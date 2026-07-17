@@ -14,6 +14,9 @@ const MODEL_URL =
 
 // recipes zone ayrı origin (yerelde 3001) — shell'den relative /recipes 404 olur.
 const RECIPES_URL = process.env.NEXT_PUBLIC_RECIPES_URL || "http://localhost:3001";
+// ŞİMDİLİK: yüz analizine göre tarif eşleştirme henüz yok; buton doğrudan
+// ücretsiz "Doğal Günlük Makyaj" tarifinin adım-adım sayfasına gider (V4 seed id).
+const ONERILEN_TARIF_ID = "019f5000-0000-7000-8000-000000000001";
 
 type Analiz = {
   yuzSekli: string;
@@ -317,7 +320,7 @@ export function FaceAnalyzer() {
               {(ONERILER[analiz.yuzSekli] ?? ONERILER.Oval).map((o) => <li key={o}>{o}</li>)}
               <li>{ALT_TON_ONERI[analiz.altTon]}</li>
             </ul>
-            <a href={`${RECIPES_URL}/`} className="gg-btn gg-btn-primary" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
+            <a href={`${RECIPES_URL}/${ONERILEN_TARIF_ID}`} className="gg-btn gg-btn-primary" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
               💄 Uygun Adım Adım Tarife Git
             </a>
           </Card>
