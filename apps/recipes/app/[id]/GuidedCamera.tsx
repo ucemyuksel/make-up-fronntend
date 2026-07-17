@@ -5,39 +5,86 @@ import type { FaceLandmarker as FaceLandmarkerT, NormalizedLandmark } from "@med
 
 /**
  * Adım-adım tarifte canlı ayna: kamerayı açar, MediaPipe Face Landmarker ile
- * yüzü izler ve o adımın BÖLGESİNİ (region) adımın ürün renginde vurgular —
- * kullanıcı ürünü yüzünün neresine süreceğini canlı görür.
- * Telefonda aynı model MediaPipe Tasks (Android/iOS) ile çalışacak.
+ * yüzü izler ve aktif adımın sürülecek ALANINI gösterir:
+ *  - alan sınırı: küçük pembe "yüz tarama" noktaları
+ *  - alan içi: ürün renginde hafif TARALI (hatch) dolgu
+ *  - sürme YÖNÜ: ok(lar) — fırçayı hangi yöne çekeceğini gösterir
+ *  - hangi FIRÇA: sol üstte rozet
+ * Analiz cihazda yapılır; telefonda aynı model MediaPipe Tasks ile koşacak.
  */
 
 const WASM_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
-// Bölge → yüz landmark indeksleri (MediaPipe Face Mesh 468). Bu noktalara
-// yarı saydam renk basınca o alan vurgulanmış görünür.
-const BOLGE_NOKTALARI: Record<string, number[]> = {
-  yuz: [10, 338, 297, 332, 234, 454, 132, 361, 205, 425, 50, 280, 152], // tüm yüz geneli
-  "goz alti": [230, 231, 232, 233, 228, 450, 451, 452, 453, 448], // göz altı
-  "elmacik kemigi": [50, 101, 118, 205, 206, 280, 330, 347, 425, 426], // elmacık
-  dudak: [61, 40, 37, 0, 267, 291, 321, 314, 17, 84, 91, 146, 13, 14], // dudaklar
-  goz: [33, 159, 145, 133, 263, 386, 374, 362], // gözler
-  "yanak": [50, 101, 118, 280, 330, 347],
+const PEMBE = "#EC2E7A"; // tarama noktaları her zaman pembe (face-scan görünümü)
+
+/** Bir bölge yaması: alan noktaları (dış hat için) + yön okları (landmark çifti: başlangıç→bitiş). */
+type Yama = { pts: number[]; arrows: [number, number][] };
+type BolgeTanim = { yamalar: Yama[]; firca: string; yon: string };
+
+// MediaPipe Face Mesh (468 nokta) indeksleriyle bölge tanımları.
+// Sol/sağ ayrı yama → her yanağa/göze kendi taralı alanı ve oku çizilir.
+const BOLGELER: Record<string, BolgeTanim> = {
+  yuz: {
+    yamalar: [
+      { pts: [10, 338, 297, 332, 284, 454, 366, 361, 397, 152, 172, 132, 137, 234, 54, 103, 67, 109], arrows: [[5, 234], [5, 454], [168, 10]] },
+    ],
+    firca: "Nemli sünger / fondöten fırçası",
+    yon: "Ortadan dışa doğru",
+  },
+  "goz alti": {
+    yamalar: [
+      { pts: [133, 155, 154, 153, 145, 144, 163, 110, 24, 23, 22, 26, 112], arrows: [[133, 143]] },   // sol göz altı: içten dışa
+      { pts: [362, 382, 381, 380, 374, 373, 390, 339, 254, 253, 252, 256, 341], arrows: [[362, 372]] }, // sağ göz altı
+    ],
+    firca: "Küçük kapatıcı fırçası (yumuşak uçlu)",
+    yon: "İç köşeden dışa, hafif dokunuşlarla",
+  },
+  "elmacik kemigi": {
+    yamalar: [
+      { pts: [50, 101, 100, 118, 117, 111, 116, 123, 147, 187, 205], arrows: [[205, 127]] },  // sol yanak → şakağa doğru
+      { pts: [280, 330, 329, 347, 346, 340, 345, 352, 376, 411, 425], arrows: [[425, 356]] }, // sağ yanak → şakağa doğru
+    ],
+    firca: "Açılı allık fırçası",
+    yon: "Elmacıktan şakağa, yukarı-dışa",
+  },
+  dudak: {
+    yamalar: [
+      { pts: [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 375, 321, 405, 314, 17, 84, 181, 91, 146], arrows: [[0, 61], [0, 291]] },
+    ],
+    firca: "Dudak fırçası / aplikatör",
+    yon: "Ortadan kenarlara",
+  },
+  goz: {
+    yamalar: [
+      { pts: [33, 246, 161, 160, 159, 158, 157, 173, 133, 155, 154, 153, 145, 144, 163, 7], arrows: [[145, 159]] },   // sol: aşağıdan yukarı
+      { pts: [263, 466, 388, 387, 386, 385, 384, 398, 362, 382, 381, 380, 374, 373, 390, 249], arrows: [[374, 386]] }, // sağ
+    ],
+    firca: "Maskara fırçası / far fırçası",
+    yon: "Kirpik dibinden uca, aşağıdan yukarı",
+  },
+  yanak: {
+    yamalar: [
+      { pts: [50, 101, 100, 118, 117, 111, 116, 123, 147, 187, 205], arrows: [[205, 127]] },
+      { pts: [280, 330, 329, 347, 346, 340, 345, 352, 376, 411, 425], arrows: [[425, 356]] },
+    ],
+    firca: "Allık fırçası",
+    yon: "Yukarı-dışa doğru",
+  },
 };
 
-// "Göz / Dudak" gibi bileşik bölgeler için anahtar-eşleşme.
-function noktalariBul(region: string): number[] {
+/** Region metnini tanımlara eşler ("Göz / Dudak" gibi bileşikler birden çok tanım döndürür). */
+function bolgeleriBul(region: string): BolgeTanim[] {
   const r = region.toLocaleLowerCase("tr").trim();
-  const bul = (k: string) => (r.includes(k) ? BOLGE_NOKTALARI[k] : []);
-  const birlesik = [
-    ...bul("goz alti"),
-    ...bul("elmacik kemigi"),
-    ...bul("dudak"),
-    ...(r.includes("göz") || r.includes("goz") ? BOLGE_NOKTALARI["goz"] : []),
-    ...(r.includes("yüz") || r.includes("yuz") ? BOLGE_NOKTALARI["yuz"] : []),
-    ...(r.includes("yanak") ? BOLGE_NOKTALARI["yanak"] : []),
-  ];
-  return birlesik.length ? Array.from(new Set(birlesik)) : BOLGE_NOKTALARI["yuz"];
+  const out: BolgeTanim[] = [];
+  if (r.includes("göz altı") || r.includes("goz alti")) out.push(BOLGELER["goz alti"]);
+  else if (r.includes("göz") || r.includes("goz")) out.push(BOLGELER["goz"]);
+  if (r.includes("elmacık") || r.includes("elmacik")) out.push(BOLGELER["elmacik kemigi"]);
+  else if (r.includes("yanak")) out.push(BOLGELER["yanak"]);
+  if (r.includes("dudak")) out.push(BOLGELER["dudak"]);
+  if (out.length === 0 || r.includes("yüz") || r.includes("yuz")) out.push(BOLGELER["yuz"]);
+  return out;
 }
 
 function hexRgba(hex: string, a: number): string {
@@ -51,11 +98,13 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const lmRef = React.useRef<FaceLandmarkerT | null>(null);
   const rafRef = React.useRef<number>(0);
-  const regionRef = React.useRef({ region, colorHex });
-  regionRef.current = { region, colorHex };
+  const cfgRef = React.useRef({ region, colorHex });
+  cfgRef.current = { region, colorHex };
 
   const [durum, setDurum] = React.useState<"kapalı" | "yükleniyor" | "açık" | "hata">("kapalı");
   const [hata, setHata] = React.useState("");
+
+  const tanimlar = bolgeleriBul(region);
 
   const durdur = React.useCallback(() => {
     cancelAnimationFrame(rafRef.current);
@@ -76,30 +125,72 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
     if (!w || !h) return;
     cv.width = w; cv.height = h;
     const ctx = cv.getContext("2d")!;
-    // Ayna görünümü (selfie): yatay çevir.
     ctx.save();
-    ctx.translate(w, 0); ctx.scale(-1, 1);
+    ctx.translate(w, 0); ctx.scale(-1, 1); // ayna (selfie)
     ctx.drawImage(v, 0, 0, w, h);
+
     if (lms) {
-      const { region: reg, colorHex: col } = regionRef.current;
-      const pts = noktalariBul(reg);
-      const rad = Math.max(10, w * 0.035);
-      ctx.fillStyle = hexRgba(col, 0.38);
-      for (const i of pts) {
-        const p = lms[i];
-        if (!p) continue;
-        ctx.beginPath();
-        ctx.arc(p.x * w, p.y * h, rad, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      // Merkez işaret noktaları (daha belirgin).
-      ctx.fillStyle = hexRgba(col, 0.95);
-      for (const i of pts) {
-        const p = lms[i];
-        if (!p) continue;
-        ctx.beginPath();
-        ctx.arc(p.x * w, p.y * h, Math.max(2, w * 0.006), 0, Math.PI * 2);
-        ctx.fill();
+      const { region: reg, colorHex: col } = cfgRef.current;
+      for (const tanim of bolgeleriBul(reg)) {
+        for (const yama of tanim.yamalar) {
+          const path = yama.pts
+            .map((i) => lms[i])
+            .filter(Boolean)
+            .map((p) => [p.x * w, p.y * h] as [number, number]);
+          if (path.length < 3) continue;
+
+          // 1) Alan: çok hafif renk + TARALI (hatch) dolgu — alanı belli eder, yüzü kapatmaz.
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(path[0][0], path[0][1]);
+          for (const [x, y] of path.slice(1)) ctx.lineTo(x, y);
+          ctx.closePath();
+          ctx.fillStyle = hexRgba(col, 0.10);
+          ctx.fill();
+          ctx.clip(); // taramayı alanın içine kilitle
+          ctx.strokeStyle = hexRgba(col, 0.35);
+          ctx.lineWidth = 1;
+          const aralik = Math.max(7, w * 0.014);
+          for (let d = -h; d < w + h; d += aralik) { // 45° çapraz tarama çizgileri
+            ctx.beginPath();
+            ctx.moveTo(d, 0);
+            ctx.lineTo(d + h, h);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          // 2) Sınır: küçük PEMBE tarama noktaları (face-scan görünümü).
+          ctx.fillStyle = PEMBE;
+          const nokta = Math.max(1.3, w * 0.0035);
+          for (const [x, y] of path) {
+            ctx.beginPath();
+            ctx.arc(x, y, nokta, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // 3) Yön okları: fırçayı hangi yöne çekeceğin.
+          for (const [ai, bi] of yama.arrows) {
+            const a = lms[ai], b = lms[bi];
+            if (!a || !b) continue;
+            const x1 = a.x * w, y1 = a.y * h, x2 = b.x * w, y2 = b.y * h;
+            const ang = Math.atan2(y2 - y1, x2 - x1);
+            const bas = Math.max(7, w * 0.016);
+            ctx.strokeStyle = "rgba(255,255,255,.95)";
+            ctx.lineWidth = Math.max(2.5, w * 0.005);
+            ctx.lineCap = "round";
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+            ctx.fillStyle = "rgba(255,255,255,.95)";
+            ctx.beginPath(); // ok başı
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - bas * Math.cos(ang - 0.45), y2 - bas * Math.sin(ang - 0.45));
+            ctx.lineTo(x2 - bas * Math.cos(ang + 0.45), y2 - bas * Math.sin(ang + 0.45));
+            ctx.closePath(); ctx.fill();
+            // okun altına ince pembe gölge çizgisi (görünürlük için)
+            ctx.strokeStyle = hexRgba(PEMBE, 0.9);
+            ctx.lineWidth = 1.2;
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          }
+        }
       }
     }
     ctx.restore();
@@ -141,6 +232,15 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
       <div style={{ position: "relative", background: "var(--gg-surface)", borderRadius: "var(--gg-r-lg)", overflow: "hidden", aspectRatio: "4 / 3" }}>
         <video ref={videoRef} playsInline muted style={{ display: "none" }} />
         <canvas ref={canvasRef} style={{ width: "100%", height: "100%", objectFit: "cover", display: durum === "açık" ? "block" : "none" }} />
+        {durum === "açık" && (
+          <div style={{ position: "absolute", top: 10, left: 10, display: "grid", gap: 6 }}>
+            {tanimlar.map((t) => (
+              <span key={t.firca} style={{ background: "rgba(255,255,255,.92)", borderRadius: 999, padding: "5px 12px", fontSize: 12.5, fontWeight: 600, boxShadow: "0 1px 4px rgba(0,0,0,.15)" }}>
+                🖌️ {t.firca} · <span style={{ color: PEMBE }}>{t.yon}</span>
+              </span>
+            ))}
+          </div>
+        )}
         {durum !== "açık" && (
           <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center", padding: 20, gap: 10 }}>
             <div style={{ fontSize: 34 }}>📷</div>
@@ -149,7 +249,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
                 ? "Kamera açılamadı: " + hata
                 : durum === "yükleniyor"
                 ? "Model yükleniyor…"
-                : `Kamerayı aç, "${stepTitle}" adımını yüzünde nereye süreceğini canlı gör.`}
+                : `Kamerayı aç, "${stepTitle}" adımında ürünü nereye ve hangi yöne süreceğini canlı gör.`}
             </div>
             {durum !== "yükleniyor" && (
               <button className="gg-btn gg-btn-primary" onClick={baslat}>📷 Kamerayı Aç</button>
@@ -166,7 +266,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
       {durum === "açık" && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "var(--gg-muted)" }}>
           <span style={{ width: 14, height: 14, borderRadius: 4, background: colorHex, border: "1px solid var(--gg-border)" }} />
-          Vurgulanan bölge: <strong style={{ color: "var(--gg-text)" }}>{region}</strong> — analiz cihazında yapılır, görüntü sunucuya gitmez.
+          Taralı alan: <strong style={{ color: "var(--gg-text)" }}>{region}</strong> · ok = sürme yönü — analiz cihazında, görüntü sunucuya gitmez.
         </div>
       )}
     </div>
