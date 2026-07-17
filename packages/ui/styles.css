@@ -1,0 +1,133 @@
+/* GlamGuide tasarım sistemi — responsive, component sınıfları. Her app
+   layout'ta `import "@makeup/ui/styles.css"` ile alır. */
+:root {
+  --gg-primary: #ec2e7a;
+  --gg-primary-dark: #c71e62;
+  --gg-primary-light: #f9a8c9;
+  --gg-primary-soft: #fce7f0;
+  --gg-coral: #f0863b;
+  --gg-coral-soft: #fdeee2;
+  --gg-gold: #e9a23b;
+  --gg-bg: #f7f6f9;
+  --gg-surface: #fff;
+  --gg-text: #241a1f;
+  --gg-muted: #8a8290;
+  --gg-border: #efeaf0;
+  --gg-star: #f5b301;
+  --gg-r-sm: 8px;
+  --gg-r-md: 14px;
+  --gg-r-lg: 22px;
+  --gg-r-pill: 999px;
+  --gg-sidebar-w: 250px;
+  --gg-rail-w: 330px;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--gg-bg); color: var(--gg-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+a { color: inherit; text-decoration: none; }
+
+/* ---------- AppShell ---------- */
+.gg-shell { display: flex; min-height: 100vh; }
+.gg-sidebar {
+  width: var(--gg-sidebar-w); flex-shrink: 0; background: var(--gg-surface);
+  border-right: 1px solid var(--gg-border); padding: 20px 14px;
+  display: flex; flex-direction: column; gap: 6px; position: sticky; top: 0; height: 100vh;
+}
+.gg-logo { display: flex; align-items: center; gap: 8px; padding: 4px 10px 16px;
+  font-weight: 800; font-size: 20px; color: var(--gg-primary); }
+.gg-logo-mark { display: inline-flex; width: 30px; height: 30px; border-radius: 9px;
+  background: var(--gg-primary); color: #fff; align-items: center; justify-content: center; font-size: 16px; }
+.gg-nav { display: flex; flex-direction: column; gap: 2px; }
+.gg-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  border-radius: var(--gg-r-md); color: var(--gg-text); font-weight: 500; font-size: 14.5px; }
+.gg-nav-item:hover { background: var(--gg-bg); }
+.gg-nav-item.active { background: var(--gg-primary-soft); color: var(--gg-primary); font-weight: 700; }
+.gg-nav-item .ico { font-size: 17px; }
+.gg-nav-item .lbl { flex: 1; }
+.gg-badge-count { background: var(--gg-primary); color: #fff; border-radius: 999px;
+  font-size: 11px; font-weight: 700; padding: 1px 7px; }
+.gg-premium { margin-top: auto; background: var(--gg-primary-soft); border-radius: var(--gg-r-lg);
+  padding: 16px; text-align: center; }
+.gg-premium p { font-size: 12px; color: var(--gg-muted); margin: 6px 0 12px; }
+
+.gg-content { flex: 1; min-width: 0; }
+.gg-topbar { display: flex; align-items: center; gap: 16px; padding: 14px 28px;
+  background: var(--gg-surface); border-bottom: 1px solid var(--gg-border); position: sticky; top: 0; z-index: 10; }
+.gg-search { flex: 1; max-width: 520px; border: 1px solid var(--gg-border); background: var(--gg-bg);
+  border-radius: var(--gg-r-pill); padding: 10px 16px; font-size: 14px; outline: none; }
+.gg-topbar-spacer { flex: 1; }
+.gg-main { padding: 24px; }
+.gg-menu-btn { display: none; font-size: 22px; background: none; border: none; cursor: pointer; }
+
+/* ---------- Buton / rozet ---------- */
+.gg-btn { display: inline-flex; align-items: center; gap: 6px; border: none; cursor: pointer;
+  border-radius: var(--gg-r-pill); padding: 10px 20px; font-weight: 700; font-size: 14px; }
+.gg-btn-primary { background: var(--gg-primary); color: #fff; }
+.gg-btn-ghost { background: #fff; color: var(--gg-text); box-shadow: inset 0 0 0 1px var(--gg-border); }
+.gg-pill { background: var(--gg-primary-soft); color: var(--gg-primary); border-radius: var(--gg-r-pill);
+  padding: 4px 12px; font-size: 12px; font-weight: 700; display: inline-block; }
+.gg-card { background: var(--gg-surface); border: 1px solid var(--gg-border); border-radius: var(--gg-r-md); padding: 16px; }
+
+/* ---------- Bölüm başlığı ---------- */
+.gg-section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.gg-section-head h3 { margin: 0; font-size: 18px; }
+.gg-section-head.small { margin-bottom: 8px; }
+.gg-section-head.small h3 { font-size: 15px; }
+.gg-see-all { font-size: 12.5px; color: var(--gg-primary); font-weight: 600; }
+
+/* ---------- Ürün kartı ---------- */
+.gg-product { background: var(--gg-surface); border: 1px solid var(--gg-border);
+  border-radius: var(--gg-r-md); padding: 12px; }
+.gg-product .thumb { position: relative; aspect-ratio: 1 / 1; border-radius: var(--gg-r-sm);
+  background: linear-gradient(135deg, var(--gg-primary-soft), var(--gg-coral-soft)); margin-bottom: 10px; }
+.gg-product .fav { position: absolute; top: 8px; right: 8px; background: #fff; border-radius: 50%;
+  width: 26px; height: 26px; display: grid; place-items: center; font-size: 13px; }
+.gg-product .name { font-weight: 600; font-size: 13.5px; }
+.gg-product .brand { color: var(--gg-muted); font-size: 12px; }
+.gg-product .rate { font-size: 12px; color: var(--gg-muted); margin: 4px 0; }
+.gg-product .rate .star { color: var(--gg-star); }
+.gg-product .buy { display: flex; justify-content: space-between; align-items: center; }
+.gg-product .cart { background: var(--gg-primary); color: #fff; border-radius: 9px;
+  width: 28px; height: 28px; display: grid; place-items: center; font-size: 14px; }
+
+/* ---------- Reel ---------- */
+.gg-reel { position: relative; aspect-ratio: 3 / 4; border-radius: var(--gg-r-md);
+  background: linear-gradient(160deg, var(--gg-primary-light), var(--gg-coral)); display: grid; place-items: center; }
+.gg-reel .play { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.85);
+  display: grid; place-items: center; font-size: 16px; }
+
+/* ---------- Responsive grid yardımcıları ---------- */
+.gg-grid { display: grid; gap: 14px; }
+.gg-grid.cols-5 { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.gg-grid.cols-4 { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.gg-grid.cols-3 { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+/* Dashboard iki sütun (ana + sağ panel) */
+.gg-dash { display: grid; grid-template-columns: 1fr var(--gg-rail-w); gap: 24px; align-items: start; }
+.gg-rail { display: grid; gap: 16px; position: sticky; top: 90px; }
+
+/* ---------- Kırılma noktaları ---------- */
+@media (max-width: 1180px) {
+  .gg-dash { grid-template-columns: 1fr; }         /* sağ panel alta iner */
+  .gg-rail { position: static; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+}
+@media (max-width: 900px) {
+  /* Sidebar yatay üst şeride dönüşür */
+  .gg-shell { flex-direction: column; }
+  .gg-sidebar { width: 100%; height: auto; position: static; flex-direction: row;
+    overflow-x: auto; align-items: center; padding: 10px 12px; gap: 4px; }
+  .gg-nav { flex-direction: row; }
+  .gg-nav-item .lbl { display: none; }             /* mobilde ikon-only menü */
+  .gg-nav-item { padding: 10px; }
+  .gg-premium { display: none; }
+  .gg-logo .txt { display: none; }
+}
+@media (max-width: 760px) {
+  .gg-messages { grid-template-columns: 1fr !important; } /* mobilde liste + sohbet alt alta */
+}
+@media (max-width: 560px) {
+  .gg-main { padding: 14px; }
+  .gg-topbar { padding: 10px 14px; gap: 8px; }
+  .gg-topbar .gg-btn .txt { display: none; }        /* buton etiketleri kısalır */
+}

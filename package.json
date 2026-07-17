@@ -1,0 +1,13 @@
+{
+  "name": "makeup-web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Makeup web — Next.js micro-frontend (Shell + domain MFE'leri, Multi-Zones)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present"
+  }
+}
