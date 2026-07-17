@@ -65,8 +65,8 @@ export function AppShell({
           <span className="gg-topbar-spacer" />
           {/* Mesaj/bildirim erişimi yalnızca sol menüde — topbar sade tutuldu
               (eskiden burada da ikonlar vardı, menü + sağ bar ile tekrar ediyordu). */}
-          <a href={ORIGINS.social + "/reels"} className="gg-btn gg-btn-primary">
-            🎬 <span className="txt">Reels Satın Al</span>
+          <a href={ORIGINS.recipes + "/"} className="gg-btn gg-btn-primary">
+            💄 <span className="txt">Tarif Satın Al</span>
           </a>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--gg-primary-light)" }} />

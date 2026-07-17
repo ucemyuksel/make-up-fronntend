@@ -12,6 +12,9 @@ const WASM_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/w
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
+// recipes zone ayrı origin (yerelde 3001) — shell'den relative /recipes 404 olur.
+const RECIPES_URL = process.env.NEXT_PUBLIC_RECIPES_URL || "http://localhost:3001";
+
 type Analiz = {
   yuzSekli: string;
   oran: number;
@@ -314,7 +317,7 @@ export function FaceAnalyzer() {
               {(ONERILER[analiz.yuzSekli] ?? ONERILER.Oval).map((o) => <li key={o}>{o}</li>)}
               <li>{ALT_TON_ONERI[analiz.altTon]}</li>
             </ul>
-            <a href="/recipes" className="gg-btn gg-btn-primary" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
+            <a href={`${RECIPES_URL}/`} className="gg-btn gg-btn-primary" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
               💄 Uygun Adım Adım Tarife Git
             </a>
           </Card>

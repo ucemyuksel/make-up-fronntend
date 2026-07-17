@@ -150,10 +150,10 @@ export default async function Dashboard() {
         </Card>
 
         <Card>
-          <div style={{ fontSize: 12, color: "var(--gg-muted)" }}>Reels Bakiyen</div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
-            <strong style={{ fontSize: 22, color: "var(--gg-gold)" }}>1.250 🪙</strong>
-            <span className="gg-pill">Reels Satın Al</span>
+          <div style={{ fontSize: 12, color: "var(--gg-muted)" }}>Tarif Mağazası</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6, gap: 10 }}>
+            <strong style={{ fontSize: 15 }}>Adım adım makyaj tarifleri</strong>
+            <a href={`${RECIPES}/`} className="gg-pill">Tariflere Göz At</a>
           </div>
         </Card>
 
