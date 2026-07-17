@@ -81,6 +81,14 @@ export default async function RecipesHome() {
               <Badge>{r.free ? "Ücretsiz" : `${r.priceTry} ₺`}</Badge>
               <span style={{ fontSize: 12, color: theme.color.textMuted }}>♥ {r.likeCount}</span>
             </div>
+            {/* Ücretsiz tarifler satın almadan adım adım denenebilir; ücretlilerde önce satın alma gerekir. */}
+            <a
+              href={`/${r.id}`}
+              className="gg-btn gg-btn-primary"
+              style={{ marginTop: 12, width: "100%", justifyContent: "center" }}
+            >
+              {r.free ? "✨ Adım adım dene" : "🔒 Satın al & dene"}
+            </a>
           </Card>
         ))}
         {recipes.length === 0 && (
