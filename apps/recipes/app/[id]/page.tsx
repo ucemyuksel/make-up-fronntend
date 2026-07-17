@@ -2,6 +2,7 @@ import * as React from "react";
 import { Badge, Card, theme } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { auth } from "../../auth";
+import { GuidedCamera } from "./GuidedCamera";
 
 type StepOutline = { index: number; title: string; region: string; state: string };
 type CurrentStep = {
@@ -143,7 +144,9 @@ export default async function GuidedPage({ params }: { params: { id: string } })
         </Card>
       ) : (
         <Card>
-          <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+          {/* Canlı ayna: bu adımın bölgesini yüzde nereye süreceğini gösterir. */}
+          <GuidedCamera region={cs.region} colorHex={cs.productColorHex} stepTitle={cs.title} />
+          <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginTop: 16 }}>
             <span style={{ width: 48, height: 48, borderRadius: 12, background: cs.productColorHex, flexShrink: 0, border: `1px solid ${theme.color.border}` }} />
             <div>
               <Badge>{cs.region}</Badge>
