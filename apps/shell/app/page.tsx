@@ -26,6 +26,11 @@ const MOCK_REELS = [
   { caption: "Dumanlı Göz Makyajı", meta: "11 Adım" },
 ];
 
+// Zone origin'leri (AppShell ile aynı mantık) — zone'lar arası linkler tam URL.
+const STORE = process.env.NEXT_PUBLIC_STORE_URL || "http://localhost:3002";
+const SOCIAL = process.env.NEXT_PUBLIC_SOCIAL_URL || "http://localhost:3003";
+const RECIPES = process.env.NEXT_PUBLIC_RECIPES_URL || "http://localhost:3001";
+
 const tl = (n: number) =>
   "₺" + Number(n).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -89,7 +94,7 @@ export default async function Dashboard() {
               Yüzünü analiz et, sana özel makyaj adımlarını öğren ve kusursuz görün!
             </p>
             <div style={{ display: "flex", gap: 12, marginTop: 22, flexWrap: "wrap" }}>
-              <a href="/recipes" className="gg-btn gg-btn-primary">✨ Hemen Başla</a>
+              <a href={`${RECIPES}/`} className="gg-btn gg-btn-primary">✨ Hemen Başla</a>
               <a href="/analysis" className="gg-btn gg-btn-ghost">🎯 Yüz Analizi Yap</a>
               {!live && (
                 <a href="/api/auth/signin?callbackUrl=%2F" className="gg-btn gg-btn-ghost">🔑 Giriş yap (canlı veri)</a>
@@ -100,7 +105,7 @@ export default async function Dashboard() {
 
         <section style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 4 }}>
           {CATEGORIES.map(([icon, label]) => (
-            <a key={label} href="/store" style={{ display: "grid", justifyItems: "center", gap: 8, minWidth: 68 }}>
+            <a key={label} href={`${STORE}/`} style={{ display: "grid", justifyItems: "center", gap: 8, minWidth: 68 }}>
               <span style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--gg-surface)", border: "1px solid var(--gg-border)", display: "grid", placeItems: "center", fontSize: 22 }}>{icon}</span>
               <span style={{ fontSize: 12.5 }}>{label}</span>
             </a>
@@ -108,7 +113,7 @@ export default async function Dashboard() {
         </section>
 
         <section>
-          <SectionHeader title={live ? `Sana Özel Öneriler (canlı · ${products.length})` : "Sana Özel Öneriler"} href="/store" />
+          <SectionHeader title={live ? `Sana Özel Öneriler (canlı · ${products.length})` : "Sana Özel Öneriler"} href={`${STORE}/`} />
           <div className="gg-grid cols-5">
             {products.map((p) => (
               <ProductCard key={p.id} name={p.name} brand={p.brand} price={tl(p.priceAmount)} />
@@ -117,7 +122,7 @@ export default async function Dashboard() {
         </section>
 
         <section>
-          <SectionHeader title="Trend Olan Reels" href="/social" />
+          <SectionHeader title="Trend Olan Reels" href={`${SOCIAL}/reels`} />
           <div className="gg-grid cols-4">
             {reels.map((r) => <ReelCard key={r.caption} caption={r.caption} meta={r.meta} />)}
           </div>
@@ -134,7 +139,7 @@ export default async function Dashboard() {
               <div style={{ fontSize: 12, color: "var(--gg-muted)" }}>
                 {session?.user?.email ?? "Dijital İçerik Üreticisi"}
               </div>
-              <a href="/social" className="gg-see-all">Profili Gör</a>
+              <a href={`${SOCIAL}/profile`} className="gg-see-all">Profili Gör</a>
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14 }}>
@@ -153,7 +158,7 @@ export default async function Dashboard() {
         </Card>
 
         <Card>
-          <SectionHeader title={lastOrder ? "Son Siparişin (canlı)" : "Siparişin Yolda"} href="/orders" small />
+          <SectionHeader title={lastOrder ? "Son Siparişin (canlı)" : "Siparişin Yolda"} href={`${STORE}/orders`} small />
           {lastOrder ? (
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <span style={{ width: 44, height: 44, borderRadius: 10, background: "var(--gg-coral-soft)" }} />
@@ -175,7 +180,7 @@ export default async function Dashboard() {
         </Card>
 
         <Card>
-          <SectionHeader title={live ? "Son Mesajlar (canlı)" : "Son Mesajlar"} href="/social" small />
+          <SectionHeader title={live ? "Son Mesajlar (canlı)" : "Son Mesajlar"} href={`${SOCIAL}/messages`} small />
           {(live && conversations.length > 0
             ? conversations.map((cv) => ({
                 name: "Kullanıcı " + cv.otherUserId.slice(0, 4).toUpperCase(),

@@ -1,19 +1,27 @@
 import * as React from "react";
 
+// Zone origin'leri: her micro-frontend ayrı dağıtım (yerelde ayrı port, prod'da
+// ayrı Vercel domain'i). Zone'lar arası gezinme origin'e tam URL ile yapılır —
+// böylece basePath/asset karmaşası olmadan menü her yerden çalışır.
+const ORIGINS = {
+  shell: process.env.NEXT_PUBLIC_SHELL_URL || "http://localhost:3010",
+  recipes: process.env.NEXT_PUBLIC_RECIPES_URL || "http://localhost:3001",
+  store: process.env.NEXT_PUBLIC_STORE_URL || "http://localhost:3002",
+  social: process.env.NEXT_PUBLIC_SOCIAL_URL || "http://localhost:3003",
+};
+
+// Yalnızca gerçekten var olan sayfalara link verilir (ölü menü öğesi yok).
 const NAV = [
-  { key: "home", label: "Ana Sayfa", icon: "🏠", href: "/" },
-  { key: "guide", label: "Adım Adım Makyaj", icon: "💄", href: "/recipes" },
-  { key: "analysis", label: "Yüz Analizi (AI)", icon: "🎯", href: "/analysis" },
-  { key: "store", label: "Mağaza", icon: "🛍️", href: "/store" },
-  { key: "reels", label: "Reels", icon: "🎬", href: "/reels" },
-  { key: "fav", label: "Favoriler", icon: "🤍", href: "/favorites" },
-  { key: "cart", label: "Alışveriş", icon: "🛒", href: "/cart" },
-  { key: "orders", label: "Siparişlerim", icon: "🧾", href: "/orders" },
-  { key: "shipping", label: "Kargo Takip", icon: "🚚", href: "/shipping" },
-  { key: "messages", label: "Mesajlar", icon: "💬", href: "/messages", badge: 2 },
-  { key: "notifications", label: "Bildirimler", icon: "🔔", href: "/notifications", badge: 3 },
-  { key: "profile", label: "Profil", icon: "👤", href: "/profile" },
-  { key: "settings", label: "Ayarlar", icon: "⚙️", href: "/settings" },
+  { key: "home", label: "Ana Sayfa", icon: "🏠", href: `${ORIGINS.shell}/` },
+  { key: "guide", label: "Adım Adım Makyaj", icon: "💄", href: `${ORIGINS.recipes}/` },
+  { key: "analysis", label: "Yüz Analizi (AI)", icon: "🎯", href: `${ORIGINS.shell}/analysis` },
+  { key: "store", label: "Mağaza", icon: "🛍️", href: `${ORIGINS.store}/` },
+  { key: "reels", label: "Reels", icon: "🎬", href: `${ORIGINS.social}/reels` },
+  { key: "cart", label: "Sepetim", icon: "🛒", href: `${ORIGINS.store}/cart` },
+  { key: "orders", label: "Siparişlerim", icon: "🧾", href: `${ORIGINS.store}/orders` },
+  { key: "messages", label: "Mesajlar", icon: "💬", href: `${ORIGINS.social}/messages` },
+  { key: "notifications", label: "Bildirimler", icon: "🔔", href: `${ORIGINS.social}/notifications` },
+  { key: "profile", label: "Profil", icon: "👤", href: `${ORIGINS.social}/profile` },
 ];
 
 export function AppShell({
@@ -28,7 +36,7 @@ export function AppShell({
   return (
     <div className="gg-shell">
       <aside className="gg-sidebar">
-        <a href="/" className="gg-logo">
+        <a href={ORIGINS.shell + "/"} className="gg-logo">
           <span className="gg-logo-mark">✦</span>
           <span className="txt">GlamGuide</span>
         </a>
@@ -55,11 +63,11 @@ export function AppShell({
         <header className="gg-topbar">
           <input className="gg-search" placeholder="Ürün, marka veya kategori ara..." />
           <span className="gg-topbar-spacer" />
-          <a href="/reels/buy" className="gg-btn gg-btn-primary">
+          {/* Mesaj/bildirim erişimi yalnızca sol menüde — topbar sade tutuldu
+              (eskiden burada da ikonlar vardı, menü + sağ bar ile tekrar ediyordu). */}
+          <a href={ORIGINS.social + "/reels"} className="gg-btn gg-btn-primary">
             🎬 <span className="txt">Reels Satın Al</span>
           </a>
-          <NotifIcon icon="🔔" n={3} />
-          <NotifIcon icon="💬" n={2} />
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--gg-primary-light)" }} />
             <strong style={{ fontSize: 14 }}>{user.name}</strong>
@@ -68,14 +76,5 @@ export function AppShell({
         <main className="gg-main">{children}</main>
       </div>
     </div>
-  );
-}
-
-function NotifIcon({ icon, n }: { icon: string; n: number }) {
-  return (
-    <span style={{ position: "relative", fontSize: 20 }}>
-      {icon}
-      <span style={{ position: "absolute", top: -4, right: -6, background: "var(--gg-primary)", color: "#fff", borderRadius: 999, fontSize: 10, fontWeight: 700, padding: "0 5px" }}>{n}</span>
-    </span>
   );
 }
