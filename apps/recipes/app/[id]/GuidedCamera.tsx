@@ -24,7 +24,7 @@ const YESIL = "#22C55E";   // ton tamam → yeşil taralı
 const TON_ESIK = 0.6;      // hedefe yakınlık eşiği (EMA'lı ilerleme 0..1)
 
 type Yama = { pts: number[]; arrows: [number, number][] };
-type BolgeTanim = { yamalar: Yama[]; firca: string; yon: string };
+type BolgeTanim = { yamalar: Yama[]; firca: string; yon: string; arac: string };
 
 // MediaPipe Face Mesh (468) indeksleriyle bölge tanımları — sınırlar sıralı
 // kontur olarak verilir; çizimde spline ile yumuşatılır.
@@ -35,6 +35,7 @@ const BOLGELER: Record<string, BolgeTanim> = {
     ],
     firca: "Nemli sünger / fondöten fırçası",
     yon: "Ortadan dışa doğru",
+    arac: "🧽",
   },
   "goz alti": {
     yamalar: [
@@ -43,6 +44,7 @@ const BOLGELER: Record<string, BolgeTanim> = {
     ],
     firca: "Küçük kapatıcı fırçası (yumuşak uçlu)",
     yon: "İç köşeden dışa, hafif dokunuşlarla",
+    arac: "🖌️",
   },
   "elmacik kemigi": {
     yamalar: [
@@ -51,6 +53,7 @@ const BOLGELER: Record<string, BolgeTanim> = {
     ],
     firca: "Açılı allık fırçası",
     yon: "Elmacıktan şakağa, yukarı-dışa",
+    arac: "🖌️",
   },
   dudak: {
     yamalar: [
@@ -58,6 +61,7 @@ const BOLGELER: Record<string, BolgeTanim> = {
     ],
     firca: "Dudak fırçası / aplikatör",
     yon: "Ortadan kenarlara",
+    arac: "💄",
   },
   goz: {
     yamalar: [
@@ -66,6 +70,7 @@ const BOLGELER: Record<string, BolgeTanim> = {
     ],
     firca: "Maskara fırçası / far fırçası",
     yon: "Kirpik dibinden uca, aşağıdan yukarı",
+    arac: "🖌️",
   },
   yanak: {
     yamalar: [
@@ -74,6 +79,7 @@ const BOLGELER: Record<string, BolgeTanim> = {
     ],
     firca: "Allık fırçası",
     yon: "Yukarı-dışa doğru",
+    arac: "🖌️",
   },
 };
 
@@ -261,7 +267,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
             const ang = Math.atan2(uy, ux);
             const iz = Math.max(0, t - 0.35);            // iz başlangıcı (kuyruk)
             const izx = x1 + ux * iz, izy = y1 + uy * iz;
-            // sürülen iz: uca doğru incelen yarı saydam şerit
+            // sürülen iz: uca doğru incelen yarı saydam şerit (ürün izi)
             const grad = ctx.createLinearGradient(izx, izy, px, py);
             grad.addColorStop(0, hexRgba(col, 0));
             grad.addColorStop(1, hexRgba(col, 0.75));
@@ -269,15 +275,18 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
             ctx.lineCap = "round";
             ctx.lineWidth = Math.max(2, w * 0.004);
             ctx.beginPath(); ctx.moveTo(izx, izy); ctx.lineTo(px, py); ctx.stroke();
-            // ince fırça ucu: yöne dik küçük kıl demeti
+            // araç görseli (🖌️ fırça / 💄 ruj / 🧽 sünger) fırça ucunda gezinir;
+            // ayna içindeyiz → emoji ters görünmesin diye karşı-çevir, hafif eğim ver.
             ctx.save();
-            ctx.translate(px, py); ctx.rotate(ang + Math.PI / 2);
-            ctx.strokeStyle = "rgba(255,255,255,.9)";
-            ctx.lineWidth = 1;
-            const kil = Math.max(4, w * 0.009);
-            for (let k = -2; k <= 2; k++) {
-              ctx.beginPath(); ctx.moveTo(k * 1.6, 0); ctx.lineTo(k * 1.2, -kil); ctx.stroke();
-            }
+            ctx.translate(px, py);
+            ctx.scale(-1, 1);
+            ctx.rotate(-0.5); // elde tutulmuş gibi ~30° eğim
+            ctx.font = `${Math.max(20, w * 0.055)}px sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "bottom";
+            ctx.shadowColor = "rgba(0,0,0,.35)";
+            ctx.shadowBlur = 4;
+            ctx.fillText(tanim.arac, Math.max(6, w * 0.012), -Math.max(2, w * 0.004));
             ctx.restore();
           }
         } else {
