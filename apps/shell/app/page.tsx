@@ -90,9 +90,8 @@ export default async function Dashboard() {
             </p>
             <div style={{ display: "flex", gap: 12, marginTop: 22, flexWrap: "wrap" }}>
               <a href="/recipes" className="gg-btn gg-btn-primary">✨ Hemen Başla</a>
-              {live ? (
-                <button className="gg-btn gg-btn-ghost">🎯 Yüz Analizi Yap</button>
-              ) : (
+              <a href="/analysis" className="gg-btn gg-btn-ghost">🎯 Yüz Analizi Yap</a>
+              {!live && (
                 <a href="/api/auth/signin?callbackUrl=%2F" className="gg-btn gg-btn-ghost">🔑 Giriş yap (canlı veri)</a>
               )}
             </div>

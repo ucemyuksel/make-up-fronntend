@@ -3,6 +3,7 @@ import * as React from "react";
 const NAV = [
   { key: "home", label: "Ana Sayfa", icon: "🏠", href: "/" },
   { key: "guide", label: "Adım Adım Makyaj", icon: "💄", href: "/recipes" },
+  { key: "analysis", label: "Yüz Analizi (AI)", icon: "🎯", href: "/analysis" },
   { key: "store", label: "Mağaza", icon: "🛍️", href: "/store" },
   { key: "reels", label: "Reels", icon: "🎬", href: "/reels" },
   { key: "fav", label: "Favoriler", icon: "🤍", href: "/favorites" },
