@@ -478,8 +478,14 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
       const bxs = path.map((p) => p[0]), bys = path.map((p) => p[1]);
       const x0 = Math.min(...bxs), x1 = Math.max(...bxs);
       const y0 = Math.min(...bys), y1 = Math.max(...bys);
-      const cw = (x1 - x0) / HUCRE, ch = (y1 - y0) / HUCRE;
-      if (cw < 2 || ch < 2) continue;
+      // Hücre SAYISI eksen başına dinamik: hücre kenarını ~ video genişliğinin
+      // %2'sinde hedefle, en az 2. Böylece göz altı gibi ince şeritlerde de
+      // (eskiden HUCRE=14 ile ch<2 olup bölge tümüyle atlanıyordu) hücre üretilir.
+      const hedefKenar = Math.max(8, w * 0.02);
+      const nx = Math.max(2, Math.min(HUCRE, Math.round((x1 - x0) / hedefKenar)));
+      const ny = Math.max(2, Math.min(HUCRE, Math.round((y1 - y0) / hedefKenar)));
+      const cw = (x1 - x0) / nx, ch = (y1 - y0) / ny;
+      if (cw < 1 || ch < 1) continue;
 
       const ornekle = t2.kare % 6 === 0 && !!tespit;
 
@@ -495,8 +501,8 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
       const aralik = Math.max(6, w * 0.012) / z.s;
       const nokta = Math.max(1.2, w * 0.003) / Math.sqrt(z.s);
 
-      for (let i = 0; i < HUCRE; i++) {
-        for (let j = 0; j < HUCRE; j++) {
+      for (let i = 0; i < nx; i++) {
+        for (let j = 0; j < ny; j++) {
           const mx = x0 + (i + 0.5) * cw, my = y0 + (j + 0.5) * ch;
           if (!icinde(mx, my, path)) continue;
           yamaIci++;
