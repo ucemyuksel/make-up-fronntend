@@ -29,6 +29,8 @@ export function ProductCard({
   price,
   href,
   image,
+  skinTag,
+  skinMatch,
 }: {
   name: string;
   brand: string;
@@ -37,6 +39,8 @@ export function ProductCard({
   count?: number;
   href?: string;
   image?: string;
+  skinTag?: string;   // uyumlu cilt tipi (ör. "Kuru & Karma")
+  skinMatch?: boolean; // kullanıcının cildine uygun (AI analizinden)
 }) {
   const inner = (
     <div className="gg-product">
@@ -45,9 +49,19 @@ export function ProductCard({
         style={image ? { backgroundImage: `url(${image})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
       >
         <span className="fav">🤍</span>
+        {skinMatch ? (
+          <span style={{ position: "absolute", top: 8, left: 8, background: "var(--gg-primary)", color: "#fff", fontSize: 10.5, fontWeight: 700, borderRadius: 999, padding: "2px 8px" }}>
+            ✓ Cildine uygun
+          </span>
+        ) : null}
       </div>
       <div className="name">{name}</div>
       <div className="brand">{brand}</div>
+      {skinTag ? (
+        <div style={{ fontSize: 11, color: "var(--gg-primary-dark)", background: "var(--gg-primary-soft)", borderRadius: 999, padding: "2px 8px", justifySelf: "start", margin: "2px 0" }}>
+          🧴 {skinTag}
+        </div>
+      ) : null}
       {rating != null ? (
         <div className="rate">
           <span className="star">★</span> {rating} <span>({count})</span>

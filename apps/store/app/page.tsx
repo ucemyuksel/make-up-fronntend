@@ -20,30 +20,34 @@ const MAGAZALAR: { ad: string; renk: string }[] = [
   { ad: "The Body Shop", renk: "#004B34" },
 ];
 
-// Popüler ürünler (geçici görselli veri — mockup ile aynı düzen).
+// Popüler ürünler (geçici görselli veri). ciltTipi = ürünün uyumlu olduğu cilt(ler);
+// baz/bakım ürünlerinde kritik, aksesuarlarda boş.
 const MOCK_URUNLER = [
-  { id: "u1", name: "Nude Far Paleti", brand: "Soft Colors", priceAmount: 1249, rating: 4.8, count: 125 },
-  { id: "u2", name: "Lash Sensational Maskara", brand: "Maybelline", priceAmount: 439.9, rating: 4.7, count: 114 },
-  { id: "u3", name: "Double Wear Fondöten", brand: "Estée Lauder", priceAmount: 1599, rating: 4.9, count: 86 },
-  { id: "u4", name: "Mat Ruj - Velvet Teddy", brand: "MAC", priceAmount: 899, rating: 4.8, count: 93 },
-  { id: "u5", name: "Vanilla Aydınlatıcı", brand: "Becca", priceAmount: 699, rating: 4.6, count: 61 },
-  { id: "u6", name: "Hydra Nemlendirici", brand: "L'Oréal Paris", priceAmount: 329, rating: 4.5, count: 208 },
-  { id: "u7", name: "Göz Farı Fırçası", brand: "Gratis", priceAmount: 129, rating: 4.4, count: 77 },
-  { id: "u8", name: "Siyah Eyeliner", brand: "Flormar", priceAmount: 149, rating: 4.3, count: 152 },
-  { id: "u9", name: "Cilt Serumu C Vitamini", brand: "The Body Shop", priceAmount: 549, rating: 4.7, count: 99 },
-  { id: "u10", name: "Allık - Şeftali", brand: "Watsons", priceAmount: 199, rating: 4.5, count: 45 },
+  { id: "u1", name: "Nude Far Paleti", brand: "Soft Colors", priceAmount: 1249, rating: 4.8, count: 125, ciltTipi: "Tüm ciltler" },
+  { id: "u2", name: "Lash Sensational Maskara", brand: "Maybelline", priceAmount: 439.9, rating: 4.7, count: 114, ciltTipi: "Hassas göz uyumlu" },
+  { id: "u3", name: "Double Wear Fondöten", brand: "Estée Lauder", priceAmount: 1599, rating: 4.9, count: 86, ciltTipi: "Yağlı & Karma" },
+  { id: "u4", name: "Mat Ruj - Velvet Teddy", brand: "MAC", priceAmount: 899, rating: 4.8, count: 93, ciltTipi: "Kuru dudakta nemlendir" },
+  { id: "u5", name: "Vanilla Aydınlatıcı", brand: "Becca", priceAmount: 699, rating: 4.6, count: 61, ciltTipi: "Normal & Kuru" },
+  { id: "u6", name: "Hydra Nemlendirici", brand: "L'Oréal Paris", priceAmount: 329, rating: 4.5, count: 208, ciltTipi: "Kuru & Hassas" },
+  { id: "u7", name: "Göz Farı Fırçası", brand: "Gratis", priceAmount: 129, rating: 4.4, count: 77, ciltTipi: "" },
+  { id: "u8", name: "Siyah Eyeliner", brand: "Flormar", priceAmount: 149, rating: 4.3, count: 152, ciltTipi: "Hassas göz uyumlu" },
+  { id: "u9", name: "Cilt Serumu C Vitamini", brand: "The Body Shop", priceAmount: 549, rating: 4.7, count: 99, ciltTipi: "Tüm ciltler" },
+  { id: "u10", name: "Allık - Şeftali", brand: "Watsons", priceAmount: 199, rating: 4.5, count: 45, ciltTipi: "Tüm ciltler" },
 ];
+
+// Cilt tipi filtresi (ürünlerin ciltTipi metniyle eşleşir).
+const CILT_TIPLERI = ["Tümü", "Kuru", "Yağlı", "Karma", "Hassas", "Normal"];
 
 const KATEGORILER = [
   ["👁️", "Makyaj"], ["🧴", "Cilt Bakımı"], ["💇", "Saç"], ["🌸", "Parfüm"], ["🧰", "Aksesuar"], ["⋯", "Tümü"],
 ];
 
-export default async function StoreHome({ searchParams }: { searchParams: { q?: string } }) {
+export default async function StoreHome({ searchParams }: { searchParams: { q?: string; cilt?: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
 
   // Canlı ürün/kategori (oturum varsa) — mağaza sayfası oturumsuz da dolu görünsün.
-  let products: (Product & { rating?: number; count?: number })[] = MOCK_URUNLER as never;
+  let products: (Product & { rating?: number; count?: number; ciltTipi?: string })[] = MOCK_URUNLER as never;
   let chips = ["Tümü", "Makyaj", "Cilt Bakımı", "Saç", "Parfüm", "Aksesuar"];
   if (token) {
     const [live, cats] = await Promise.all([
@@ -56,12 +60,22 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
     if (cats && cats.length > 0) chips = ["Tümü", ...cats.map((c) => c.name)];
   }
 
-  // Arama: ürün (ad/marka) + mağaza (isim) filtresi.
+  // Arama: ürün (ad/marka) + mağaza (isim) filtresi + cilt tipi filtresi.
   const q = (searchParams.q ?? "").toLocaleLowerCase("tr").trim();
+  const cilt = searchParams.cilt && searchParams.cilt !== "Tümü" ? searchParams.cilt : "";
   const magazalar = q ? MAGAZALAR.filter((m) => m.ad.toLocaleLowerCase("tr").includes(q)) : MAGAZALAR;
-  const urunler = q
-    ? products.filter((p) => `${p.name} ${p.brand}`.toLocaleLowerCase("tr").includes(q))
-    : products;
+  const urunler = products.filter((p) => {
+    if (q && !`${p.name} ${p.brand}`.toLocaleLowerCase("tr").includes(q)) return false;
+    if (cilt && !(p.ciltTipi ?? "").toLocaleLowerCase("tr").includes(cilt.toLocaleLowerCase("tr"))) return false;
+    return true;
+  });
+  const ciltLink = (c: string) => {
+    const p = new URLSearchParams();
+    if (searchParams.q) p.set("q", searchParams.q);
+    if (c !== "Tümü") p.set("cilt", c);
+    const s = p.toString();
+    return "/" + (s ? `?${s}` : "");
+  };
 
   return (
     <div style={{ display: "grid", gap: 22 }}>
@@ -123,7 +137,19 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
       {/* Popüler Ürünler (görselli) */}
       <section>
         <SectionHeader title={q ? `Ürünler (${urunler.length})` : "Popüler Ürünler"} href="#" />
-        {urunler.length === 0 ? <p style={{ color: "var(--gg-muted)", fontSize: 13 }}>Eşleşen ürün yok.</p> : null}
+        {/* Cilt tipine göre filtre */}
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 12 }}>
+          <span style={{ fontSize: 12.5, color: "var(--gg-muted)", alignSelf: "center", whiteSpace: "nowrap" }}>🧴 Cilt tipi:</span>
+          {CILT_TIPLERI.map((c) => {
+            const aktif = (cilt || "Tümü") === c;
+            return (
+              <a key={c} href={ciltLink(c)} style={{ borderRadius: "var(--gg-r-pill)", padding: "5px 13px", fontSize: 12.5, whiteSpace: "nowrap", textDecoration: "none", background: aktif ? "var(--gg-primary)" : "var(--gg-surface)", color: aktif ? "#fff" : "var(--gg-text)", border: `1px solid ${aktif ? "var(--gg-primary)" : "var(--gg-border)"}` }}>
+                {c}
+              </a>
+            );
+          })}
+        </div>
+        {urunler.length === 0 ? <p style={{ color: "var(--gg-muted)", fontSize: 13 }}>Bu cilt tipine/aramaya uygun ürün yok.</p> : null}
         <div className="gg-grid cols-5">
           {urunler.map((p, i) => (
             <ProductCard
@@ -134,6 +160,7 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
               rating={p.rating ?? 4.5}
               count={p.count ?? 40}
               image={img(p.id ?? String(i))}
+              skinTag={p.ciltTipi || undefined}
               href={`/product/${p.id}`}
             />
           ))}
