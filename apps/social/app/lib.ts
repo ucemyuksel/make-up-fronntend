@@ -12,6 +12,8 @@ export type Post = {
 export type Reel = {
   id: string;
   authorUserId: string;
+  authorName: string | null;          // user-service olaylarından (Kafka read-model)
+  authorAvatarColorHex: string | null;
   caption: string;
   videoUrl: string;
   likeCount: number;
