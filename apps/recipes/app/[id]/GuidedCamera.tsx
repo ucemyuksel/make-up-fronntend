@@ -25,7 +25,7 @@ const KIRMIZI = "#EF4444";
 const HOLO = "#38BDF8";        // hologram mavi (kılavuz + araç)
 const TAMAM_ALT = 0.85;        // uygulama oranı bandı → "ton tamam"
 const FAZLA_UST = 1.3;         // üstü → "fazla sürüldü"
-const YUZ_GRACE_MS = 3000;     // yüz kaybolunca son landmark'larla devam süresi
+const YUZ_GRACE_MS = 4000;     // yüz kaybolunca son landmark'larla devam süresi
 
 type Yama = {
   pts: number[];
@@ -34,6 +34,7 @@ type Yama = {
   arrows: [number, number, number?][];
   alinUzat?: boolean; // üst yarıyı yukarı uzat (alın saç çizgisine kadar dahil olsun)
   hull?: boolean;     // dışbükey zarf al (profilde dışarı taşan burun alana dahil olur)
+  serit?: boolean;    // pts açık çizgidir; yukarı ofsetli BANT yapılır (kirpik hattı gibi)
 };
 type BolgeTanim = { yamalar: Yama[]; firca: string; yon: string; arac: "firca" | "ruj" | "sunger" };
 
@@ -42,15 +43,16 @@ const BOLGELER: Record<string, BolgeTanim> = {
     yamalar: [
       // Yüz ovali + burun köprüsü/ucu → hull ile profilde burun alana dahil kalır;
       // alinUzat ile alın saç çizgisine kadar taranır.
-      { pts: [10, 338, 297, 332, 284, 454, 366, 361, 397, 152, 172, 132, 137, 234, 54, 103, 67, 109, 1, 4, 5, 19, 94, 197], arrows: [[5, 234], [5, 454], [168, 10]], alinUzat: true, hull: true },
+      // Oklar yanak HİZASINDA (4→205/425) — göz üstünden geçmez; alna dikey (168→10).
+      { pts: [10, 338, 297, 332, 284, 454, 366, 361, 397, 152, 172, 132, 137, 234, 54, 103, 67, 109, 1, 4, 5, 19, 94, 197], arrows: [[4, 205], [4, 425], [168, 10]], alinUzat: true, hull: true },
     ],
     firca: "Nemli sünger / fondöten fırçası", yon: "Ortadan dışa doğru", arac: "sunger",
   },
   kontur: {
     yamalar: [
       // Elmacık altı çukuru + çene hattına inen bant (sol/sağ ayrı).
-      { pts: [227, 123, 50, 205, 187, 147, 177, 137], arrows: [[205, 234, 0.25]] },
-      { pts: [447, 352, 280, 425, 411, 376, 401, 366], arrows: [[425, 454, 0.25]] },
+      { pts: [227, 123, 50, 205, 187, 147, 177, 137], arrows: [[205, 234]] },
+      { pts: [447, 352, 280, 425, 411, 376, 401, 366], arrows: [[425, 454]] },
     ],
     firca: "Açılı kontür fırçası", yon: "Elmacık altından kulağa, yukarı harmanla", arac: "firca",
   },
@@ -63,8 +65,8 @@ const BOLGELER: Record<string, BolgeTanim> = {
   },
   "elmacik kemigi": {
     yamalar: [
-      { pts: [50, 101, 100, 118, 117, 111, 116, 123, 147, 187, 205], arrows: [[205, 127, 0.3]] },
-      { pts: [280, 330, 329, 347, 346, 340, 345, 352, 376, 411, 425], arrows: [[425, 356, 0.3]] },
+      { pts: [50, 101, 100, 118, 117, 111, 116, 123, 147, 187, 205], arrows: [[205, 127]] },
+      { pts: [280, 330, 329, 347, 346, 340, 345, 352, 376, 411, 425], arrows: [[425, 356]] },
     ],
     firca: "Açılı allık fırçası", yon: "Elmacıktan şakağa, yukarı-dışa", arac: "firca",
   },
@@ -75,16 +77,18 @@ const BOLGELER: Record<string, BolgeTanim> = {
     firca: "Dudak fırçası / aplikatör", yon: "Ortadan kenarlara", arac: "ruj",
   },
   goz: {
+    // Maskara GÖZÜN İÇİNE değil KİRPİĞE sürülür: üst kapak çizgisi boyunca
+    // yukarı ofsetli ince BANT taranır (göz küresi taranmaz).
     yamalar: [
-      { pts: [33, 246, 161, 160, 159, 158, 157, 173, 133, 155, 154, 153, 145, 144, 163, 7], arrows: [[145, 159]] },
-      { pts: [263, 466, 388, 387, 386, 385, 384, 398, 362, 382, 381, 380, 374, 373, 390, 249], arrows: [[374, 386]] },
+      { pts: [33, 246, 161, 160, 159, 158, 157, 173, 133], arrows: [[159, 105]], serit: true },
+      { pts: [263, 466, 388, 387, 386, 385, 384, 398, 362], arrows: [[386, 334]], serit: true },
     ],
     firca: "Maskara fırçası / far fırçası", yon: "Kirpik dibinden uca, aşağıdan yukarı", arac: "firca",
   },
   yanak: {
     yamalar: [
-      { pts: [50, 101, 100, 118, 117, 111, 116, 123, 147, 187, 205], arrows: [[205, 127, 0.3]] },
-      { pts: [280, 330, 329, 347, 346, 340, 345, 352, 376, 411, 425], arrows: [[425, 356, 0.3]] },
+      { pts: [50, 101, 100, 118, 117, 111, 116, 123, 147, 187, 205], arrows: [[205, 127]] },
+      { pts: [280, 330, 329, 347, 346, 340, 345, 352, 376, 411, 425], arrows: [[425, 356]] },
     ],
     firca: "Allık fırçası", yon: "Yukarı-dışa doğru", arac: "firca",
   },
@@ -352,12 +356,20 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
           if (ham.length < 3) continue;
           let path: Pt[] = ham.map((p) => [p.x * w, p.y * h]);
           const zOrt = ham.reduce((s, p) => s + (p.z ?? 0), 0) / ham.length;
-          if (yama.alinUzat) {
-            // Üst yarıyı yukarı uzat: alın saç çizgisine kadar taramaya dahil.
-            const my = path.reduce((s, p) => s + p[1], 0) / path.length;
-            path = path.map(([x, y]) => [x, y < my ? Math.max(0, my - (my - y) * 1.55) : y]);
+          if (yama.serit) {
+            // Açık çizgiden BANT: çizgi + yukarı ofsetli kopyası (kirpik hattı bandı).
+            const L0 = Math.hypot(path[path.length - 1][0] - path[0][0], path[path.length - 1][1] - path[0][1]);
+            const d = Math.max(4, L0 * 0.16);
+            const ust = path.map(([x, y]) => [x, y - d] as Pt).reverse();
+            path = [...path, ...ust];
+          } else {
+            if (yama.alinUzat) {
+              // Üst yarıyı yukarı uzat: alın saç çizgisine kadar taramaya dahil.
+              const my = path.reduce((s, p) => s + p[1], 0) / path.length;
+              path = path.map(([x, y]) => [x, y < my ? Math.max(0, my - (my - y) * 1.55) : y]);
+            }
+            if (yama.hull) path = zarf(path); // profilde burun alana dahil, sınır toparlanır
           }
-          if (yama.hull) path = zarf(path); // profilde burun alana dahil, sınır toparlanır
           adaylar.push({ path, yama, tanim, z: zOrt });
         }
         // Yan profilde ARKADA kalan ikiz yama (uzak yanak/göz) gizlenir —
@@ -476,11 +488,27 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
       }
       ctx.restore();
 
-      // --- 2) Küçük tarama noktaları ---
-      ctx.fillStyle = fazlaMi ? KIRMIZI : tamamMi ? YESIL : PEMBE;
+      // --- 2) Tarama noktaları: sınırda SIK (ara noktalarla), içeride seyrek ızgara ---
+      const noktaRenk = fazlaMi ? KIRMIZI : tamamMi ? YESIL : PEMBE;
+      ctx.fillStyle = noktaRenk;
       const nokta = Math.max(1.2, w * 0.003) / Math.sqrt(z.s);
-      for (const [x, y] of path) {
-        ctx.beginPath(); ctx.arc(x, y, nokta, 0, Math.PI * 2); ctx.fill();
+      for (let i = 0; i < path.length; i++) {
+        const p1 = path[i], p2 = path[(i + 1) % path.length];
+        ctx.beginPath(); ctx.arc(p1[0], p1[1], nokta, 0, Math.PI * 2); ctx.fill();
+        // ara nokta → sınır çizgisi nokta nokta belirgin (yüz-tarama görünümü)
+        ctx.beginPath(); ctx.arc((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2, nokta * 0.8, 0, Math.PI * 2); ctx.fill();
+      }
+      // İç ızgara: taralı alanın İÇİ de pembe noktalarla dokulu.
+      ctx.fillStyle = fazlaMi ? hexRgba(KIRMIZI, 0.65) : tamamMi ? hexRgba(YESIL, 0.65) : hexRgba(PEMBE, 0.65);
+      const gAdim = Math.max(12, w * 0.024);
+      const bxs = path.map((p) => p[0]), bys = path.map((p) => p[1]);
+      const gx0 = Math.min(...bxs), gx1 = Math.max(...bxs);
+      const gy0 = Math.min(...bys), gy1 = Math.max(...bys);
+      for (let gy = gy0 + gAdim / 2; gy < gy1; gy += gAdim) {
+        for (let gx = gx0 + gAdim / 2; gx < gx1; gx += gAdim) {
+          if (!icinde(gx, gy, path)) continue;
+          ctx.beginPath(); ctx.arc(gx, gy, nokta * 0.75, 0, Math.PI * 2); ctx.fill();
+        }
       }
 
       // --- 3) Kavisli kılavuz + gerçekçi araç animasyonu ---
@@ -492,7 +520,10 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
           // yüzü kesen anlamsız oklar oluşmasın.
           if ((b0.z ?? 0) - (a0.z ?? 0) > 0.08) continue;
           const kavisK = kv ?? 0; // 0 = düz ok (teknik düz süredir); >0 = kavisli teknik
-          const A: Pt = [a0.x * w, a0.y * h], B: Pt = [b0.x * w, b0.y * h];
+          const A: Pt = [a0.x * w, a0.y * h];
+          let B: Pt = [b0.x * w, b0.y * h];
+          // Ok, hedefe %75 mesafede biter — ucu kulağa/kenara taşmaz.
+          B = [A[0] + (B[0] - A[0]) * 0.75, A[1] + (B[1] - A[1]) * 0.75];
           swooshCiz(ctx, A, B, Math.hypot(B[0] - A[0], B[1] - A[1]) * 3, kavisK);
 
           // Araç, kılavuzla aynı yol üzerinde süpürür (düzse düz).
@@ -521,8 +552,8 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
             }
             ctx.stroke();
             ctx.restore();
-            // Gerçekçi araç: ucu kavis noktasında.
-            aracCiz(ctx, tanim.arac, p[0], p[1], Math.max(46, L * 1.15));
+            // Gerçekçi araç: ucu yol üzerinde; boyu sınırlı (yüzü kapatan dev görsel yok).
+            aracCiz(ctx, tanim.arac, p[0], p[1], Math.max(38, Math.min(85, L * 0.7)));
           }
         }
       } else {
@@ -558,10 +589,10 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
           baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
           runningMode: "VIDEO",
           numFaces: 1,
-          // Profil dayanıklılığı: eşikler çok düşük → yan dönüşte takip kolay kopmaz.
-          minFaceDetectionConfidence: 0.15,
-          minFacePresenceConfidence: 0.15,
-          minTrackingConfidence: 0.15,
+          // Profil dayanıklılığı: eşikler minimum → yan dönüşte takip kolay kopmaz.
+          minFaceDetectionConfidence: 0.1,
+          minFacePresenceConfidence: 0.1,
+          minTrackingConfidence: 0.1,
         });
       }
       const v = videoRef.current!;
