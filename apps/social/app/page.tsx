@@ -1,9 +1,11 @@
 import * as React from "react";
 import { SectionHeader, ReelCard, Badge } from "@makeup/ui";
+import { revalidatePath } from "next/cache";
 import { auth } from "../auth";
 import { api, timeAgo, authorName, type Post, type Reel } from "./lib";
+import { StoryBar, ShareButton, SaveButton, DislikeButton, type Hikaye } from "./etkilesim";
 
-const STORIES = ["Sen", "Melisa", "İrem", "Sena", "Duygu", "Gizem", "Makyaj.Sanatı", "GlowQueen"];
+const RENKLER = ["#F6C6D8", "#EFB3C8", "#F3D9DE", "#E8B48F", "#E79A9A", "#C56A7A", "#F0C6A0", "#DCA8B9"];
 
 export default async function Feed() {
   const session = await auth();
@@ -25,19 +27,34 @@ export default async function Feed() {
     api<Reel[]>(process.env.REELS_API, "/api/reels", token),
   ]);
 
+  // Hikâyeler: son gönderilerden türetilir (ayrı story backend'i yok — dürüst MVP).
+  const hikayeler: Hikaye[] = [
+    { ad: "Sen", metin: "Hikayeni paylaşmak için gönderi oluştur ✨", renk: "#F3D9DE" },
+    ...(posts ?? []).slice(0, 7).map((p, i) => ({
+      ad: authorName(i),
+      metin: p.text,
+      renk: RENKLER[i % RENKLER.length],
+    })),
+  ];
+
+  async function likePost(id: string) {
+    "use server";
+    const s = await auth();
+    const t = (s as unknown as { accessToken?: string } | null)?.accessToken;
+    if (t) {
+      await fetch(`${process.env.POST_API}/api/posts/${id}/like`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${t}` },
+        cache: "no-store",
+      }).catch(() => null);
+      revalidatePath("/");
+    }
+  }
+
   return (
     <div style={{ maxWidth: 720, display: "grid", gap: 22 }}>
-      {/* Hikâye şeridi */}
-      <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 4 }}>
-        {STORIES.map((s, i) => (
-          <div key={s} style={{ display: "grid", justifyItems: "center", gap: 6, minWidth: 62 }}>
-            <span style={{ width: 58, height: 58, borderRadius: "50%", padding: 2, background: i === 0 ? "var(--gg-border)" : "linear-gradient(135deg, var(--gg-primary), var(--gg-coral))" }}>
-              <span style={{ display: "block", width: "100%", height: "100%", borderRadius: "50%", background: "var(--gg-primary-light)", border: "2px solid #fff" }} />
-            </span>
-            <span style={{ fontSize: 11.5, whiteSpace: "nowrap" }}>{s}</span>
-          </div>
-        ))}
-      </div>
+      {/* Hikâye şeridi — tıklanınca tam ekran görüntüleyici (ilerleme çubuklu) */}
+      <StoryBar hikayeler={hikayeler} />
 
       <SectionHeader title="Haber Akışı" />
       <div style={{ display: "grid", gap: 16 }}>
@@ -56,10 +73,18 @@ export default async function Feed() {
             </div>
             <div style={{ padding: 14 }}>
               <p style={{ margin: "0 0 10px" }}>{p.text}</p>
-              <div style={{ display: "flex", gap: 18, color: "var(--gg-muted)", fontSize: 14 }}>
-                <span>❤️ {p.likeCount}</span>
+              <div style={{ display: "flex", gap: 16, alignItems: "center", color: "var(--gg-muted)", fontSize: 14 }}>
+                <form action={likePost.bind(null, p.id)} style={{ display: "inline" }}>
+                  <button type="submit" title="Beğen" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "var(--gg-muted)" }}>
+                    ❤️ {p.likeCount}
+                  </button>
+                </form>
+                <DislikeButton id={p.id} />
                 <span>💬 {p.commentCount}</span>
-                <span style={{ marginLeft: "auto" }}>🔖</span>
+                <span style={{ marginLeft: "auto", display: "inline-flex", gap: 14, alignItems: "center" }}>
+                  <ShareButton baslik={p.text.slice(0, 60)} />
+                  <SaveButton id={p.id} tip="post" baslik={p.text.slice(0, 60)} />
+                </span>
               </div>
             </div>
           </article>
@@ -71,7 +96,9 @@ export default async function Feed() {
         <SectionHeader title="Önerilen Reels" href="/reels" />
         <div className="gg-grid cols-5">
           {(reels ?? []).slice(0, 5).map((r) => (
-            <ReelCard key={r.id} caption={r.caption} meta={`${r.viewCount} izlenme`} />
+            <a key={r.id} href="/reels">
+              <ReelCard caption={r.caption} meta={`${r.viewCount} izlenme`} />
+            </a>
           ))}
         </div>
       </section>

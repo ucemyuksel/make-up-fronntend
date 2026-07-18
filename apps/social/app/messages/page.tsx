@@ -33,6 +33,14 @@ export default async function Messages({ searchParams }: { searchParams: { c?: s
 
   const conversations = (await api<Conversation[]>(process.env.MESSAGING_API, "/api/conversations", token)) ?? [];
   const selectedId = searchParams.c ?? conversations[0]?.id;
+  // Konuşma açılınca karşıdan gelen mesajlar "görüldü" işaretlenir (okundu bilgisi).
+  if (selectedId) {
+    await fetch(`${process.env.MESSAGING_API}/api/conversations/${selectedId}/read`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }).catch(() => null);
+  }
   const messages = selectedId
     ? (await api<Message[]>(process.env.MESSAGING_API, `/api/conversations/${selectedId}/messages`, token)) ?? []
     : [];
@@ -94,7 +102,16 @@ export default async function Messages({ searchParams }: { searchParams: { c?: s
               {messages.map((m) => (
                 <div key={m.id} style={{ justifySelf: isMine(m) ? "end" : "start", maxWidth: "72%", background: isMine(m) ? "var(--gg-primary)" : "var(--gg-bg)", color: isMine(m) ? "#fff" : "var(--gg-text)", borderRadius: 14, padding: "9px 13px", fontSize: 13.5 }}>
                   {m.text}
-                  <div style={{ fontSize: 10, opacity: 0.7, marginTop: 3, textAlign: "right" }}>{timeAgo(m.createdAt)}</div>
+                  <div style={{ fontSize: 10, opacity: 0.75, marginTop: 3, textAlign: "right", display: "flex", gap: 5, justifyContent: "flex-end", alignItems: "center" }}>
+                    {timeAgo(m.createdAt)}
+                    {/* Tikler: sunucuya ulaştı = iletildi (✓✓ soluk); karşı taraf okudu = görüldü (✓✓ parlak). */}
+                    {isMine(m) && (
+                      <span title={m.read ? "Görüldü" : "İletildi"}
+                            style={{ fontWeight: 700, letterSpacing: -1, opacity: m.read ? 1 : 0.55, color: m.read ? "#B9F3FF" : "#fff" }}>
+                        ✓✓
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

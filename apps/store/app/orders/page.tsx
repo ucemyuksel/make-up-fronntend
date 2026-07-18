@@ -4,23 +4,66 @@ import { auth } from "../../auth";
 import { tl } from "../lib";
 import { purchases, STATUS, shortId, dateTr, type Purchase } from "./lib";
 
-const TABS = ["Tümü", "Bekliyor", "Kargoda", "Teslim Edildi", "İptal Edildi"];
+// Sekmeler gerçek sipariş durumlarına eşlenir (purchase-service: PENDING/COMPLETED/FAILED).
+const TABS: { ad: string; durum: string | null }[] = [
+  { ad: "Tümü", durum: null },
+  { ad: "Kargoda", durum: "PENDING" },
+  { ad: "Teslim Edildi", durum: "COMPLETED" },
+  { ad: "İptal Edildi", durum: "FAILED" },
+];
 
-export default async function Orders() {
+export default async function Orders({ searchParams }: { searchParams: { t?: string; q?: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   if (!token) {
     return <a href="/api/auth/signin?callbackUrl=%2Forders" className="gg-btn gg-btn-primary">Giriş yap</a>;
   }
-  const orders = (await purchases<Purchase[]>("/api/purchases", token)) ?? [];
+  const hepsi = (await purchases<Purchase[]>("/api/purchases", token)) ?? [];
+
+  const aktifDurum = searchParams.t ?? null;
+  const q = (searchParams.q ?? "").trim().toLocaleLowerCase("tr");
+
+  // Filtre: sekme (durum) + arama (sipariş no / tarih / tutar / durum etiketi).
+  const orders = hepsi.filter((o) => {
+    if (aktifDurum && o.status !== aktifDurum) return false;
+    if (q) {
+      const etiket = (STATUS[o.status]?.label ?? "").toLocaleLowerCase("tr");
+      const hedef = `${shortId(o.id)} ${o.id} ${dateTr(o.createdAt)} ${o.amountTry} ${etiket}`.toLocaleLowerCase("tr");
+      if (!hedef.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const linkOf = (durum: string | null) => {
+    const p = new URLSearchParams();
+    if (durum) p.set("t", durum);
+    if (searchParams.q) p.set("q", searchParams.q);
+    const s = p.toString();
+    return "/orders" + (s ? `?${s}` : "");
+  };
 
   return (
     <div style={{ maxWidth: 720 }}>
       <SectionHeader title="Siparişlerim" />
+
+      {/* Arama (GET formu — sunucuda filtrelenir) */}
+      <form method="get" style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {aktifDurum && <input type="hidden" name="t" value={aktifDurum} />}
+        <input name="q" defaultValue={searchParams.q ?? ""} className="gg-search" style={{ flex: 1 }}
+               placeholder="Sipariş no, tarih, tutar veya durum ara..." />
+        <button className="gg-btn gg-btn-primary" type="submit">Ara</button>
+      </form>
+
       <div style={{ display: "flex", gap: 18, borderBottom: "1px solid var(--gg-border)", marginBottom: 16, overflowX: "auto" }}>
-        {TABS.map((t, i) => (
-          <span key={t} style={{ padding: "8px 2px", whiteSpace: "nowrap", borderBottom: i === 0 ? "2px solid var(--gg-primary)" : "2px solid transparent", color: i === 0 ? "var(--gg-primary)" : "var(--gg-muted)", fontWeight: 600, fontSize: 13.5 }}>{t}</span>
-        ))}
+        {TABS.map((t) => {
+          const aktif = aktifDurum === t.durum;
+          return (
+            <a key={t.ad} href={linkOf(t.durum)}
+               style={{ padding: "8px 2px", whiteSpace: "nowrap", borderBottom: aktif ? "2px solid var(--gg-primary)" : "2px solid transparent", color: aktif ? "var(--gg-primary)" : "var(--gg-muted)", fontWeight: 600, fontSize: 13.5 }}>
+              {t.ad} ({t.durum ? hepsi.filter((o) => o.status === t.durum).length : hepsi.length})
+            </a>
+          );
+        })}
       </div>
 
       <div style={{ display: "grid", gap: 12 }}>
@@ -43,7 +86,11 @@ export default async function Orders() {
             </a>
           );
         })}
-        {orders.length === 0 && <p style={{ color: "var(--gg-muted)" }}>Sipariş yok.</p>}
+        {orders.length === 0 && (
+          <p style={{ color: "var(--gg-muted)" }}>
+            {q || aktifDurum ? "Filtreye uyan sipariş yok." : "Sipariş yok."}
+          </p>
+        )}
       </div>
     </div>
   );
