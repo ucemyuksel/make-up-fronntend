@@ -30,6 +30,8 @@ export default async function UrunTanimla({ searchParams }: { searchParams: { st
       stock: Number(formData.get("stock") ?? 0),
       imageUrl: String(formData.get("imageUrl") ?? ""),
       categoryId: catId || null,
+      barcode: String(formData.get("barcode") ?? ""),
+      variant: String(formData.get("variant") ?? ""),
     });
     redirect(r.ok ? `/satici/urun?store=${store}&ok=1` : `/satici/urun?store=${store}&hata=${encodeURIComponent(r.error ?? "hata")}`);
   }
@@ -66,6 +68,17 @@ export default async function UrunTanimla({ searchParams }: { searchParams: { st
           <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Stok
             <input name="stock" type="number" min="0" defaultValue={0} className="gg-search" />
           </label>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Barkod / Stok Kodu
+            <input name="barcode" className="gg-search" placeholder="8690000000001 (benzersiz, opsiyonel)" />
+          </label>
+          <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Varyant (renk/ton/ml)
+            <input name="variant" className="gg-search" placeholder="Velvet Teddy / 50ml" />
+          </label>
+        </div>
+        <div style={{ background: "var(--gg-primary-soft)", color: "var(--gg-primary-dark)", borderRadius: 10, padding: "10px 12px", fontSize: 12.5 }}>
+          ℹ️ Eklenen ürün <strong>onay bekler (PENDING)</strong>; platform onayından sonra mağazada yayınlanır.
         </div>
         <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Görsel URL
           <input name="imageUrl" className="gg-search" placeholder="https://... (opsiyonel)" />
