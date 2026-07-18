@@ -25,11 +25,13 @@ const KIRMIZI = "#EF4444";
 const HOLO = "#38BDF8";        // hologram mavi (kılavuz + araç)
 const TAMAM_ALT = 0.85;        // uygulama oranı bandı → "ton tamam"
 const FAZLA_UST = 1.3;         // üstü → "fazla sürüldü"
-const YUZ_GRACE_MS = 1500;     // yüz kaybolunca son landmark'larla devam süresi
+const YUZ_GRACE_MS = 3000;     // yüz kaybolunca son landmark'larla devam süresi
 
 type Yama = {
   pts: number[];
-  arrows: [number, number][];
+  // [başlangıç, bitiş, kavis?] — kavis 0 (varsayılan) = DÜZ ok; yalnız gerçekten
+  // kavisli sürülen tekniklerde (allık/kontür) > 0 verilir.
+  arrows: [number, number, number?][];
   alinUzat?: boolean; // üst yarıyı yukarı uzat (alın saç çizgisine kadar dahil olsun)
   hull?: boolean;     // dışbükey zarf al (profilde dışarı taşan burun alana dahil olur)
 };
@@ -47,8 +49,8 @@ const BOLGELER: Record<string, BolgeTanim> = {
   kontur: {
     yamalar: [
       // Elmacık altı çukuru + çene hattına inen bant (sol/sağ ayrı).
-      { pts: [227, 123, 50, 205, 187, 147, 177, 137], arrows: [[205, 234]] },
-      { pts: [447, 352, 280, 425, 411, 376, 401, 366], arrows: [[425, 454]] },
+      { pts: [227, 123, 50, 205, 187, 147, 177, 137], arrows: [[205, 234, 0.25]] },
+      { pts: [447, 352, 280, 425, 411, 376, 401, 366], arrows: [[425, 454, 0.25]] },
     ],
     firca: "Açılı kontür fırçası", yon: "Elmacık altından kulağa, yukarı harmanla", arac: "firca",
   },
@@ -61,8 +63,8 @@ const BOLGELER: Record<string, BolgeTanim> = {
   },
   "elmacik kemigi": {
     yamalar: [
-      { pts: [50, 101, 100, 118, 117, 111, 116, 123, 147, 187, 205], arrows: [[205, 127]] },
-      { pts: [280, 330, 329, 347, 346, 340, 345, 352, 376, 411, 425], arrows: [[425, 356]] },
+      { pts: [50, 101, 100, 118, 117, 111, 116, 123, 147, 187, 205], arrows: [[205, 127, 0.3]] },
+      { pts: [280, 330, 329, 347, 346, 340, 345, 352, 376, 411, 425], arrows: [[425, 356, 0.3]] },
     ],
     firca: "Açılı allık fırçası", yon: "Elmacıktan şakağa, yukarı-dışa", arac: "firca",
   },
@@ -81,8 +83,8 @@ const BOLGELER: Record<string, BolgeTanim> = {
   },
   yanak: {
     yamalar: [
-      { pts: [50, 101, 100, 118, 117, 111, 116, 123, 147, 187, 205], arrows: [[205, 127]] },
-      { pts: [280, 330, 329, 347, 346, 340, 345, 352, 376, 411, 425], arrows: [[425, 356]] },
+      { pts: [50, 101, 100, 118, 117, 111, 116, 123, 147, 187, 205], arrows: [[205, 127, 0.3]] },
+      { pts: [280, 330, 329, 347, 346, 340, 345, 352, 376, 411, 425], arrows: [[425, 356, 0.3]] },
     ],
     firca: "Allık fırçası", yon: "Yukarı-dışa doğru", arac: "firca",
   },
@@ -171,15 +173,15 @@ function kavis(a: Pt, c: Pt, b: Pt, t: number): { p: Pt; ang: number } {
   return { p, ang: Math.atan2(dy, dx) };
 }
 
-/** Profesyonel kavisli yön kılavuzu: uca doğru genişleyen parlayan swoosh + ok başı. */
-function swooshCiz(ctx: CanvasRenderingContext2D, a: Pt, b: Pt, boyOlcek: number) {
+/** Yön kılavuzu: uca doğru genişleyen parlayan swoosh + ok başı.
+ *  kavisK=0 → DÜZ ok (varsayılan); >0 → o oranda yukarı kavis (allık/kontür). */
+function swooshCiz(ctx: CanvasRenderingContext2D, a: Pt, b: Pt, boyOlcek: number, kavisK: number) {
   const dx = b[0] - a[0], dy = b[1] - a[1];
   const L = Math.hypot(dx, dy);
   if (L < 4) return;
-  // Kontrol noktası: yola dik, yukarı doğru kavis (referans görseldeki gibi).
   let px = -dy / L, py = dx / L;
   if (py > 0) { px = -px; py = -py; }
-  const c: Pt = [(a[0] + b[0]) / 2 + px * L * 0.28, (a[1] + b[1]) / 2 + py * L * 0.28];
+  const c: Pt = [(a[0] + b[0]) / 2 + px * L * kavisK, (a[1] + b[1]) / 2 + py * L * kavisK];
 
   const N = 22;
   const wMax = Math.max(5, boyOlcek * 0.016);
@@ -413,8 +415,10 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
       const idx = yamaNo++;
 
       // --- TON ÖRNEKLEME (6 karede bir; fazla sürme için sürekli) ---
+      // Yalnız TAZE tespitte örnekle: grace sırasında (bayat landmark) yüz kaymış
+      // olabilir, yanlış pikselden ölçüm ton takibini bozar.
       const t2 = tonRef.current;
-      if (t2.kare % 6 === 0) {
+      if (t2.kare % 6 === 0 && tespit) {
         const xs = path.map((p) => p[0]), ys = path.map((p) => p[1]);
         const x0 = Math.max(0, Math.min(...xs)), x1 = Math.min(w, Math.max(...xs));
         const y0 = Math.max(0, Math.min(...ys)), y1 = Math.min(h, Math.max(...ys));
@@ -481,21 +485,22 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
 
       // --- 3) Kavisli kılavuz + gerçekçi araç animasyonu ---
       if (!bitti) {
-        for (const [ai, bi] of yama.arrows) {
+        for (const [ai, bi, kv] of yama.arrows) {
           const a0 = lms[ai], b0 = lms[bi];
           if (!a0 || !b0) continue;
           // Kılavuzun ucu kafanın arkasına dönükse (profil) o oku çizme —
           // yüzü kesen anlamsız oklar oluşmasın.
           if ((b0.z ?? 0) - (a0.z ?? 0) > 0.08) continue;
+          const kavisK = kv ?? 0; // 0 = düz ok (teknik düz süredir); >0 = kavisli teknik
           const A: Pt = [a0.x * w, a0.y * h], B: Pt = [b0.x * w, b0.y * h];
-          swooshCiz(ctx, A, B, Math.hypot(B[0] - A[0], B[1] - A[1]) * 3);
+          swooshCiz(ctx, A, B, Math.hypot(B[0] - A[0], B[1] - A[1]) * 3, kavisK);
 
-          // Araç kavis boyunca süpürür.
+          // Araç, kılavuzla aynı yol üzerinde süpürür (düzse düz).
           const dx = B[0] - A[0], dy = B[1] - A[1];
           const L = Math.hypot(dx, dy);
           let px2 = -dy / L, py2 = dx / L;
           if (py2 > 0) { px2 = -px2; py2 = -py2; }
-          const C: Pt = [(A[0] + B[0]) / 2 + px2 * L * 0.28, (A[1] + B[1]) / 2 + py2 * L * 0.28];
+          const C: Pt = [(A[0] + B[0]) / 2 + px2 * L * kavisK, (A[1] + B[1]) / 2 + py2 * L * kavisK];
           const faz = ((simdi + (ai * 137) % 700) % 2000) / 2000;
           if (faz <= 0.8) {
             const t = faz / 0.8;
@@ -553,14 +558,15 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
           baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
           runningMode: "VIDEO",
           numFaces: 1,
-          // Profil dayanıklılığı: eşikler düşük → yan dönüşte takip kolay kopmaz.
-          minFaceDetectionConfidence: 0.25,
-          minFacePresenceConfidence: 0.25,
-          minTrackingConfidence: 0.25,
+          // Profil dayanıklılığı: eşikler çok düşük → yan dönüşte takip kolay kopmaz.
+          minFaceDetectionConfidence: 0.15,
+          minFacePresenceConfidence: 0.15,
+          minTrackingConfidence: 0.15,
         });
       }
       const v = videoRef.current!;
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+      // Yüksek çözünürlük: loş ışıkta ve yan açılarda tespit belirgin iyileşir.
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } } });
       v.srcObject = stream;
       await v.play();
       tonRef.current = { region: "", base: [], ema: [], kare: 0 };
