@@ -1,6 +1,8 @@
 export type Post = {
   id: string;
   authorUserId: string;
+  authorName: string | null;          // user-service olaylarından (Kafka read-model)
+  authorAvatarColorHex: string | null;
   text: string;
   imageUrls: string[];
   likeCount: number;
@@ -34,6 +36,8 @@ export function timeAgo(iso: string): string {
   return Math.floor(s / 86400) + " gün önce";
 }
 
-// Gönderileri sunumsal olarak isimlendir (backend yalnızca authorUserId tutar).
+// Gerçek ad user read-model'den (post.authorName) gelir; henüz olay ulaşmadıysa
+// sunumsal ada düşülür.
 const NAMES = ["Makyaj.Sanatı", "BeautyGizem", "GlowQueen", "Melisa Güler"];
 export const authorName = (i: number) => NAMES[i % NAMES.length];
+export const yazarAdi = (p: Post, i: number) => p.authorName ?? authorName(i);

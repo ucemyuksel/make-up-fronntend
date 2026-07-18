@@ -2,7 +2,7 @@ import * as React from "react";
 import { SectionHeader, ReelCard, Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { auth } from "../auth";
-import { api, timeAgo, authorName, type Post, type Reel } from "./lib";
+import { api, timeAgo, authorName, yazarAdi, type Post, type Reel } from "./lib";
 import { StoryBar, ShareButton, SaveButton, DislikeButton, type Hikaye } from "./etkilesim";
 
 const RENKLER = ["#F6C6D8", "#EFB3C8", "#F3D9DE", "#E8B48F", "#E79A9A", "#C56A7A", "#F0C6A0", "#DCA8B9"];
@@ -31,9 +31,9 @@ export default async function Feed() {
   const hikayeler: Hikaye[] = [
     { ad: "Sen", metin: "Hikayeni paylaşmak için gönderi oluştur ✨", renk: "#F3D9DE" },
     ...(posts ?? []).slice(0, 7).map((p, i) => ({
-      ad: authorName(i),
+      ad: yazarAdi(p, i),
       metin: p.text,
-      renk: RENKLER[i % RENKLER.length],
+      renk: p.authorAvatarColorHex ?? RENKLER[i % RENKLER.length],
     })),
   ];
 
@@ -61,9 +61,9 @@ export default async function Feed() {
         {(posts ?? []).map((p, i) => (
           <article key={p.id} className="gg-card" style={{ padding: 0, overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 14 }}>
-              <span style={{ width: 38, height: 38, borderRadius: "50%", background: "var(--gg-primary-light)" }} />
+              <span style={{ width: 38, height: 38, borderRadius: "50%", background: p.authorAvatarColorHex ?? "var(--gg-primary-light)" }} />
               <div style={{ flex: 1 }}>
-                <strong>{authorName(i)}</strong>
+                <strong>{yazarAdi(p, i)}</strong>
                 <div style={{ fontSize: 12, color: "var(--gg-muted)" }}>{timeAgo(p.createdAt)}</div>
               </div>
               <span style={{ color: "var(--gg-muted)" }}>⋯</span>
