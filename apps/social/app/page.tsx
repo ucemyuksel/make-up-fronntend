@@ -2,7 +2,7 @@ import * as React from "react";
 import { SectionHeader, ReelCard, Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { auth } from "../auth";
-import { api, timeAgo, authorName, yazarAdi, type Post, type Reel } from "./lib";
+import { api, timeAgo, authorName, yazarAdi, img, type Post, type Reel } from "./lib";
 import { StoryBar, ShareButton, SaveButton, DislikeButton, type Hikaye } from "./etkilesim";
 
 const RENKLER = ["#F6C6D8", "#EFB3C8", "#F3D9DE", "#E8B48F", "#E79A9A", "#C56A7A", "#F0C6A0", "#DCA8B9"];
@@ -68,9 +68,8 @@ export default async function Feed() {
               </div>
               <span style={{ color: "var(--gg-muted)" }}>⋯</span>
             </div>
-            <div style={{ aspectRatio: "16/10", background: "linear-gradient(135deg, var(--gg-primary-soft), var(--gg-coral-soft))", display: "grid", placeItems: "center" }}>
-              <span style={{ width: 46, height: 46, borderRadius: "50%", background: "rgba(255,255,255,.85)", display: "grid", placeItems: "center" }}>▶️</span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={img(p.id)} alt="" style={{ width: "100%", aspectRatio: "16/10", objectFit: "cover", display: "block" }} />
             <div style={{ padding: 14 }}>
               <p style={{ margin: "0 0 10px" }}>{p.text}</p>
               <div style={{ display: "flex", gap: 16, alignItems: "center", color: "var(--gg-muted)", fontSize: 14 }}>
@@ -97,7 +96,7 @@ export default async function Feed() {
         <div className="gg-grid cols-5">
           {(reels ?? []).slice(0, 5).map((r) => (
             <a key={r.id} href="/reels">
-              <ReelCard caption={r.caption} meta={`${r.viewCount} izlenme`} />
+              <ReelCard caption={r.caption} meta={`${r.viewCount} izlenme`} image={img(r.id + "r")} />
             </a>
           ))}
         </div>

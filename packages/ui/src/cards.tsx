@@ -28,6 +28,7 @@ export function ProductCard({
   count,
   price,
   href,
+  image,
 }: {
   name: string;
   brand: string;
@@ -35,10 +36,14 @@ export function ProductCard({
   rating?: number;
   count?: number;
   href?: string;
+  image?: string;
 }) {
   const inner = (
     <div className="gg-product">
-      <div className="thumb">
+      <div
+        className="thumb"
+        style={image ? { backgroundImage: `url(${image})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+      >
         <span className="fav">🤍</span>
       </div>
       <div className="name">{name}</div>
@@ -59,10 +64,13 @@ export function ProductCard({
   return href ? <a href={href}>{inner}</a> : inner;
 }
 
-export function ReelCard({ caption, meta }: { caption?: string; meta?: string }) {
+export function ReelCard({ caption, meta, image }: { caption?: string; meta?: string; image?: string }) {
   return (
     <div>
-      <div className="gg-reel">
+      <div
+        className="gg-reel"
+        style={image ? { backgroundImage: `url(${image})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+      >
         <span className="play">▶️</span>
       </div>
       {caption ? (

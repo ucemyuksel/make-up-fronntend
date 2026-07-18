@@ -2,7 +2,7 @@ import * as React from "react";
 import { Stat } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { auth } from "../../auth";
-import { api, type Post, type Reel } from "../lib";
+import { api, img, type Post, type Reel } from "../lib";
 import { KaydedilenlerListesi, DislikeButton, ShareButton } from "../etkilesim";
 
 const HILITE = [["🎨", "Makyaj"], ["🧴", "Cilt Bakımı"], ["🤍", "Favoriler"], ["❓", "Q&A"], ["👤", "Ben"]];
@@ -90,7 +90,8 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
         <div className="gg-grid cols-3">
           {(posts ?? []).map((p) => (
             <div key={p.id} className="gg-card" style={{ padding: 12, display: "grid", gap: 8 }}>
-              <div style={{ aspectRatio: "1/1", borderRadius: "var(--gg-r-sm)", background: "linear-gradient(135deg, var(--gg-primary-soft), var(--gg-coral-soft))" }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img(p.id)} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", borderRadius: "var(--gg-r-sm)", display: "block" }} />
               <p style={{ margin: 0, fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.text}</p>
               <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13 }}>
                 <form action={likePost.bind(null, p.id)} style={{ display: "inline" }}>
@@ -111,7 +112,8 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
         <div className="gg-grid cols-3">
           {(reels ?? []).map((r) => (
             <a key={r.id} href="/reels" className="gg-card" style={{ padding: 12, display: "grid", gap: 8 }}>
-              <div style={{ aspectRatio: "9/12", borderRadius: "var(--gg-r-sm)", background: "linear-gradient(160deg, var(--gg-primary-soft), var(--gg-coral-soft))", display: "grid", placeItems: "center", fontSize: 26 }}>🎬</div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img(r.id + "r")} alt="" style={{ width: "100%", aspectRatio: "9/12", objectFit: "cover", borderRadius: "var(--gg-r-sm)", display: "block" }} />
               <p style={{ margin: 0, fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.caption}</p>
               <span style={{ fontSize: 12, color: "var(--gg-muted)" }}>❤ {r.likeCount} · 👁 {r.viewCount}</span>
             </a>

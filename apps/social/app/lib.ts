@@ -31,6 +31,9 @@ export async function api<T>(base: string | undefined, path: string, token: stri
   return res.ok ? ((await res.json()) as T) : null;
 }
 
+// Geçici görsel (placeholder — prod'da MinIO'daki gerçek gönderi/reel görseli).
+export const img = (seed: string) => `https://picsum.photos/seed/gg${seed}/600/400`;
+
 export function timeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 3600) return Math.max(1, Math.floor(s / 60)) + " dk önce";
