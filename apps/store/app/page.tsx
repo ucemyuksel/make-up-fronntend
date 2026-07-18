@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ProductCard } from "@makeup/ui";
+import { ProductCard, Carousel } from "@makeup/ui";
 import { auth } from "../auth";
 import { api, tl, type Product, type Category } from "./lib";
 
@@ -82,7 +82,7 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
   const filtreliMi = q || cilt || kategori || magaza;
 
   return (
-    <div style={{ display: "grid", gap: 26 }}>
+    <div style={{ display: "grid", gap: 26, gridTemplateColumns: "minmax(0, 1fr)" }}>
       {/* Arama */}
       <form method="get" style={{ display: "flex", gap: 8 }}>
         <input name="q" defaultValue={searchParams.q ?? ""} className="gg-search" style={{ flex: 1 }} placeholder="Ürün, marka veya mağaza ara..." autoComplete="off" />
@@ -149,18 +149,20 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
       <section>
         <h2 style={{ margin: "0 0 12px", fontSize: 18 }}>Mağazalar</h2>
         {magazalar.length === 0 ? <p style={{ color: "var(--gg-muted)", fontSize: 13 }}>Eşleşen mağaza yok.</p> : null}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
-          {magazalar.map((m) => (
-            <a key={m.slug} href={link({ magaza: m.slug })} className="gg-card" style={{ padding: 0, overflow: "hidden", textDecoration: "none" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img("mag" + m.slug, 300, 120)} alt="" style={{ width: "100%", height: 80, objectFit: "cover", display: "block" }} />
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 12, marginTop: -24 }}>
-                <span style={{ width: 44, height: 44, borderRadius: "50%", background: m.renk, color: "#fff", display: "grid", placeItems: "center", fontWeight: 800, border: "3px solid #fff", boxShadow: "0 2px 6px rgba(0,0,0,.15)" }}>{m.ad.slice(0, 2).toUpperCase()}</span>
-                <strong style={{ fontSize: 14 }}>{m.ad}</strong>
-              </div>
-            </a>
-          ))}
-        </div>
+        {magazalar.length > 0 ? (
+          <Carousel itemWidth={210}>
+            {magazalar.map((m) => (
+              <a key={m.slug} href={link({ magaza: m.slug })} className="gg-card" style={{ display: "block", padding: 0, overflow: "hidden", textDecoration: "none" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img("mag" + m.slug, 300, 120)} alt="" style={{ width: "100%", height: 80, objectFit: "cover", display: "block" }} />
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 12, marginTop: -24 }}>
+                  <span style={{ width: 44, height: 44, borderRadius: "50%", background: m.renk, color: "#fff", display: "grid", placeItems: "center", fontWeight: 800, border: "3px solid #fff", boxShadow: "0 2px 6px rgba(0,0,0,.15)" }}>{m.ad.slice(0, 2).toUpperCase()}</span>
+                  <strong style={{ fontSize: 14 }}>{m.ad}</strong>
+                </div>
+              </a>
+            ))}
+          </Carousel>
+        ) : null}
       </section>
 
       {/* ÜRÜNLER (indirim rozetli, görselli) */}

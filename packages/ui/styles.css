@@ -131,3 +131,6 @@ a { color: inherit; text-decoration: none; }
   .gg-topbar { padding: 10px 14px; gap: 8px; }
   .gg-topbar .gg-btn .txt { display: none; }        /* buton etiketleri kısalır */
 }
+
+/* Carousel — scrollbar gizle (webkit) */
+.gg-carousel-track::-webkit-scrollbar { display: none; }
