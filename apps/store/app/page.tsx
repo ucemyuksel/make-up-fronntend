@@ -38,7 +38,7 @@ const KATEGORILER = [
   ["👁️", "Makyaj"], ["🧴", "Cilt Bakımı"], ["💇", "Saç"], ["🌸", "Parfüm"], ["🧰", "Aksesuar"], ["⋯", "Tümü"],
 ];
 
-export default async function StoreHome() {
+export default async function StoreHome({ searchParams }: { searchParams: { q?: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
 
@@ -56,9 +56,27 @@ export default async function StoreHome() {
     if (cats && cats.length > 0) chips = ["Tümü", ...cats.map((c) => c.name)];
   }
 
+  // Arama: ürün (ad/marka) + mağaza (isim) filtresi.
+  const q = (searchParams.q ?? "").toLocaleLowerCase("tr").trim();
+  const magazalar = q ? MAGAZALAR.filter((m) => m.ad.toLocaleLowerCase("tr").includes(q)) : MAGAZALAR;
+  const urunler = q
+    ? products.filter((p) => `${p.name} ${p.brand}`.toLocaleLowerCase("tr").includes(q))
+    : products;
+
   return (
     <div style={{ display: "grid", gap: 22 }}>
-      <input className="gg-search" style={{ maxWidth: "100%" }} placeholder="Ürün, marka veya kategori ara..." />
+      {/* Çalışan arama (GET; sunucuda filtrelenir) */}
+      <form method="get" style={{ display: "flex", gap: 8 }}>
+        <input name="q" defaultValue={searchParams.q ?? ""} className="gg-search" style={{ flex: 1 }} placeholder="Ürün, marka veya mağaza ara..." autoComplete="off" />
+        <button className="gg-btn gg-btn-primary" type="submit">Ara</button>
+        {q ? <a href="/" className="gg-btn gg-btn-ghost">Temizle</a> : null}
+      </form>
+
+      {q ? (
+        <div style={{ fontSize: 13.5, color: "var(--gg-muted)" }}>
+          &quot;{searchParams.q}&quot; için {urunler.length} ürün, {magazalar.length} mağaza bulundu.
+        </div>
+      ) : null}
 
       {/* Kategori çipleri */}
       <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
@@ -86,9 +104,10 @@ export default async function StoreHome() {
 
       {/* Mağazalar */}
       <section>
-        <SectionHeader title="Mağazalar" href="#" />
+        <SectionHeader title={q ? `Mağazalar (${magazalar.length})` : "Mağazalar"} href="#" />
+        {magazalar.length === 0 ? <p style={{ color: "var(--gg-muted)", fontSize: 13 }}>Eşleşen mağaza yok.</p> : null}
         <div style={{ display: "flex", gap: 18, overflowX: "auto", paddingBottom: 6 }}>
-          {MAGAZALAR.map((m) => (
+          {magazalar.map((m) => (
             <a key={m.ad} href="#" style={{ display: "grid", justifyItems: "center", gap: 8, minWidth: 84, textDecoration: "none" }}>
               <span style={{ width: 72, height: 72, borderRadius: "50%", background: "#fff", border: "1px solid var(--gg-border)", display: "grid", placeItems: "center", boxShadow: "0 2px 8px rgba(0,0,0,.06)" }}>
                 <span style={{ width: 54, height: 54, borderRadius: "50%", background: m.renk, color: "#fff", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 18 }}>
@@ -103,9 +122,10 @@ export default async function StoreHome() {
 
       {/* Popüler Ürünler (görselli) */}
       <section>
-        <SectionHeader title="Popüler Ürünler" href="#" />
+        <SectionHeader title={q ? `Ürünler (${urunler.length})` : "Popüler Ürünler"} href="#" />
+        {urunler.length === 0 ? <p style={{ color: "var(--gg-muted)", fontSize: 13 }}>Eşleşen ürün yok.</p> : null}
         <div className="gg-grid cols-5">
-          {products.map((p, i) => (
+          {urunler.map((p, i) => (
             <ProductCard
               key={p.id}
               name={p.name}
