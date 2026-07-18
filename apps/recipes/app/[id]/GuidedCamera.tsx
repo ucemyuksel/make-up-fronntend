@@ -27,15 +27,30 @@ const TAMAM_ALT = 0.85;        // uygulama oranı bandı → "ton tamam"
 const FAZLA_UST = 1.3;         // üstü → "fazla sürüldü"
 const YUZ_GRACE_MS = 1500;     // yüz kaybolunca son landmark'larla devam süresi
 
-type Yama = { pts: number[]; arrows: [number, number][] };
+type Yama = {
+  pts: number[];
+  arrows: [number, number][];
+  alinUzat?: boolean; // üst yarıyı yukarı uzat (alın saç çizgisine kadar dahil olsun)
+  hull?: boolean;     // dışbükey zarf al (profilde dışarı taşan burun alana dahil olur)
+};
 type BolgeTanim = { yamalar: Yama[]; firca: string; yon: string; arac: "firca" | "ruj" | "sunger" };
 
 const BOLGELER: Record<string, BolgeTanim> = {
   yuz: {
     yamalar: [
-      { pts: [10, 338, 297, 332, 284, 454, 366, 361, 397, 152, 172, 132, 137, 234, 54, 103, 67, 109], arrows: [[5, 234], [5, 454], [168, 10]] },
+      // Yüz ovali + burun köprüsü/ucu → hull ile profilde burun alana dahil kalır;
+      // alinUzat ile alın saç çizgisine kadar taranır.
+      { pts: [10, 338, 297, 332, 284, 454, 366, 361, 397, 152, 172, 132, 137, 234, 54, 103, 67, 109, 1, 4, 5, 19, 94, 197], arrows: [[5, 234], [5, 454], [168, 10]], alinUzat: true, hull: true },
     ],
     firca: "Nemli sünger / fondöten fırçası", yon: "Ortadan dışa doğru", arac: "sunger",
+  },
+  kontur: {
+    yamalar: [
+      // Elmacık altı çukuru + çene hattına inen bant (sol/sağ ayrı).
+      { pts: [227, 123, 50, 205, 187, 147, 177, 137], arrows: [[205, 234]] },
+      { pts: [447, 352, 280, 425, 411, 376, 401, 366], arrows: [[425, 454]] },
+    ],
+    firca: "Açılı kontür fırçası", yon: "Elmacık altından kulağa, yukarı harmanla", arac: "firca",
   },
   "goz alti": {
     yamalar: [
@@ -76,6 +91,7 @@ const BOLGELER: Record<string, BolgeTanim> = {
 function bolgeleriBul(region: string): BolgeTanim[] {
   const r = region.toLocaleLowerCase("tr").trim();
   const out: BolgeTanim[] = [];
+  if (r.includes("kontür") || r.includes("kontur")) out.push(BOLGELER["kontur"]);
   if (r.includes("göz altı") || r.includes("goz alti")) out.push(BOLGELER["goz alti"]);
   else if (r.includes("göz") || r.includes("goz")) out.push(BOLGELER["goz"]);
   if (r.includes("elmacık") || r.includes("elmacik")) out.push(BOLGELER["elmacik kemigi"]);
@@ -116,6 +132,25 @@ function puruzsuzYol(ctx: CanvasRenderingContext2D, path: Pt[]) {
     ctx.quadraticCurveTo(p[0], p[1], m2[0], m2[1]);
   }
   ctx.closePath();
+}
+
+/** Dışbükey zarf (monotone chain) — profilde burun gibi taşan noktaları alana katar. */
+function zarf(points: Pt[]): Pt[] {
+  const pts = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o: Pt, a: Pt, b: Pt) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const alt: Pt[] = [];
+  for (const p of pts) {
+    while (alt.length >= 2 && cross(alt[alt.length - 2], alt[alt.length - 1], p) <= 0) alt.pop();
+    alt.push(p);
+  }
+  const ust: Pt[] = [];
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    while (ust.length >= 2 && cross(ust[ust.length - 2], ust[ust.length - 1], p) <= 0) ust.pop();
+    ust.push(p);
+  }
+  alt.pop(); ust.pop();
+  return alt.concat(ust);
 }
 
 function icinde(x: number, y: number, poly: Pt[]): boolean {
@@ -305,14 +340,31 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
     tonRef.current.kare++;
     const hedef = hexRgb(col);
 
-    // Yamaları önceden hesapla (zoom hedefi için).
+    // Yamaları önceden hesapla (zoom hedefi için) + profil işleme.
     const tumYamalar: { path: Pt[]; yama: Yama; tanim: BolgeTanim }[] = [];
     if (lms) {
       for (const tanim of bolgeleriBul(reg)) {
+        const adaylar: { path: Pt[]; yama: Yama; tanim: BolgeTanim; z: number }[] = [];
         for (const yama of tanim.yamalar) {
-          const path: Pt[] = yama.pts.map((i) => lms[i]).filter(Boolean).map((p) => [p.x * w, p.y * h]);
-          if (path.length >= 3) tumYamalar.push({ path, yama, tanim });
+          const ham = yama.pts.map((i) => lms[i]).filter(Boolean);
+          if (ham.length < 3) continue;
+          let path: Pt[] = ham.map((p) => [p.x * w, p.y * h]);
+          const zOrt = ham.reduce((s, p) => s + (p.z ?? 0), 0) / ham.length;
+          if (yama.alinUzat) {
+            // Üst yarıyı yukarı uzat: alın saç çizgisine kadar taramaya dahil.
+            const my = path.reduce((s, p) => s + p[1], 0) / path.length;
+            path = path.map(([x, y]) => [x, y < my ? Math.max(0, my - (my - y) * 1.55) : y]);
+          }
+          if (yama.hull) path = zarf(path); // profilde burun alana dahil, sınır toparlanır
+          adaylar.push({ path, yama, tanim, z: zOrt });
         }
+        // Yan profilde ARKADA kalan ikiz yama (uzak yanak/göz) gizlenir —
+        // görünmeyen tarafta saçma alan/ok çizilmez, ton örneklemesi bozulmaz.
+        if (adaylar.length === 2 && Math.abs(adaylar[0].z - adaylar[1].z) > 0.06) {
+          adaylar.sort((a, b) => a.z - b.z); // küçük z = kameraya yakın
+          adaylar.pop();
+        }
+        for (const a of adaylar) tumYamalar.push({ path: a.path, yama: a.yama, tanim: a.tanim });
       }
     }
 
@@ -432,6 +484,9 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
         for (const [ai, bi] of yama.arrows) {
           const a0 = lms[ai], b0 = lms[bi];
           if (!a0 || !b0) continue;
+          // Kılavuzun ucu kafanın arkasına dönükse (profil) o oku çizme —
+          // yüzü kesen anlamsız oklar oluşmasın.
+          if ((b0.z ?? 0) - (a0.z ?? 0) > 0.08) continue;
           const A: Pt = [a0.x * w, a0.y * h], B: Pt = [b0.x * w, b0.y * h];
           swooshCiz(ctx, A, B, Math.hypot(B[0] - A[0], B[1] - A[1]) * 3);
 
