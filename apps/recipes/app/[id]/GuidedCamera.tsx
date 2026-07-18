@@ -86,12 +86,62 @@ const BOLGELER: Record<string, BolgeTanim> = {
     ],
     firca: "Allık fırçası", yon: "Yukarı-dışa doğru", arac: "firca",
   },
+  kas: {
+    // Kaş bantları (şerit) — iç uçtan dışa doğru kıl taklidi çizgiler.
+    yamalar: [
+      { pts: [107, 66, 105, 63, 70], arrows: [[107, 70]], serit: true },
+      { pts: [336, 296, 334, 293, 300], arrows: [[336, 300]], serit: true },
+    ],
+    firca: "Kaş kalemi + kaş fırçası", yon: "İç uçtan dışa, kısa kıl çizgileri", arac: "firca",
+  },
 };
 
-function bolgeleriBul(region: string): BolgeTanim[] {
+/** /analysis'in ölçtüğü yüz şekline göre ek kontür yamaları ve ipuçları.
+ *  (Makyöz kuralı: kalp yüzde alın kenarları yumuşatılır; yuvarlak/kare yüzde
+ *  çene hattı belirginleştirilir.) */
+const SEKIL_EK: Record<string, { bolge: "kontur"; yama: Yama[]; ipucu: string }> = {
+  Kalp: {
+    bolge: "kontur",
+    yama: [
+      { pts: [54, 103, 67], arrows: [[67, 54]], serit: true },     // sol alın kenarı
+      { pts: [284, 332, 297], arrows: [[297, 284]], serit: true }, // sağ alın kenarı
+    ],
+    ipucu: "Kalp yüz: alın kenarlarını da hafifçe karart, çene ucunu dengede tut.",
+  },
+  Yuvarlak: {
+    bolge: "kontur",
+    yama: [
+      { pts: [58, 172, 136, 150, 149], arrows: [[149, 58]], serit: true },     // sol çene hattı
+      { pts: [288, 397, 365, 379, 378], arrows: [[378, 288]], serit: true },   // sağ çene hattı
+    ],
+    ipucu: "Yuvarlak yüz: çene hattını da karart — yüz belirginleşir ve incelir.",
+  },
+  Kare: {
+    bolge: "kontur",
+    yama: [
+      { pts: [58, 172, 136, 150], arrows: [[150, 58]], serit: true },
+      { pts: [288, 397, 365, 379], arrows: [[379, 288]], serit: true },
+    ],
+    ipucu: "Kare yüz: çene köşelerini yumuşat; allığı üst elmacıkta tut, buruna yaklaştırma.",
+  },
+  Uzun: {
+    bolge: "kontur",
+    yama: [],
+    ipucu: "Uzun yüz: kontürü yatay tut (alın üstü + çene ucu); dikey hatlardan kaçın.",
+  },
+};
+
+function bolgeleriBul(region: string, sekil?: string | null): BolgeTanim[] {
   const r = region.toLocaleLowerCase("tr").trim();
   const out: BolgeTanim[] = [];
-  if (r.includes("kontür") || r.includes("kontur")) out.push(BOLGELER["kontur"]);
+  if (r.includes("kaş") || r.includes("kas")) out.push(BOLGELER["kas"]);
+  if (r.includes("kontür") || r.includes("kontur")) {
+    const ek = sekil ? SEKIL_EK[sekil] : undefined;
+    // Yüz şekline göre ek kontür yamaları (kalp: alın kenarı, yuvarlak/kare: çene hattı).
+    out.push(ek && ek.yama.length > 0
+      ? { ...BOLGELER["kontur"], yamalar: [...BOLGELER["kontur"].yamalar, ...ek.yama] }
+      : BOLGELER["kontur"]);
+  }
   if (r.includes("göz altı") || r.includes("goz alti")) out.push(BOLGELER["goz alti"]);
   else if (r.includes("göz") || r.includes("goz")) out.push(BOLGELER["goz"]);
   if (r.includes("elmacık") || r.includes("elmacik")) out.push(BOLGELER["elmacik kemigi"]);
@@ -298,9 +348,19 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
   const [fazla, setFazla] = React.useState(false);
   const [yuzVar, setYuzVar] = React.useState(true);
   const [zoomAcik, setZoomAcik] = React.useState(true);
+  const [isikAz, setIsikAz] = React.useState(false);
+  const [sekil, setSekil] = React.useState<string | null>(null);
+  const sekilRef = React.useRef<string | null>(null);
   zoomAcikRef.current = zoomAcik;
 
-  const tanimlar = bolgeleriBul(region);
+  // /analysis sayfası yüz şeklini localStorage'a yazar; rehber yerleşimi ona uyar.
+  React.useEffect(() => {
+    const s = localStorage.getItem("gg-yuz-sekli");
+    setSekil(s); sekilRef.current = s;
+  }, []);
+
+  const tanimlar = bolgeleriBul(region, sekil);
+  const sekilIpucu = sekil ? SEKIL_EK[sekil]?.ipucu : undefined;
 
   const durdur = React.useCallback(() => {
     cancelAnimationFrame(rafRef.current);
@@ -332,7 +392,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
     // Yamaları hesapla (+ profil işleme).
     const tumYamalar: { path: Pt[]; yama: Yama; tanim: BolgeTanim; anahtar: string }[] = [];
     if (lms) {
-      for (const tanim of bolgeleriBul(reg)) {
+      for (const tanim of bolgeleriBul(reg, sekilRef.current)) {
         const adaylar: { path: Pt[]; yama: Yama; tanim: BolgeTanim; z: number; anahtar: string }[] = [];
         for (const yama of tanim.yamalar) {
           const ham = yama.pts.map((i) => lms[i]).filter(Boolean);
@@ -385,6 +445,17 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
     ctx.translate(w, 0); ctx.scale(-1, 1);
     ctx.translate(cx, cy); ctx.scale(z.s, z.s); ctx.translate(-cx, -cy);
     ctx.drawImage(v, 0, 0, w, h);
+
+    // IŞIK KONTROLÜ: makyaj (ve ton takibi) yeterli ışık ister — kare parlaklığını ölç.
+    if (tonRef.current.kare % 30 === 0) {
+      let toplam = 0;
+      const noktalar = [[w / 2, h / 2], [w / 4, h / 3], [(3 * w) / 4, h / 3], [w / 2, (3 * h) / 4]];
+      for (const [px, py] of noktalar) {
+        const d = ctx.getImageData(Math.round(px), Math.round(py), 1, 1).data;
+        toplam += (d[0] + d[1] + d[2]) / 3;
+      }
+      setIsikAz(toplam / noktalar.length < 55);
+    }
 
     if (!lms) {
       ctx.restore();
@@ -597,6 +668,16 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
                 🖌️ {t.firca} · <span style={{ color: PEMBE }}>{t.yon}</span>
               </span>
             ))}
+            {sekilIpucu && (
+              <span style={{ background: "rgba(236,46,122,.92)", color: "#fff", borderRadius: 999, padding: "5px 12px", fontSize: 12, fontWeight: 600, justifySelf: "start" }}>
+                💡 {sekilIpucu}
+              </span>
+            )}
+            {isikAz && (
+              <span style={{ background: "rgba(250,204,21,.95)", borderRadius: 999, padding: "5px 12px", fontSize: 12.5, fontWeight: 700, justifySelf: "start" }}>
+                💡 Işık yetersiz — makyajı ve ton takibini doğal/parlak ışıkta yap
+              </span>
+            )}
             {!yuzVar && (
               <span style={{ background: "rgba(250,204,21,.95)", borderRadius: 999, padding: "5px 12px", fontSize: 12.5, fontWeight: 700, justifySelf: "start" }}>
                 👤 Yüz aranıyor — kameraya biraz dön

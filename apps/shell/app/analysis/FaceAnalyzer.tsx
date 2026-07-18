@@ -28,6 +28,7 @@ type Analiz = {
   tenTonu: string;
   altTon: "sıcak" | "soğuk" | "nötr";
   rgb: [number, number, number];
+  ceneRgb: [number, number, number]; // çene hattı tonu — fondöten testi burada yapılır
 };
 
 // Yüz şekline göre makyaj önerileri — tarif (recipe) kategorileriyle hizalı.
@@ -63,7 +64,16 @@ export function FaceAnalyzer() {
   const [noktalar, setNoktalar] = React.useState(true);
   const [guven, setGuven] = React.useState(0.5);
   const [fps, setFps] = React.useState(0);
-  const [analiz, setAnaliz] = React.useState<Analiz | null>(null);
+  const [analiz, setAnalizHam] = React.useState<Analiz | null>(null);
+  // Analiz sonucu rehberli kameranın da kullanması için localStorage'a yazılır
+  // (yüz şekline göre kontür/allık yerleşimi).
+  const setAnaliz = React.useCallback((a: Analiz | null) => {
+    setAnalizHam(a);
+    if (a) {
+      localStorage.setItem("gg-yuz-sekli", a.yuzSekli);
+      localStorage.setItem("gg-alt-ton", a.altTon);
+    }
+  }, []);
   const [fotoUrl, setFotoUrl] = React.useState<string | null>(null);
 
   // Modeli yükle (WASM + .task dosyası CDN'den).
@@ -136,12 +146,16 @@ export function FaceAnalyzer() {
       ctx.drawImage(kaynak, 0, 0, w, h);
       const px = ctx.getImageData(Math.round(lms[425].x * w), Math.round(lms[425].y * h), 1, 1).data;
       const [r, g, b] = [px[0], px[1], px[2]];
+      // Çene hattı tonu: makyözler fondöten testini elde değil ÇENE HATTINDA yapar
+      // (yüz+boyun uyumu birlikte görülür).
+      const cpx = ctx.getImageData(Math.round(lms[172].x * w), Math.round(lms[172].y * h), 1, 1).data;
+      const ceneRgb: [number, number, number] = [cpx[0], cpx[1], cpx[2]];
       const parlaklik = (r + g + b) / 3;
       const tenTonu = parlaklik > 170 ? "Açık" : parlaklik > 110 ? "Orta" : "Koyu";
       const fark = r - b;
       const altTon: Analiz["altTon"] = fark > 25 ? "sıcak" : fark < 8 ? "soğuk" : "nötr";
 
-      return { yuzSekli, oran, cene: ceneOrani, gozAcikligi, gulumseme, simetri, tenTonu, altTon, rgb: [r, g, b] };
+      return { yuzSekli, oran, cene: ceneOrani, gozAcikligi, gulumseme, simetri, tenTonu, altTon, rgb: [r, g, b], ceneRgb };
     },
     []
   );
@@ -305,8 +319,14 @@ export function FaceAnalyzer() {
               <Satir ad="Ten tonu" deger={`${analiz.tenTonu} · ${analiz.altTon} alt ton`} />
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <span style={{ width: 22, height: 22, borderRadius: 6, background: `rgb(${analiz.rgb.join(",")})`, border: "1px solid var(--gg-border)" }} />
-                <span style={{ color: "var(--gg-muted)", fontSize: 12 }}>rgb({analiz.rgb.join(", ")})</span>
+                <span style={{ color: "var(--gg-muted)", fontSize: 12 }}>yanak</span>
+                <span style={{ width: 22, height: 22, borderRadius: 6, background: `rgb(${analiz.ceneRgb.join(",")})`, border: "1px solid var(--gg-border)" }} />
+                <span style={{ color: "var(--gg-muted)", fontSize: 12 }}>çene hattı</span>
               </div>
+              <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--gg-muted)", lineHeight: 1.5 }}>
+                💡 Fondöten tonunu <strong>çene hattında</strong>, doğal ışıkta test et (yüz+boyun uyumu).
+                Bilek damarların yeşilse sıcak, mavi/morsa soğuk alt tonlusun.
+              </p>
             </div>
           ) : (
             <p style={{ color: "var(--gg-muted)", fontSize: 13 }}>Henüz analiz yok.</p>
