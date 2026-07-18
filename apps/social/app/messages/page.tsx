@@ -7,6 +7,8 @@ import { api, timeAgo } from "../lib";
 type Conversation = {
   id: string;
   otherUserId: string;
+  otherName: string | null;          // user-service olaylarından (Kafka read-model)
+  otherAvatarColorHex: string | null;
   lastMessageText: string | null;
   lastMessageAt: string | null;
   unread: number;
@@ -21,8 +23,9 @@ type Message = {
   read: boolean;
 };
 
-// Sunumsal ad (backend yalnızca userId tutar).
+// Gerçek ad user read-model'den (conversation.otherName); yoksa sunumsal ada düş.
 const nameOf = (id: string) => "Kullanıcı " + id.slice(0, 4).toUpperCase();
+const convName = (c: Conversation) => c.otherName ?? nameOf(c.otherUserId);
 
 export default async function Messages({ searchParams }: { searchParams: { c?: string } }) {
   const session = await auth();
@@ -74,7 +77,7 @@ export default async function Messages({ searchParams }: { searchParams: { c?: s
             <a key={c.id} href={`/messages?c=${c.id}`} style={{ display: "flex", gap: 10, alignItems: "center", padding: "10px 8px", borderRadius: "var(--gg-r-sm)", background: c.id === selectedId ? "var(--gg-primary-soft)" : "transparent" }}>
               <span style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--gg-primary-light)", flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600 }}>{nameOf(c.otherUserId)}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 600 }}>{convName(c)}</div>
                 <div style={{ fontSize: 12, color: "var(--gg-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.lastMessageText ?? "—"}</div>
               </div>
               <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -94,7 +97,7 @@ export default async function Messages({ searchParams }: { searchParams: { c?: s
             <div style={{ display: "flex", gap: 10, alignItems: "center", borderBottom: "1px solid var(--gg-border)", paddingBottom: 10 }}>
               <span style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--gg-primary-light)" }} />
               <div>
-                <strong>{nameOf(selected.otherUserId)}</strong>
+                <strong>{convName(selected)}</strong>
                 <div style={{ fontSize: 11.5, color: "#1E9E5A" }}>çevrimiçi</div>
               </div>
             </div>
