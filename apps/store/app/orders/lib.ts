@@ -17,11 +17,16 @@ export const STATUS: Record<string, { label: string; color: string; bg: string }
 };
 
 export async function purchases<T>(path: string, token: string): Promise<T | null> {
-  const res = await fetch(`${process.env.PURCHASE_API}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  return res.ok ? ((await res.json()) as T) : null;
+  try {
+    const res = await fetch(`${process.env.PURCHASE_API}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    return res.ok ? ((await res.json()) as T) : null;
+  } catch {
+    // purchase-service erişilemez (ör. kapalı) → sayfayı çökertme, boş göster.
+    return null;
+  }
 }
 
 export function shortId(id: string): string {

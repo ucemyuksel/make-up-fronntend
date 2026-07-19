@@ -1,4 +1,5 @@
 import * as React from "react";
+import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
 import { tl } from "../../lib";
 import { purchases, STATUS, KDV_ORANI, shortId, dateTr, type Purchase } from "../lib";
@@ -8,7 +9,7 @@ const STEPS = ["Sipariş Alındı", "Doğrulandı", "Hazırlanıyor", "Tamamland
 export default async function OrderDetail({ params }: { params: { id: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) return <a href="/api/auth/signin?callbackUrl=%2Forders" className="gg-btn gg-btn-primary">Giriş yap</a>;
+  if (!token) redirect(`/api/auth/signin?callbackUrl=%2Forders%2F${params.id}`);
 
   const o = await purchases<Purchase>(`/api/purchases/${params.id}`, token);
   if (!o) return <p>Sipariş bulunamadı.</p>;

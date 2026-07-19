@@ -1,5 +1,6 @@
 import * as React from "react";
 import { SectionHeader } from "@makeup/ui";
+import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { tl } from "../lib";
 import { purchases, STATUS, shortId, dateTr, type Purchase } from "./lib";
@@ -16,7 +17,7 @@ export default async function Orders({ searchParams }: { searchParams: { t?: str
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   if (!token) {
-    return <a href="/api/auth/signin?callbackUrl=%2Forders" className="gg-btn gg-btn-primary">Giriş yap</a>;
+    redirect("/api/auth/signin?callbackUrl=%2Forders"); // oturum yoksa login sayfasına yönlendir
   }
   const hepsi = (await purchases<Purchase[]>("/api/purchases", token)) ?? [];
 
