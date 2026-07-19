@@ -19,6 +19,7 @@ const NAV = [
   { key: "reels", label: "Reels", icon: "🎬", href: `${ORIGINS.social}/reels` },
   { key: "cart", label: "Sepetim", icon: "🛒", href: `${ORIGINS.store}/cart` },
   { key: "orders", label: "Siparişlerim", icon: "🧾", href: `${ORIGINS.store}/orders` },
+  { key: "reklam", label: "Reklam Ver", icon: "📣", href: `${ORIGINS.store}/reklam` },
   { key: "messages", label: "Mesajlar", icon: "💬", href: `${ORIGINS.social}/messages` },
   { key: "notifications", label: "Bildirimler", icon: "🔔", href: `${ORIGINS.social}/notifications` },
   { key: "profile", label: "Profil", icon: "👤", href: `${ORIGINS.social}/profile` },
