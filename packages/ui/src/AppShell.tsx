@@ -1,4 +1,5 @@
 import * as React from "react";
+import { ShellNav } from "./ShellNav";
 
 // Zone origin'leri: her micro-frontend ayrı dağıtım (yerelde ayrı port, prod'da
 // ayrı Vercel domain'i). Zone'lar arası gezinme origin'e tam URL ile yapılır —
@@ -41,15 +42,8 @@ export function AppShell({
           <span className="gg-logo-mark">✦</span>
           <span className="txt">GlamGuide</span>
         </a>
-        <nav className="gg-nav">
-          {NAV.map((n) => (
-            <a key={n.key} href={n.href} className={"gg-nav-item" + (n.key === active ? " active" : "")}>
-              <span className="ico">{n.icon}</span>
-              <span className="lbl">{n.label}</span>
-              {n.badge ? <span className="gg-badge-count">{n.badge}</span> : null}
-            </a>
-          ))}
-        </nav>
+        {/* Aktif sekme konumdan otomatik (client); active prop SSR fallback'i. */}
+        <ShellNav nav={NAV} fallbackActive={active} />
         <div className="gg-premium">
           <div style={{ fontSize: 22 }}>👑</div>
           <strong style={{ color: "var(--gg-primary-dark)" }}>Premium&apos;a Geç</strong>
