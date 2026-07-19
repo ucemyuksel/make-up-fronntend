@@ -115,8 +115,41 @@ export function DislikeButton({ id }: { id: string }) {
 /** Hikâye şeridi + tam ekran görüntüleyici (ilerleme çubuklu, otomatik geçiş). */
 export type Hikaye = { ad: string; metin: string; renk: string };
 
+type ServedAd = {
+  campaignId: string; advertiserName: string; placement: string;
+  mediaUrl: string; mediaType: string; headline: string; ctaText: string; ctaUrl: string; sponsored: boolean;
+};
+
+type Slayt = { tip: "story"; h: Hikaye } | { tip: "ad"; ad: ServedAd; eventId: string };
+
+function tarayiciUlke(): string {
+  return (typeof navigator !== "undefined" ? navigator.language : "").split("-")[1] || "";
+}
+
+/** Reklam takibi — idempotent eventId ile gösterim/tık bildir (proxy route üzerinden). */
+async function reklamOlayBildir(campaignId: string, type: "impression" | "click", eventId: string) {
+  try {
+    await fetch(`/api/ads/${campaignId}/${type}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId, countryCode: tarayiciUlke() || null }),
+      keepalive: true,
+    });
+  } catch { /* sessiz */ }
+}
+
 export function StoryBar({ hikayeler }: { hikayeler: Hikaye[] }) {
   const [aktif, setAktif] = React.useState<number | null>(null);
+  const [reklamlar, setReklamlar] = React.useState<ServedAd[]>([]);
+
+  React.useEffect(() => {
+    const ulke = tarayiciUlke();
+    fetch(`/api/ads/serve?placement=STORY&limit=3${ulke ? `&country=${ulke}` : ""}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setReklamlar(Array.isArray(d) ? d : []))
+      .catch(() => setReklamlar([]));
+  }, []);
+
   return (
     <>
       <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 4 }}>
@@ -129,14 +162,39 @@ export function StoryBar({ hikayeler }: { hikayeler: Hikaye[] }) {
           </button>
         ))}
       </div>
-      {aktif !== null && <StoryViewer hikayeler={hikayeler} baslangic={aktif} kapat={() => setAktif(null)} />}
+      {aktif !== null && <StoryViewer hikayeler={hikayeler} reklamlar={reklamlar} baslangic={aktif} kapat={() => setAktif(null)} />}
     </>
   );
 }
 
-function StoryViewer({ hikayeler, baslangic, kapat }: { hikayeler: Hikaye[]; baslangic: number; kapat: () => void }) {
-  const [i, setI] = React.useState(baslangic);
+function StoryViewer({ hikayeler, reklamlar, baslangic, kapat }: { hikayeler: Hikaye[]; reklamlar: ServedAd[]; baslangic: number; kapat: () => void }) {
+  // Slaytlar: her 3 hikayede bir reklam araya girer (mevcut reklam sayısınca).
+  const slaytlar = React.useMemo<Slayt[]>(() => {
+    const out: Slayt[] = [];
+    let adIdx = 0;
+    hikayeler.forEach((h, k) => {
+      out.push({ tip: "story", h });
+      if ((k + 1) % 3 === 0 && adIdx < reklamlar.length) {
+        const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${adIdx}`;
+        out.push({ tip: "ad", ad: reklamlar[adIdx++], eventId: id });
+      }
+    });
+    return out;
+  }, [hikayeler, reklamlar]);
+
+  // Tıklanan hikayenin slayt indeksini bul.
+  const baslaSlayt = React.useMemo(() => {
+    let sayac = -1;
+    for (let idx = 0; idx < slaytlar.length; idx++) {
+      const s = slaytlar[idx];
+      if (s.tip === "story") { sayac++; if (sayac === baslangic) return idx; }
+    }
+    return 0;
+  }, [slaytlar, baslangic]);
+
+  const [i, setI] = React.useState(baslaSlayt);
   const [t, setT] = React.useState(0); // 0..1 ilerleme
+  const firedRef = React.useRef<Set<string>>(new Set());
   const SURE = 4000;
 
   React.useEffect(() => {
@@ -146,7 +204,7 @@ function StoryViewer({ hikayeler, baslangic, kapat }: { hikayeler: Hikaye[]; bas
     const dongu = (now: number) => {
       const oran = (now - bas) / SURE;
       if (oran >= 1) {
-        if (i + 1 < hikayeler.length) setI(i + 1);
+        if (i + 1 < slaytlar.length) setI(i + 1);
         else kapat();
         return;
       }
@@ -155,32 +213,76 @@ function StoryViewer({ hikayeler, baslangic, kapat }: { hikayeler: Hikaye[]; bas
     };
     raf = requestAnimationFrame(dongu);
     return () => cancelAnimationFrame(raf);
-  }, [i, hikayeler.length, kapat]);
+  }, [i, slaytlar.length, kapat]);
 
-  const h = hikayeler[i];
+  // Reklam slaytı görününce bir kez gösterim (impression) bildir.
+  React.useEffect(() => {
+    const cur = slaytlar[i];
+    if (cur && cur.tip === "ad" && !firedRef.current.has(cur.eventId)) {
+      firedRef.current.add(cur.eventId);
+      reklamOlayBildir(cur.ad.campaignId, "impression", cur.eventId);
+    }
+  }, [i, slaytlar]);
+
+  const cur = slaytlar[i];
+  if (!cur) return null;
+  const reklamMi = cur.tip === "ad";
+
+  const ctaTikla = (ad: ServedAd, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-clk`;
+    reklamOlayBildir(ad.campaignId, "click", id);
+    if (typeof window !== "undefined") window.open(ad.ctaUrl, "_blank", "noopener");
+  };
+
+  const arka = reklamMi
+    ? "#000"
+    : `linear-gradient(160deg, ${(cur as { h: Hikaye }).h.renk}, var(--gg-primary))`;
+  const baslik = reklamMi ? (cur as { ad: ServedAd }).ad.advertiserName : (cur as { h: Hikaye }).h.ad;
+
   return (
-    <div onClick={() => (i + 1 < hikayeler.length ? setI(i + 1) : kapat())}
+    <div onClick={() => (i + 1 < slaytlar.length ? setI(i + 1) : kapat())}
          style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,.92)", display: "grid", placeItems: "center" }}>
-      <div style={{ width: "min(420px, 94vw)", aspectRatio: "9/16", borderRadius: 18, overflow: "hidden", position: "relative", background: `linear-gradient(160deg, ${h.renk}, var(--gg-primary))`, display: "grid", placeItems: "center" }}>
+      <div style={{ width: "min(420px, 94vw)", aspectRatio: "9/16", borderRadius: 18, overflow: "hidden", position: "relative", background: arka, display: "grid", placeItems: "center" }}>
+        {/* Reklam görseli */}
+        {reklamMi ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={(cur as { ad: ServedAd }).ad.mediaUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.9 }} />
+        ) : null}
+
         {/* İlerleme çubukları */}
-        <div style={{ position: "absolute", top: 10, left: 10, right: 10, display: "flex", gap: 4 }}>
-          {hikayeler.map((_, k) => (
+        <div style={{ position: "absolute", top: 10, left: 10, right: 10, display: "flex", gap: 4, zIndex: 2 }}>
+          {slaytlar.map((_, k) => (
             <span key={k} style={{ flex: 1, height: 3, borderRadius: 2, background: "rgba(255,255,255,.35)", overflow: "hidden" }}>
               <span style={{ display: "block", height: "100%", background: "#fff", width: k < i ? "100%" : k === i ? `${t * 100}%` : "0%" }} />
             </span>
           ))}
         </div>
-        <div style={{ position: "absolute", top: 24, left: 14, display: "flex", gap: 8, alignItems: "center" }}>
+
+        <div style={{ position: "absolute", top: 24, left: 14, display: "flex", gap: 8, alignItems: "center", zIndex: 2 }}>
           <span style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,.85)" }} />
-          <strong style={{ color: "#fff", fontSize: 13 }}>{h.ad}</strong>
+          <strong style={{ color: "#fff", fontSize: 13, textShadow: "0 1px 4px rgba(0,0,0,.5)" }}>{baslik}</strong>
+          {reklamMi ? <span style={{ background: "rgba(0,0,0,.55)", color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 6px" }}>Sponsorlu</span> : null}
         </div>
+
         <button onClick={(e) => { e.stopPropagation(); kapat(); }}
-                style={{ position: "absolute", top: 20, right: 12, background: "none", border: "none", color: "#fff", fontSize: 20, cursor: "pointer" }}>✕</button>
+                style={{ position: "absolute", top: 20, right: 12, background: "none", border: "none", color: "#fff", fontSize: 20, cursor: "pointer", zIndex: 2 }}>✕</button>
         {i > 0 && (
           <button onClick={(e) => { e.stopPropagation(); setI(i - 1); }}
-                  style={{ position: "absolute", left: 6, top: "50%", background: "none", border: "none", color: "rgba(255,255,255,.7)", fontSize: 26, cursor: "pointer" }}>‹</button>
+                  style={{ position: "absolute", left: 6, top: "50%", background: "none", border: "none", color: "rgba(255,255,255,.7)", fontSize: 26, cursor: "pointer", zIndex: 2 }}>‹</button>
         )}
-        <p style={{ color: "#fff", fontSize: 17, fontWeight: 600, padding: "0 26px", textAlign: "center", textShadow: "0 1px 6px rgba(0,0,0,.35)" }}>{h.metin}</p>
+
+        {reklamMi ? (
+          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "20px 22px", background: "linear-gradient(0deg, rgba(0,0,0,.75), transparent)", zIndex: 2 }}>
+            <div style={{ color: "#fff", fontSize: 19, fontWeight: 700, marginBottom: 12, textShadow: "0 1px 6px rgba(0,0,0,.5)" }}>{(cur as { ad: ServedAd }).ad.headline}</div>
+            <button onClick={(e) => ctaTikla((cur as { ad: ServedAd }).ad, e)}
+                    style={{ width: "100%", padding: "12px", borderRadius: 12, border: "none", background: "#fff", color: "var(--gg-primary-dark)", fontWeight: 800, fontSize: 15, cursor: "pointer" }}>
+              {(cur as { ad: ServedAd }).ad.ctaText} →
+            </button>
+          </div>
+        ) : (
+          <p style={{ color: "#fff", fontSize: 17, fontWeight: 600, padding: "0 26px", textAlign: "center", textShadow: "0 1px 6px rgba(0,0,0,.35)", zIndex: 2 }}>{(cur as { h: Hikaye }).h.metin}</p>
+        )}
       </div>
     </div>
   );
