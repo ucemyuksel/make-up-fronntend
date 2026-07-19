@@ -4,3 +4,4 @@ export { Button, Card, Badge } from "./components";
 export { AppShell } from "./AppShell";
 export { SectionHeader, ProductCard, ReelCard, Stat } from "./cards";
 export { Carousel } from "./Carousel";
+export { MediaUpload } from "./MediaUpload";

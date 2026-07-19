@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Badge } from "@makeup/ui";
+import { Badge, MediaUpload } from "@makeup/ui";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
 import { adApi, adSend, type Advertiser } from "../../lib";
@@ -111,9 +111,10 @@ export default async function YeniKampanya({ searchParams }: { searchParams: { h
         {/* Kreatif */}
         <div style={{ display: "grid", gap: 10, borderTop: "1px solid var(--gg-border)", paddingTop: 12 }}>
           <strong style={{ fontSize: 14 }}>🖼️ Kreatif</strong>
-          <label style={lbl}>Görsel/Video URL (MinIO)
-            <input name="mediaUrl" required className="gg-search" placeholder="https://... 9:16 dikey" />
+          <label style={lbl}>Görsel/Video URL (9:16 dikey)
+            <input id="reklam-medya" name="mediaUrl" required className="gg-search" placeholder="https://... (yükleyince otomatik dolar)" />
           </label>
+          <MediaUpload targetId="reklam-medya" label="📤 Kreatif yükle (MinIO)" accept="image/*,video/*" />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <label style={lbl}>Medya türü
               <select name="mediaType" className="gg-search"><option value="IMAGE">Görsel</option><option value="VIDEO">Video</option></select>

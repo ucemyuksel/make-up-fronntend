@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Badge } from "@makeup/ui";
+import { Badge, MediaUpload } from "@makeup/ui";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
 import { api, send, type Category } from "../../lib";
@@ -80,9 +80,12 @@ export default async function UrunTanimla({ searchParams }: { searchParams: { st
         <div style={{ background: "var(--gg-primary-soft)", color: "var(--gg-primary-dark)", borderRadius: 10, padding: "10px 12px", fontSize: 12.5 }}>
           ℹ️ Eklenen ürün <strong>onay bekler (PENDING)</strong>; platform onayından sonra mağazada yayınlanır.
         </div>
-        <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Görsel URL
-          <input name="imageUrl" className="gg-search" placeholder="https://... (opsiyonel)" />
-        </label>
+        <div style={{ display: "grid", gap: 6 }}>
+          <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Görsel URL
+            <input id="urun-gorsel" name="imageUrl" className="gg-search" placeholder="https://... (yükleyince otomatik dolar)" />
+          </label>
+          <MediaUpload targetId="urun-gorsel" label="📤 Görsel yükle (MinIO)" accept="image/*" />
+        </div>
         <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Açıklama
           <textarea name="description" className="gg-search" rows={3} placeholder="Ürün açıklaması" style={{ resize: "vertical" }} />
         </label>
