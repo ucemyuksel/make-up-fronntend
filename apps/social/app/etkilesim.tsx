@@ -172,13 +172,17 @@ function StoryViewer({ hikayeler, reklamlar, baslangic, kapat }: { hikayeler: Hi
   const slaytlar = React.useMemo<Slayt[]>(() => {
     const out: Slayt[] = [];
     let adIdx = 0;
+    const yeniId = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${adIdx}`);
     hikayeler.forEach((h, k) => {
       out.push({ tip: "story", h });
       if ((k + 1) % 3 === 0 && adIdx < reklamlar.length) {
-        const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${adIdx}`;
-        out.push({ tip: "ad", ad: reklamlar[adIdx++], eventId: id });
+        out.push({ tip: "ad", ad: reklamlar[adIdx++], eventId: yeniId() });
       }
     });
+    // Az hikaye varsa (araya reklam girmediyse) sona bir reklam ekle — sponsorlu slayt hep görünsün.
+    if (adIdx === 0 && reklamlar.length > 0) {
+      out.push({ tip: "ad", ad: reklamlar[0], eventId: yeniId() });
+    }
     return out;
   }, [hikayeler, reklamlar]);
 
