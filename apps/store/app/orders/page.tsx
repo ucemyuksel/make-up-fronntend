@@ -79,7 +79,7 @@ export default async function Orders({ searchParams }: { searchParams: { t?: str
                 </div>
                 <div style={{ fontSize: 12.5, color: "var(--gg-muted)", marginTop: 2 }}>{dateTr(o.createdAt)}</div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
-                  <strong>{tl(o.amountTry)}</strong>
+                  <div><strong>{tl(o.amountTry)}</strong> <span style={{ fontSize: 11, color: "var(--gg-muted)" }}>KDV dahil</span></div>
                   <span className="gg-see-all">Detay ›</span>
                 </div>
               </div>

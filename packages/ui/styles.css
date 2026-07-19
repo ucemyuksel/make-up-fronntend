@@ -134,3 +134,8 @@ a { color: inherit; text-decoration: none; }
 
 /* Carousel — scrollbar gizle (webkit) */
 .gg-carousel-track::-webkit-scrollbar { display: none; }
+
+/* Sepet -> odeme adimi: mobilde tek kolon */
+@media (max-width: 720px) {
+  .gg-checkout-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}

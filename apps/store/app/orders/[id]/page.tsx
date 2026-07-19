@@ -1,7 +1,7 @@
 import * as React from "react";
 import { auth } from "../../../auth";
 import { tl } from "../../lib";
-import { purchases, STATUS, shortId, dateTr, type Purchase } from "../lib";
+import { purchases, STATUS, KDV_ORANI, shortId, dateTr, type Purchase } from "../lib";
 
 const STEPS = ["Sipariş Alındı", "Doğrulandı", "Hazırlanıyor", "Tamamlandı"];
 
@@ -54,9 +54,24 @@ export default async function OrderDetail({ params }: { params: { id: string } }
             </div>
             <strong>{tl(o.amountTry)}</strong>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, marginTop: 4 }}>
-            <strong>Toplam</strong><strong>{tl(o.amountTry)}</strong>
-          </div>
+
+          {/* KDV kırılımı (amountTry KDV dahildir → net + KDV ayrıştır) */}
+          {(() => {
+            const kdvHaric = o.amountTry / (1 + KDV_ORANI);
+            const kdv = o.amountTry - kdvHaric;
+            const rj = { display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--gg-muted)" } as React.CSSProperties;
+            return (
+              <div style={{ borderTop: "1px dashed var(--gg-border)", paddingTop: 10, display: "grid", gap: 6 }}>
+                <div style={rj}><span>Ara Toplam (KDV hariç)</span><span>{tl(kdvHaric)}</span></div>
+                <div style={rj}><span>KDV (%{Math.round(KDV_ORANI * 100)})</span><span>{tl(kdv)}</span></div>
+                <div style={rj}><span>Kargo</span><span style={{ color: "var(--gg-primary)" }}>Ücretsiz</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, marginTop: 4 }}>
+                  <strong>Genel Toplam</strong><strong>{tl(o.amountTry)}</strong>
+                </div>
+                <div style={{ fontSize: 11.5, color: "var(--gg-muted)" }}>Fiyatlara %{Math.round(KDV_ORANI * 100)} KDV dahildir.</div>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
