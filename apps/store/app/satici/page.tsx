@@ -72,6 +72,7 @@ export default async function SaticiPanel({ searchParams }: { searchParams: { ok
               </div>
               <a href={`/satici/urun?store=${st.id}`} className="gg-btn gg-btn-primary">Ürün Ekle</a>
               <a href={`/satici/kampanya?store=${st.id}`} className="gg-btn gg-btn-ghost">Kampanya</a>
+              <a href="/satici/cache" className="gg-btn gg-btn-ghost">🧹 Cache</a>
             </div>
           ))}
           {stores.length === 0 ? <p style={{ color: "var(--gg-muted)" }}>Henüz mağaza yok — yukarıdan aç.</p> : null}
