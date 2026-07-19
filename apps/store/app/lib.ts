@@ -23,11 +23,15 @@ export function tl(amount: number): string {
 }
 
 export async function api<T>(path: string, token: string): Promise<T | null> {
-  const res = await fetch(`${process.env.STORE_API}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  return res.ok ? ((await res.json()) as T) : null;
+  try {
+    const res = await fetch(`${process.env.STORE_API}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    return res.ok ? ((await res.json()) as T) : null;
+  } catch {
+    return null; // backend erişilemez → sayfayı çökertme
+  }
 }
 
 /** Yazma isteği (satıcı ekranları). Durum + hata mesajı döner. */
@@ -37,12 +41,17 @@ export async function send(
   token: string,
   body: unknown,
 ): Promise<{ ok: boolean; status: number; error?: string }> {
-  const res = await fetch(`${process.env.STORE_API}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${process.env.STORE_API}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+  } catch {
+    return { ok: false, status: 0, error: "Sunucuya ulaşılamadı" };
+  }
   if (res.ok) return { ok: true, status: res.status };
   let error = `HTTP ${res.status}`;
   try {
@@ -70,11 +79,15 @@ export type GeoStat = { countryCode: string; regionCode?: string; cityName?: str
 export type LedgerDay = { day: string; impressions: number; clicks: number; spend: number };
 
 export async function adApi<T>(path: string, token: string): Promise<T | null> {
-  const res = await fetch(`${process.env.AD_API}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  return res.ok ? ((await res.json()) as T) : null;
+  try {
+    const res = await fetch(`${process.env.AD_API}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    return res.ok ? ((await res.json()) as T) : null;
+  } catch {
+    return null; // ad-service erişilemez → sayfayı çökertme
+  }
 }
 
 /** ad-service yazma isteği; başarıda gövdeyi de döner. */
@@ -84,12 +97,17 @@ export async function adSend<T = unknown>(
   token: string,
   body: unknown,
 ): Promise<{ ok: boolean; status: number; error?: string; data?: T }> {
-  const res = await fetch(`${process.env.AD_API}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${process.env.AD_API}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+  } catch {
+    return { ok: false, status: 0, error: "Sunucuya ulaşılamadı" };
+  }
   if (res.ok) {
     let data: T | undefined;
     try { data = (await res.json()) as T; } catch { /* gövde yok */ }

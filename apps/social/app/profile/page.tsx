@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Stat } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { api, img, type Post, type Reel } from "../lib";
 import { KaydedilenlerListesi, DislikeButton, ShareButton } from "../etkilesim";
@@ -17,7 +18,7 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   const email = session?.user?.email;
   if (!token) {
-    return <a href="/api/auth/signin?callbackUrl=%2Fprofile" className="gg-btn gg-btn-primary">Giriş yap</a>;
+    redirect("/api/auth/signin?callbackUrl=%2Fprofile");
   }
   const aktifTab = searchParams.tab ?? "gonderiler";
 

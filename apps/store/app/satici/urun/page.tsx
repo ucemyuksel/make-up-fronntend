@@ -9,7 +9,7 @@ export const metadata = { title: "Ürün Tanımla — GlamGuide" };
 export default async function UrunTanimla({ searchParams }: { searchParams: { store?: string; ok?: string; hata?: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) return <a href="/api/auth/signin" className="gg-btn gg-btn-primary">Giriş yap</a>;
+  if (!token) redirect("/api/auth/signin?callbackUrl=%2Fsatici");
   const store = searchParams.store;
   if (!store) return <p>Mağaza seçilmedi. <a href="/satici" className="gg-see-all">← Panele dön</a></p>;
 

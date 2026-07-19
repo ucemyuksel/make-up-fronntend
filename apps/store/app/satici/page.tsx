@@ -10,9 +10,7 @@ export const metadata = { title: "Satıcı Paneli — GlamGuide" };
 export default async function SaticiPanel({ searchParams }: { searchParams: { ok?: string; hata?: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) {
-    return <a href="/api/auth/signin?callbackUrl=%2Fsatici" className="gg-btn gg-btn-primary">Giriş yap</a>;
-  }
+  if (!token) redirect("/api/auth/signin?callbackUrl=%2Fsatici");
   const stores = (await api<Store[]>("/api/stores", token)) ?? [];
 
   async function magazaAc(formData: FormData) {

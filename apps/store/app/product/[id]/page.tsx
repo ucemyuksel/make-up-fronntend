@@ -9,11 +9,9 @@ const SWATCHES = ["#E7C4A0", "#D9A679", "#C98A5E", "#B06B45", "#8A4F33", "#5E332
 export default async function ProductDetail({ params }: { params: { id: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) {
-    return <a href="/api/auth/signin?callbackUrl=%2F" className="gg-btn gg-btn-primary">Giriş yap</a>;
-  }
-  const p = await api<Product>(`/api/products/${params.id}`, token);
-  if (!p) return <p>Ürün bulunamadı.</p>;
+  // Ürün detayı herkese açık (GET anonim — Cache Faz 2). Oturum varsa token gönderilir.
+  const p = await api<Product>(`/api/products/${params.id}`, token ?? "");
+  if (!p) return <p>Ürün bulunamadı. <a href="/" className="gg-see-all">← Mağaza</a></p>;
 
   return (
     <div style={{ maxWidth: 900 }}>

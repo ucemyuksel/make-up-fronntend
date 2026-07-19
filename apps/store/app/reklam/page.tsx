@@ -19,9 +19,7 @@ const DURUM: Record<string, { etiket: string; renk: string; bg: string }> = {
 export default async function ReklamPanel({ searchParams }: { searchParams: { ok?: string; hata?: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) {
-    return <a href="/api/auth/signin?callbackUrl=%2Freklam" className="gg-btn gg-btn-primary">Giriş yap</a>;
-  }
+  if (!token) redirect("/api/auth/signin?callbackUrl=%2Freklam");
 
   const advertiser = await adApi<Advertiser>("/api/advertisers/me", token);
 

@@ -10,9 +10,7 @@ export const metadata = { title: "Cache Yönetimi — GlamGuide" };
 export default async function CacheYonetim({ searchParams }: { searchParams: { ok?: string; hata?: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) {
-    return <a href="/api/auth/signin?callbackUrl=%2Fsatici%2Fcache" className="gg-btn gg-btn-primary">Giriş yap</a>;
-  }
+  if (!token) redirect("/api/auth/signin?callbackUrl=%2Fsatici%2Fcache");
   const stores = (await api<Store[]>("/api/stores", token)) ?? [];
 
   async function cacheTemizle(formData: FormData) {

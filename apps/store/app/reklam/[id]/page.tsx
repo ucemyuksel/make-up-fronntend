@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Badge } from "@makeup/ui";
+import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
 import { adApi, tl, type AdCampaign, type GeoStat } from "../../lib";
 
@@ -8,7 +9,7 @@ export const metadata = { title: "Kampanya Raporu — GlamGuide" };
 export default async function KampanyaRapor({ params }: { params: { id: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) return <a href="/api/auth/signin?callbackUrl=%2Freklam" className="gg-btn gg-btn-primary">Giriş yap</a>;
+  if (!token) redirect("/api/auth/signin?callbackUrl=%2Freklam");
 
   const c = await adApi<AdCampaign>(`/api/campaigns/${params.id}`, token);
   if (!c) return <p>Kampanya bulunamadı. <a href="/reklam" className="gg-see-all">← Reklam Paneli</a></p>;

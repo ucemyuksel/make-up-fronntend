@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Badge, Card, theme } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { GuidedCamera } from "./GuidedCamera";
 
@@ -39,14 +40,7 @@ export default async function GuidedPage({ params }: { params: { id: string } })
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
 
-  if (!token) {
-    return (
-      <div style={{ display: "grid", gap: 12, maxWidth: 420 }}>
-        <h1 style={{ color: theme.color.primaryDark }}>Adım adım makyaj</h1>
-        <a href={`/api/auth/signin?callbackUrl=%2F${recipeId}`} className="gg-btn gg-btn-primary">Giriş yap</a>
-      </div>
-    );
-  }
+  if (!token) redirect(`/api/auth/signin?callbackUrl=%2F${recipeId}`);
 
   // Önce mevcut oturumu al; yoksa (404) başlat. 403 → erişim yok (ücretli, satın alınmamış).
   let s = await call(`/api/recipes/${recipeId}/session`, "GET", token);

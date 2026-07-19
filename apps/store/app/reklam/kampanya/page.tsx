@@ -9,7 +9,7 @@ export const metadata = { title: "Yeni Kampanya — GlamGuide" };
 export default async function YeniKampanya({ searchParams }: { searchParams: { hata?: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) return <a href="/api/auth/signin?callbackUrl=%2Freklam%2Fkampanya" className="gg-btn gg-btn-primary">Giriş yap</a>;
+  if (!token) redirect("/api/auth/signin?callbackUrl=%2Freklam%2Fkampanya");
 
   const advertiser = await adApi<Advertiser>("/api/advertisers/me", token);
   if (!advertiser) redirect("/reklam"); // önce reklam veren kaydı

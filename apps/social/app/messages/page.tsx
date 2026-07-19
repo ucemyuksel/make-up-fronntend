@@ -1,6 +1,7 @@
 import * as React from "react";
 import { SectionHeader } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { api, timeAgo } from "../lib";
 
@@ -31,7 +32,7 @@ export default async function Messages({ searchParams }: { searchParams: { c?: s
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   if (!token) {
-    return <a href="/api/auth/signin?callbackUrl=%2Fmessages" className="gg-btn gg-btn-primary">Giriş yap</a>;
+    redirect("/api/auth/signin?callbackUrl=%2Fmessages");
   }
 
   const conversations = (await api<Conversation[]>(process.env.MESSAGING_API, "/api/conversations", token)) ?? [];

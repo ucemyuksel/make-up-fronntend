@@ -24,11 +24,15 @@ export type Reel = {
 };
 
 export async function api<T>(base: string | undefined, path: string, token: string): Promise<T | null> {
-  const res = await fetch(`${base}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  return res.ok ? ((await res.json()) as T) : null;
+  try {
+    const res = await fetch(`${base}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    return res.ok ? ((await res.json()) as T) : null;
+  } catch {
+    return null; // backend erişilemez → sayfayı çökertme
+  }
 }
 
 // Geçici görsel (placeholder — prod'da MinIO'daki gerçek gönderi/reel görseli).

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { SectionHeader } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { api, type Reel } from "../lib";
 import { ShareButton, SaveButton } from "../etkilesim";
@@ -9,7 +10,7 @@ export default async function ReelsPage() {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   if (!token) {
-    return <a href="/api/auth/signin?callbackUrl=%2Freels" className="gg-btn gg-btn-primary">Giriş yap</a>;
+    redirect("/api/auth/signin?callbackUrl=%2Freels");
   }
   const reels = (await api<Reel[]>(process.env.REELS_API, "/api/reels", token)) ?? [];
 
