@@ -56,7 +56,8 @@ export function AppShell({
 
       <div className="gg-content">
         <header className="gg-topbar">
-          <input className="gg-search" placeholder="Ürün, marka veya kategori ara..." />
+          <input className="gg-search" type="search" aria-label="Ürün, marka veya kategori ara"
+                 placeholder="Ürün, marka veya kategori ara..." />
           <span className="gg-topbar-spacer" />
           {/* Mesaj/bildirim erişimi yalnızca sol menüde — topbar sade tutuldu
               (eskiden burada da ikonlar vardı, menü + sağ bar ile tekrar ediyordu). */}

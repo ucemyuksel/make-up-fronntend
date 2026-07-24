@@ -107,7 +107,9 @@ export default function CartPage() {
         {kupon ? (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--gg-primary-soft)", color: "var(--gg-primary-dark)", borderRadius: 8, padding: "6px 10px", fontSize: 12.5 }}>
             <span>🎟️ {kupon} — {KUPONLAR[kupon].ad}</span>
-            <span onClick={() => { setKupon(null); setKuponGirdi(""); }} style={{ cursor: "pointer" }}>✕</span>
+            <button type="button" onClick={() => { setKupon(null); setKuponGirdi(""); }}
+                    aria-label="Kuponu kaldır"
+                    style={{ cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: 14 }}>✕</button>
           </div>
         ) : null}
         {kuponHata ? <div style={{ color: "#B42318", fontSize: 12.5 }}>{kuponHata}</div> : null}
@@ -165,11 +167,12 @@ export default function CartPage() {
                 <div style={{ fontWeight: 700, marginTop: 2 }}>{tl(i.priceAmount)}</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={stepBox} onClick={() => setQty(i.id, -1)}>−</span>
-                <strong style={{ minWidth: 18, textAlign: "center" }}>{i.qty}</strong>
-                <span style={stepBox} onClick={() => setQty(i.id, 1)}>+</span>
+                <button type="button" style={stepBox} onClick={() => setQty(i.id, -1)} aria-label={`${i.name} adedini azalt`}>−</button>
+                <strong style={{ minWidth: 18, textAlign: "center" }} aria-live="polite">{i.qty}</strong>
+                <button type="button" style={stepBox} onClick={() => setQty(i.id, 1)} aria-label={`${i.name} adedini artır`}>+</button>
               </div>
-              <span style={{ cursor: "pointer", color: "var(--gg-muted)" }} onClick={() => remove(i.id)}>🗑️</span>
+              <button type="button" onClick={() => remove(i.id)} aria-label={`${i.name} ürününü sepetten çıkar`}
+                      style={{ cursor: "pointer", color: "var(--gg-muted)", background: "none", border: "none", fontSize: 16 }}>🗑️</button>
             </div>
           ))}
 

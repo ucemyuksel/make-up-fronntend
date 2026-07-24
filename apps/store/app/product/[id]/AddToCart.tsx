@@ -26,9 +26,9 @@ export function AddToCart({ product }: { product: Omit<CartItem, "qty"> }) {
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <span style={box} onClick={() => setQty((q) => Math.max(1, q - 1))}>−</span>
-        <strong style={{ minWidth: 24, textAlign: "center" }}>{qty}</strong>
-        <span style={box} onClick={() => setQty((q) => q + 1)}>+</span>
+        <button type="button" style={box} onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Adedi azalt">−</button>
+        <strong style={{ minWidth: 24, textAlign: "center" }} aria-live="polite">{qty}</strong>
+        <button type="button" style={box} onClick={() => setQty((q) => q + 1)} aria-label="Adedi artır">+</button>
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <button className="gg-btn gg-btn-primary" style={{ flex: 1, justifyContent: "center" }} onClick={add}>
