@@ -2,6 +2,7 @@ import * as React from "react";
 import { Badge, MediaUpload } from "@makeup/ui";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
+import { saticiKapisi } from "../../yetki";
 import { adSend } from "../../lib";
 import { BolgeSecici } from "../../bilesenler/BolgeSecici";
 import { ButceSecici } from "../ButceSecici";
@@ -13,9 +14,8 @@ export const metadata = { title: "Reklam Ver — GlamGuide" };
  * backend'de otomatik açılır, ayrıca "kampanya tanımlama" adımı gerekmez.
  */
 export default async function ReklamVer({ searchParams }: { searchParams: { hata?: string } }) {
-  const session = await auth();
-  const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) redirect("/api/auth/signin?callbackUrl=%2Freklam%2Fkampanya");
+  // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
+  const { token } = await saticiKapisi("/reklam/kampanya");
 
   async function olustur(formData: FormData) {
     "use server";

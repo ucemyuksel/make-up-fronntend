@@ -2,14 +2,14 @@ import * as React from "react";
 import { Badge, MediaUpload } from "@makeup/ui";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
+import { saticiKapisi } from "../../yetki";
 import { api, send, type Category } from "../../lib";
 
 export const metadata = { title: "Ürün Tanımla — GlamGuide" };
 
 export default async function UrunTanimla({ searchParams }: { searchParams: { store?: string; ok?: string; hata?: string } }) {
-  const session = await auth();
-  const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) redirect("/api/auth/signin?callbackUrl=%2Fsatici");
+  // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
+  const { token } = await saticiKapisi("/satici");
   const store = searchParams.store;
   if (!store) return <p>Mağaza seçilmedi. <a href="/satici" className="gg-see-all">← Panele dön</a></p>;
 

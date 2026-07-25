@@ -2,15 +2,15 @@ import * as React from "react";
 import { Badge, SectionHeader } from "@makeup/ui";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
+import { saticiKapisi } from "../../yetki";
 import { api, send, type Campaign } from "../../lib";
 import { BolgeSecici } from "../../bilesenler/BolgeSecici";
 
 export const metadata = { title: "Kampanya Tanımla — GlamGuide" };
 
 export default async function KampanyaTanimla({ searchParams }: { searchParams: { store?: string; ok?: string; hata?: string } }) {
-  const session = await auth();
-  const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) redirect("/api/auth/signin?callbackUrl=%2Fsatici");
+  // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
+  const { token } = await saticiKapisi("/satici");
   const store = searchParams.store;
   if (!store) return <p>Mağaza seçilmedi. <a href="/satici" className="gg-see-all">← Panele dön</a></p>;
 

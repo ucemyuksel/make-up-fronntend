@@ -3,14 +3,14 @@ import { SectionHeader, Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../auth";
+import { saticiKapisi } from "../yetki";
 import { api, send, type Store } from "../lib";
 
 export const metadata = { title: "Satıcı Paneli — GlamGuide" };
 
 export default async function SaticiPanel({ searchParams }: { searchParams: { ok?: string; hata?: string } }) {
-  const session = await auth();
-  const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) redirect("/api/auth/signin?callbackUrl=%2Fsatici");
+  // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
+  const { token } = await saticiKapisi("/satici");
   const stores = (await api<Store[]>("/api/stores", token)) ?? [];
 
   async function magazaAc(formData: FormData) {

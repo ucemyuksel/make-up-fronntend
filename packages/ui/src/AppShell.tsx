@@ -20,7 +20,7 @@ const ADMIN_NAV = {
   href: `${ORIGINS.admin}/`,
 };
 
-// Yalnızca gerçekten var olan sayfalara link verilir (ölü menü öğesi yok).
+// Tüketici menüsü. Yalnızca gerçekten var olan sayfalara link verilir.
 const NAV = [
   { key: "home", label: "Ana Sayfa", icon: "🏠", href: `${ORIGINS.shell}/` },
   { key: "guide", label: "Adım Adım Makyaj", icon: "💄", href: `${ORIGINS.recipes}/` },
@@ -29,7 +29,23 @@ const NAV = [
   { key: "reels", label: "Reels", icon: "🎬", href: `${ORIGINS.social}/reels` },
   { key: "cart", label: "Sepetim", icon: "🛒", href: `${ORIGINS.store}/cart` },
   { key: "orders", label: "Siparişlerim", icon: "🧾", href: `${ORIGINS.store}/orders` },
+  { key: "messages", label: "Mesajlar", icon: "💬", href: `${ORIGINS.social}/messages` },
+  { key: "notifications", label: "Bildirimler", icon: "🔔", href: `${ORIGINS.social}/notifications` },
+  { key: "profile", label: "Profil", icon: "👤", href: `${ORIGINS.social}/profile` },
+];
+
+/**
+ * Satıcı menüsü. Mağaza sahibi işini yönetir — Reels ve Yüz Analizi gibi
+ * tüketici içerikleri menüsünde yer almaz. Reklam verme yalnızca burada.
+ */
+const SATICI_NAV = [
+  { key: "satici", label: "Satıcı Paneli", icon: "🏪", href: `${ORIGINS.store}/satici` },
+  { key: "urun", label: "Ürünlerim", icon: "📦", href: `${ORIGINS.store}/satici/urun` },
+  { key: "siparis", label: "Siparişler & Kargo", icon: "🚚", href: `${ORIGINS.store}/satici/siparis` },
+  { key: "yorum", label: "Ürün Yorumları", icon: "⭐", href: `${ORIGINS.store}/satici/yorum` },
+  { key: "skampanya", label: "Kampanyalar", icon: "🏷️", href: `${ORIGINS.store}/satici/kampanya` },
   { key: "reklam", label: "Reklam Ver", icon: "📣", href: `${ORIGINS.store}/reklam` },
+  { key: "store", label: "Mağazam", icon: "🛍️", href: `${ORIGINS.store}/` },
   { key: "messages", label: "Mesajlar", icon: "💬", href: `${ORIGINS.social}/messages` },
   { key: "notifications", label: "Bildirimler", icon: "🔔", href: `${ORIGINS.social}/notifications` },
   { key: "profile", label: "Profil", icon: "👤", href: `${ORIGINS.social}/profile` },
@@ -39,15 +55,21 @@ export function AppShell({
   active = "home",
   user = { name: "Melisa Güler" },
   isAdmin = false,
+  roles = [],
   children,
 }: {
   active?: string;
   user?: { name: string };
   /** ADMIN rolü varsa yönetim merkezi linki menüye eklenir. */
   isAdmin?: boolean;
+  /** Keycloak realm rolleri — menü buna göre kurulur. */
+  roles?: string[];
   children: React.ReactNode;
 }) {
-  const nav = isAdmin ? [...NAV, ADMIN_NAV] : NAV;
+  // Mağaza sahibi satıcı menüsünü görür; hem satıcı hem admin ise ikisi birleşir.
+  const satici = roles.includes("STORE_OWNER");
+  const temel = satici ? SATICI_NAV : NAV;
+  const nav = isAdmin || roles.includes("ADMIN") ? [...temel, ADMIN_NAV] : temel;
   return (
     <div className="gg-shell">
       <aside className="gg-sidebar">
@@ -57,14 +79,27 @@ export function AppShell({
         </a>
         {/* Aktif sekme konumdan otomatik (client); active prop SSR fallback'i. */}
         <ShellNav nav={nav} fallbackActive={active} />
-        <div className="gg-premium">
-          <div style={{ fontSize: 22 }}>👑</div>
-          <strong style={{ color: "var(--gg-primary-dark)" }}>Premium&apos;a Geç</strong>
-          <p>Özel içerikler, sınırsız reels ve kişiye özel öneriler seni bekliyor.</p>
-          <a href="/premium" className="gg-btn gg-btn-primary" style={{ width: "100%", justifyContent: "center" }}>
-            Premium&apos;u Keşfet
-          </a>
-        </div>
+        {/* Premium tüketiciye satılır; satıcıya bunun yerine mağaza özeti gösterilir. */}
+        {satici ? (
+          <div className="gg-premium">
+            <div style={{ fontSize: 22 }}>🏪</div>
+            <strong style={{ color: "var(--gg-primary-dark)" }}>Satıcı Hesabı</strong>
+            <p>Siparişlerini yönet, kampanya kur, reklam ver.</p>
+            <a href={`${ORIGINS.store}/satici`} className="gg-btn gg-btn-primary"
+               style={{ width: "100%", justifyContent: "center" }}>
+              Panele Git
+            </a>
+          </div>
+        ) : (
+          <div className="gg-premium">
+            <div style={{ fontSize: 22 }}>👑</div>
+            <strong style={{ color: "var(--gg-primary-dark)" }}>Premium&apos;a Geç</strong>
+            <p>Özel içerikler, sınırsız reels ve kişiye özel öneriler seni bekliyor.</p>
+            <a href="/premium" className="gg-btn gg-btn-primary" style={{ width: "100%", justifyContent: "center" }}>
+              Premium&apos;u Keşfet
+            </a>
+          </div>
+        )}
       </aside>
 
       <div className="gg-content">

@@ -11,12 +11,13 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // ADMIN rolü varsa menüye "Yönetim Merkezi" eklenir.
   const session = (await auth()) as { roles?: string[] } | null;
-  const isAdmin = session?.roles?.includes("ADMIN") ?? false;
+  const roles = session?.roles ?? [];
+  const isAdmin = roles.includes("ADMIN");
 
   return (
     <html lang="tr">
       <body>
-        <AppShell active="home" isAdmin={isAdmin}>{children}</AppShell>
+        <AppShell active="home" isAdmin={isAdmin} roles={roles}>{children}</AppShell>
       </body>
     </html>
   );

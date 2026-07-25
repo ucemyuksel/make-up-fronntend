@@ -9,12 +9,13 @@ export const metadata = { title: "Tarifler — GlamGuide" };
 // sayfa çıplak görünüyordu ("giriş yaptım ama hiçbir şey yok").
 export default async function RecipesLayout({ children }: { children: React.ReactNode }) {
   const session = (await auth()) as { roles?: string[] } | null;
-  const isAdmin = session?.roles?.includes("ADMIN") ?? false;
+  const roles = session?.roles ?? [];
+  const isAdmin = roles.includes("ADMIN");
 
   return (
     <html lang="tr">
       <body>
-        <AppShell active="guide" isAdmin={isAdmin}>{children}</AppShell>
+        <AppShell active="guide" isAdmin={isAdmin} roles={roles}>{children}</AppShell>
       </body>
     </html>
   );
