@@ -9,6 +9,15 @@ const ORIGINS = {
   recipes: process.env.NEXT_PUBLIC_RECIPES_URL || "http://localhost:3001",
   store: process.env.NEXT_PUBLIC_STORE_URL || "http://localhost:3002",
   social: process.env.NEXT_PUBLIC_SOCIAL_URL || "http://localhost:3003",
+  admin: process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3004",
+};
+
+/** Yalnız ADMIN rolüne gösterilir — sıradan kullanıcıya yönetim linki çıkmaz. */
+const ADMIN_NAV = {
+  key: "admin",
+  label: "Yönetim Merkezi",
+  icon: "🛡️",
+  href: `${ORIGINS.admin}/`,
 };
 
 // Yalnızca gerçekten var olan sayfalara link verilir (ölü menü öğesi yok).
@@ -29,12 +38,16 @@ const NAV = [
 export function AppShell({
   active = "home",
   user = { name: "Melisa Güler" },
+  isAdmin = false,
   children,
 }: {
   active?: string;
   user?: { name: string };
+  /** ADMIN rolü varsa yönetim merkezi linki menüye eklenir. */
+  isAdmin?: boolean;
   children: React.ReactNode;
 }) {
+  const nav = isAdmin ? [...NAV, ADMIN_NAV] : NAV;
   return (
     <div className="gg-shell">
       <aside className="gg-sidebar">
@@ -43,7 +56,7 @@ export function AppShell({
           <span className="txt">GlamGuide</span>
         </a>
         {/* Aktif sekme konumdan otomatik (client); active prop SSR fallback'i. */}
-        <ShellNav nav={NAV} fallbackActive={active} />
+        <ShellNav nav={nav} fallbackActive={active} />
         <div className="gg-premium">
           <div style={{ fontSize: 22 }}>👑</div>
           <strong style={{ color: "var(--gg-primary-dark)" }}>Premium&apos;a Geç</strong>

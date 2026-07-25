@@ -5,6 +5,17 @@ import type { JWT } from "next-auth/jwt";
 // Access token bitmeden bu kadar sn önce yenile (test için env ile şişirilebilir).
 const REFRESH_SKEW = Number(process.env.AUTH_REFRESH_SKEW ?? 60);
 
+/** Keycloak access token.indan realm rollerini cikarir (ADMIN menusu icin). */
+function rolesFrom(accessToken?: string): string[] {
+  try {
+    const payload = accessToken?.split(".")[1];
+    if (!payload) return [];
+    return JSON.parse(Buffer.from(payload, "base64url").toString()).realm_access?.roles ?? [];
+  } catch {
+    return [];
+  }
+}
+
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
     const res = await fetch(
@@ -56,6 +67,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.expiresAt = account.expires_at;
+        token.roles = rolesFrom(account.access_token);
         return token;
       }
       // Süresi dolmadıysa aynen kullan.
@@ -68,6 +80,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       (session as unknown as { accessToken?: string }).accessToken =
         token.accessToken as string | undefined;
+      (session as unknown as { roles?: string[] }).roles = token.roles as string[] | undefined;
       return session;
     },
   },
