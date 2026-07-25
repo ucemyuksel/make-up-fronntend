@@ -1,8 +1,18 @@
+import { redirect } from "next/navigation";
+
 export async function adminApi<T>(base: string, path: string, token: string): Promise<T | null> {
+  let response: Response;
   try {
-    const response = await fetch(`${base}${path}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
-    return response.ok ? await response.json() as T : null;
-  } catch { return null; }
+    response = await fetch(`${base}${path}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+  } catch {
+    return null; // servise ulaşılamıyor → sayfa boş listeyle ayakta kalır
+  }
+  // Oturum düştüyse boş liste göstermek yanıltıcı ("veri yok" sanılır) — girişe yolla.
+  // redirect() try/catch DIŞINDA çağrılmalı, aksi halde NEXT_REDIRECT yutulur.
+  if (response.status === 401 || response.status === 403) {
+    redirect("/api/auth/signin");
+  }
+  return response.ok ? await response.json() as T : null;
 }
 
 export async function adminPost(base: string, path: string, token: string) {
