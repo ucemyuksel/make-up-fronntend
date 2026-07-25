@@ -18,6 +18,8 @@ export type Store = {
 export type Campaign = {
   id: string; storeId: string; title: string; discountType: string;
   discountValue: number; startsAt: string | null; endsAt: string | null; active: boolean;
+  /** Boş liste = kampanya her bölgede geçerli. */
+  geoTargets?: { countryCode: string; regionCode: string | null; cityName: string | null }[];
 };
 
 export function tl(amount: number): string {

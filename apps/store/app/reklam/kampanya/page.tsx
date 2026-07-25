@@ -3,7 +3,7 @@ import { Badge, MediaUpload } from "@makeup/ui";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
 import { adSend } from "../../lib";
-import { BolgeSecici } from "../BolgeSecici";
+import { BolgeSecici } from "../../bilesenler/BolgeSecici";
 import { ButceSecici } from "../ButceSecici";
 
 export const metadata = { title: "Reklam Ver — GlamGuide" };

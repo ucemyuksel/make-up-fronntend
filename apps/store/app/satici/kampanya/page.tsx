@@ -3,6 +3,7 @@ import { Badge, SectionHeader } from "@makeup/ui";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
 import { api, send, type Campaign } from "../../lib";
+import { BolgeSecici } from "../../bilesenler/BolgeSecici";
 
 export const metadata = { title: "Kampanya Tanımla — GlamGuide" };
 
@@ -21,12 +22,28 @@ export default async function KampanyaTanimla({ searchParams }: { searchParams: 
     const t = (s as unknown as { accessToken?: string } | null)?.accessToken;
     if (!t) return;
     const gun = (v: FormDataEntryValue | null) => (v ? new Date(String(v)).toISOString() : null);
+
+    // Bölgesel kampanya: hiç hedef seçilmezse kampanya her yerde geçerli olur.
+    let geoTargets: { countryCode: string; regionCode: string | null; cityName: string | null }[] = [];
+    try {
+      const ham = JSON.parse(String(formData.get("geoTargets") ?? "[]")) as
+        { ulke: string; ilKod: string; ilAd: string }[];
+      geoTargets = ham.map((h) => ({
+        countryCode: h.ulke,
+        regionCode: h.ilKod || null,
+        cityName: h.ilAd || null,
+      }));
+    } catch {
+      geoTargets = [];
+    }
+
     const r = await send(`/api/stores/${store}/campaigns`, "POST", t, {
       title: String(formData.get("title") ?? "").trim(),
       discountType: String(formData.get("discountType") ?? "PERCENT"),
       discountValue: Number(formData.get("discountValue") ?? 0),
       startsAt: gun(formData.get("startsAt")),
       endsAt: gun(formData.get("endsAt")),
+      geoTargets,
     });
     redirect(r.ok ? `/satici/kampanya?store=${store}&ok=1` : `/satici/kampanya?store=${store}&hata=${encodeURIComponent(r.error ?? "hata")}`);
   }
@@ -64,6 +81,10 @@ export default async function KampanyaTanimla({ searchParams }: { searchParams: 
             <input name="endsAt" type="datetime-local" className="gg-search" />
           </label>
         </div>
+        <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--gg-border)", paddingTop: 12 }}>
+          <strong style={{ fontSize: 14 }}>🌍 Nerede geçerli olsun</strong>
+          <BolgeSecici />
+        </div>
         <button className="gg-btn gg-btn-primary" type="submit" style={{ justifySelf: "start" }}>Kampanyayı Başlat</button>
       </form>
 
@@ -76,6 +97,12 @@ export default async function KampanyaTanimla({ searchParams }: { searchParams: 
                 <strong>{c.title}</strong>
                 <div style={{ fontSize: 12.5, color: "var(--gg-muted)" }}>
                   {c.discountType === "PERCENT" ? `%${c.discountValue} indirim` : `₺${c.discountValue} indirim`}
+                  {" · "}
+                  {c.geoTargets && c.geoTargets.length > 0
+                    ? "📍 " + c.geoTargets
+                        .map((g) => [g.countryCode, g.cityName].filter(Boolean).join(" "))
+                        .join(", ")
+                    : "🌍 Tüm bölgeler"}
                 </div>
               </div>
               <span style={{ background: c.active ? "#E5F6EC" : "#F3F4F6", color: c.active ? "#1E9E5A" : "#6B7280", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>
