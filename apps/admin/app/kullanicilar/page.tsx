@@ -1,0 +1,3 @@
+import { auth } from "../../auth";
+import { redirect } from "next/navigation";
+export default async function Users() { const s = await auth() as { roles?: string[] } | null; if (!s?.roles?.includes("ADMIN")) redirect("/yetkisiz"); return <main style={{ maxWidth: 760, margin: "0 auto", padding: 32 }}><a href="/">← Yönetim merkezi</a><h1>Kullanıcı kısıtları</h1><section className="gg-card"><strong>Güvenli yaptırım modeli</strong><p>Kısıtlamalar hesap kimliği, neden, başlangıç/bitiş zamanı, uygulayan yönetici ve itiraz bağlantısıyla kaydedilmelidir. Kapsam: giriş, yorum, paylaşım, mesaj ve mağaza açma.</p><p style={{ color: "var(--gg-muted)" }}>Bu ekranda işlem başlatmak için user-service’e denetim kaydı ve geçici/kalıcı kısıt uçları eklenmelidir.</p></section></main>; }
