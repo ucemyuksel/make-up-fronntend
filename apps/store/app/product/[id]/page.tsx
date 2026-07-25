@@ -1,17 +1,27 @@
 import * as React from "react";
 import { Badge } from "@makeup/ui";
 import { auth } from "../../../auth";
-import { api, tl, type Product } from "../../lib";
+import { api, reviewApi, tl, type Product, type ReviewSummary } from "../../lib";
+import { Degerlendirmeler } from "../../bilesenler/Degerlendirmeler";
 import { AddToCart } from "./AddToCart";
 
 const SWATCHES = ["#E7C4A0", "#D9A679", "#C98A5E", "#B06B45", "#8A4F33", "#5E3320"];
 
-export default async function ProductDetail({ params }: { params: { id: string } }) {
+export default async function ProductDetail({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { yhata?: string };
+}) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   // Ürün detayı herkese açık (GET anonim — Cache Faz 2). Oturum varsa token gönderilir.
   const p = await api<Product>(`/api/products/${params.id}`, token ?? "");
   if (!p) return <p>Ürün bulunamadı. <a href="/" className="gg-see-all">← Mağaza</a></p>;
+
+  // Puan özeti başlıkta da gösterilir (eskiden sabit "4.8 (125)" yazıyordu).
+  const ozet = await reviewApi<ReviewSummary>(`/api/reviews/summary/PRODUCT/${p.id}`);
 
   return (
     <div style={{ maxWidth: 900 }}>
@@ -24,7 +34,15 @@ export default async function ProductDetail({ params }: { params: { id: string }
             <div style={{ color: "var(--gg-muted)" }}>{p.brand}</div>
           </div>
           <div style={{ fontSize: 13, color: "var(--gg-muted)" }}>
-            <span style={{ color: "var(--gg-star)" }}>★ 4.8</span> (125) · Stok: {p.stock}
+            {ozet && ozet.count > 0 ? (
+              <>
+                <span style={{ color: "var(--gg-star)" }}>★ {Number(ozet.average).toFixed(1)}</span>{" "}
+                ({ozet.count} değerlendirme)
+              </>
+            ) : (
+              <span>Henüz değerlendirilmedi</span>
+            )}{" "}
+            · Stok: {p.stock}
           </div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{tl(p.priceAmount)}</div>
 
@@ -45,6 +63,8 @@ export default async function ProductDetail({ params }: { params: { id: string }
           <AddToCart product={{ id: p.id, name: p.name, brand: p.brand, priceAmount: p.priceAmount }} />
         </div>
       </div>
+
+      <Degerlendirmeler tur="PRODUCT" subjectId={p.id} donusYolu={`/product/${p.id}`} hata={searchParams.yhata} />
     </div>
   );
 }

@@ -72,6 +72,67 @@ export async function send(
 }
 
 // ---------------------------------------------------------------------------
+// Değerlendirme (review-service) istemcisi + tipleri
+// ---------------------------------------------------------------------------
+export type Review = {
+  id: string;
+  subjectType: "PRODUCT" | "RECIPE";
+  subjectId: string;
+  userId: string;
+  rating: number;
+  text: string;
+  verifiedPurchase: boolean;
+  sellerReply: string | null;
+  sellerRepliedAt: string | null;
+  createdAt: string;
+};
+export type ReviewSummary = {
+  count: number; average: number;
+  five: number; four: number; three: number; two: number; one: number;
+};
+
+/** Okuma uçları girişsiz de çalışır; token varsa gönderilir. */
+export async function reviewApi<T>(path: string, token?: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${process.env.REVIEW_API}${path}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      cache: "no-store",
+    });
+    return res.ok ? ((await res.json()) as T) : null;
+  } catch {
+    return null; // review-service erişilemez → sayfa yorumsuz gösterilir
+  }
+}
+
+export async function reviewSend(
+  path: string,
+  token: string,
+  body: unknown,
+): Promise<{ ok: boolean; error?: string }> {
+  let res: Response;
+  try {
+    res = await fetch(`${process.env.REVIEW_API}${path}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+  } catch {
+    return { ok: false, error: "Sunucuya ulaşılamadı" };
+  }
+  if (res.ok) return { ok: true };
+  let error = `HTTP ${res.status}`;
+  try {
+    const j = await res.json();
+    error = j.message ?? error;
+  } catch { /* gövde yok */ }
+  return { ok: false, error };
+}
+
+/** Yıldız gösterimi: dolu/boş yıldız dizisi. */
+export const yildiz = (puan: number) => "★".repeat(Math.round(puan)) + "☆".repeat(5 - Math.round(puan));
+
+// ---------------------------------------------------------------------------
 // Reklam (ad-service) istemcisi + tipleri
 // ---------------------------------------------------------------------------
 export type Advertiser = { id: string; name: string; taxId?: string; storeId?: string; status: string; balance: number };
