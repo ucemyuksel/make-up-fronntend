@@ -23,19 +23,6 @@ export default async function ReklamPanel({ searchParams }: { searchParams: { ok
 
   const advertiser = await adApi<Advertiser>("/api/advertisers/me", token);
 
-  async function reklamVerenKaydet(formData: FormData) {
-    "use server";
-    const s = await auth();
-    const t = (s as unknown as { accessToken?: string } | null)?.accessToken;
-    if (!t) return;
-    const r = await adSend("/api/advertisers", "POST", t, {
-      name: String(formData.get("name") ?? "").trim(),
-      taxId: String(formData.get("taxId") ?? "").trim() || null,
-    });
-    revalidatePath("/reklam");
-    if (!r.ok) redirect(`/reklam?hata=${encodeURIComponent(r.error ?? "hata")}`);
-  }
-
   async function durumDegis(formData: FormData) {
     "use server";
     const s = await auth();
@@ -47,27 +34,33 @@ export default async function ReklamPanel({ searchParams }: { searchParams: { ok
     revalidatePath("/reklam");
   }
 
-  // Reklam veren kaydı yoksa: kayıt formu
+  // Henüz hiç reklam vermemiş: kayıt formu YOK — doğrudan reklam vermeye yollarız.
+  // Reklam veren kaydı ilk reklamda backend'de otomatik açılır; firma/vergi
+  // bilgisi fatura gerektiğinde tamamlanır.
   if (!advertiser) {
     return (
       <div style={{ maxWidth: 560, display: "grid", gap: 18 }}>
         <div>
-          <Badge>Reklam Paneli</Badge>
+          <Badge>Reklam</Badge>
           <h1 style={{ margin: "8px 0 0" }}>Reklam Vermeye Başla</h1>
           <p style={{ color: "var(--gg-muted)", marginTop: 6 }}>
-            Story aralarında bölgesel reklam göster. Önce reklam veren hesabını oluştur.
+            Story, akış ve Reels aralarında bölgesel reklam göster. Ön kayıt gerekmez —
+            bölgeni ve bütçeni seç, yayına gönder.
           </p>
         </div>
-        {searchParams.hata ? <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>Hata: {searchParams.hata}</div> : null}
-        <form action={reklamVerenKaydet} className="gg-card" style={{ display: "grid", gap: 12 }}>
-          <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Firma / Marka Adı
-            <input name="name" required className="gg-search" placeholder="Örnek Kozmetik A.Ş." />
-          </label>
-          <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Vergi No (opsiyonel)
-            <input name="taxId" className="gg-search" placeholder="1234567890" />
-          </label>
-          <button className="gg-btn gg-btn-primary" type="submit" style={{ justifySelf: "start" }}>Hesabı Oluştur</button>
-        </form>
+        {searchParams.hata ? (
+          <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
+            Hata: {searchParams.hata}
+          </div>
+        ) : null}
+        <a href="/reklam/kampanya" className="gg-btn gg-btn-primary" style={{ justifySelf: "start" }}>
+          + Reklam Ver
+        </a>
+        <div className="gg-card" style={{ fontSize: 13, color: "var(--gg-muted)", display: "grid", gap: 6 }}>
+          <span>📍 Ülke ve şehir bazında hedefleme</span>
+          <span>💰 Günlük bütçe — dolunca otomatik durur, aşım olmaz</span>
+          <span>📊 Gösterim, tık ve harcama raporu</span>
+        </div>
       </div>
     );
   }
@@ -84,7 +77,7 @@ export default async function ReklamPanel({ searchParams }: { searchParams: { ok
           <h1 style={{ margin: "8px 0 0" }}>{advertiser.name}</h1>
           <div style={{ fontSize: 12.5, color: "var(--gg-muted)" }}>Reklam veren · {advertiser.status}</div>
         </div>
-        <a href="/reklam/kampanya" className="gg-btn gg-btn-primary">+ Yeni Kampanya</a>
+        <a href="/reklam/kampanya" className="gg-btn gg-btn-primary">+ Reklam Ver</a>
       </div>
 
       {searchParams.ok ? <div style={{ background: "#E5F6EC", color: "#1E9E5A", padding: 12, borderRadius: 10 }}>✓ Kampanya oluşturuldu — onaydan sonra yayına çıkar.</div> : null}
