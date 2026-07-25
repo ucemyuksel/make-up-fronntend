@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 export type Post = {
   id: string;
   authorUserId: string;
@@ -24,15 +26,20 @@ export type Reel = {
 };
 
 export async function api<T>(base: string | undefined, path: string, token: string): Promise<T | null> {
+  let res: Response;
   try {
-    const res = await fetch(`${base}${path}`, {
+    res = await fetch(`${base}${path}`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
-    return res.ok ? ((await res.json()) as T) : null;
   } catch {
     return null; // backend erişilemez → sayfayı çökertme
   }
+  // Oturum düştüyse girişe yolla (redirect try/catch DIŞINDA olmalı).
+  if (token && (res.status === 401 || res.status === 403)) {
+    redirect("/api/auth/signin");
+  }
+  return res.ok ? ((await res.json()) as T) : null;
 }
 
 // Geçici görsel (placeholder — prod'da MinIO'daki gerçek gönderi/reel görseli).

@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 export type Product = {
   id: string;
   name: string;
@@ -23,15 +25,21 @@ export function tl(amount: number): string {
 }
 
 export async function api<T>(path: string, token: string): Promise<T | null> {
+  let res: Response;
   try {
-    const res = await fetch(`${process.env.STORE_API}${path}`, {
+    res = await fetch(`${process.env.STORE_API}${path}`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
-    return res.ok ? ((await res.json()) as T) : null;
   } catch {
     return null; // backend erişilemez → sayfayı çökertme
   }
+  // Oturum düştüyse girişe yolla ("servis çalışmıyor" demek yanıltıcı olurdu).
+  // redirect() try/catch DIŞINDA çağrılmalı — aksi halde NEXT_REDIRECT yutulur.
+  if (token && (res.status === 401 || res.status === 403)) {
+    redirect("/api/auth/signin");
+  }
+  return res.ok ? ((await res.json()) as T) : null;
 }
 
 /** Yazma isteği (satıcı ekranları). Durum + hata mesajı döner. */

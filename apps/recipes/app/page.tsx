@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Card, Badge, Button, theme } from "@makeup/ui";
+import { redirect } from "next/navigation";
 import { auth, signOut } from "../auth";
 
 type RecipeCard = {
@@ -13,10 +14,20 @@ type RecipeCard = {
 };
 
 async function fetchRecipes(token: string): Promise<RecipeCard[]> {
-  const res = await fetch(`${process.env.RECIPE_API}/api/recipes`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${process.env.RECIPE_API}/api/recipes`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+  } catch {
+    return []; // servise ulaşılamıyor
+  }
+  // Oturum düştüyse (token bayat / Keycloak yeniden başlamış) girişe yolla —
+  // "servis çalışmıyor" demek yanıltıcı olurdu.
+  if (res.status === 401 || res.status === 403) {
+    redirect("/api/auth/signin?callbackUrl=%2F");
+  }
   if (!res.ok) return [];
   return res.json();
 }
