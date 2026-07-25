@@ -1,133 +1,123 @@
 "use client";
 
 import * as React from "react";
+import { ULKELER, ONE_CIKAN_ULKELER, ulkeAdi } from "./ulkeler";
+import { BOLGELER, bolgeAdi, bolgeleriOlan } from "./bolgeler";
 
 /**
- * Bölgesel hedefleme seçici. Ülke seçilince il listesi ona göre değişir;
- * il boş bırakılırsa hedef "ülkenin tamamı" olur. Serbest metin yerine liste
- * kullanılır — "TR" yerine "Türkiye / İstanbul" yazım hatası olmadan seçilir.
+ * Coğrafi hedefleme seçici — dünyanın tamamı.
  *
- * Backend sözleşmesi (ad_geo_targets): countryCode = ISO-2, regionCode = il
- * plaka/eyalet kodu, cityName = il adı.
+ * Ülke seçilince bölge listesi ona göre değişir; bölge listesi olmayan
+ * ülkelerde serbest şehir girişi açılır. Hiç hedef eklenmezse "tüm dünya"
+ * anlamına gelir.
+ *
+ * Backend sözleşmesi: countryCode = ISO-2, regionCode = il/eyalet kodu
+ * (boş = ülke geneli), cityName = görünen ad.
  */
-
-type Il = { kod: string; ad: string };
-
-const ULKELER: { kod: string; ad: string; iller: Il[] }[] = [
-  {
-    kod: "TR",
-    ad: "Türkiye",
-    // Nüfus/reklam hacmi yüksek iller önde; tamamı plaka kodlarıyla.
-    iller: [
-      { kod: "34", ad: "İstanbul" }, { kod: "06", ad: "Ankara" }, { kod: "35", ad: "İzmir" },
-      { kod: "16", ad: "Bursa" }, { kod: "07", ad: "Antalya" }, { kod: "01", ad: "Adana" },
-      { kod: "42", ad: "Konya" }, { kod: "27", ad: "Gaziantep" }, { kod: "41", ad: "Kocaeli" },
-      { kod: "38", ad: "Kayseri" }, { kod: "55", ad: "Samsun" }, { kod: "20", ad: "Denizli" },
-      { kod: "31", ad: "Hatay" }, { kod: "45", ad: "Manisa" }, { kod: "61", ad: "Trabzon" },
-      { kod: "21", ad: "Diyarbakır" }, { kod: "44", ad: "Malatya" }, { kod: "65", ad: "Van" },
-      { kod: "33", ad: "Mersin" }, { kod: "09", ad: "Aydın" }, { kod: "48", ad: "Muğla" },
-      { kod: "10", ad: "Balıkesir" }, { kod: "26", ad: "Eskişehir" }, { kod: "22", ad: "Edirne" },
-      { kod: "54", ad: "Sakarya" }, { kod: "63", ad: "Şanlıurfa" }, { kod: "25", ad: "Erzurum" },
-    ],
-  },
-  {
-    kod: "DE",
-    ad: "Almanya",
-    iller: [
-      { kod: "BE", ad: "Berlin" }, { kod: "BY", ad: "Bayern" }, { kod: "NW", ad: "Nordrhein-Westfalen" },
-      { kod: "HE", ad: "Hessen" }, { kod: "HH", ad: "Hamburg" }, { kod: "BW", ad: "Baden-Württemberg" },
-    ],
-  },
-  {
-    kod: "NL",
-    ad: "Hollanda",
-    iller: [{ kod: "NH", ad: "Noord-Holland" }, { kod: "ZH", ad: "Zuid-Holland" }, { kod: "UT", ad: "Utrecht" }],
-  },
-  {
-    kod: "GB",
-    ad: "Birleşik Krallık",
-    iller: [{ kod: "LND", ad: "London" }, { kod: "MAN", ad: "Manchester" }, { kod: "BIR", ad: "Birmingham" }],
-  },
-  {
-    kod: "US",
-    ad: "ABD",
-    iller: [
-      { kod: "CA", ad: "California" }, { kod: "NY", ad: "New York" }, { kod: "TX", ad: "Texas" },
-      { kod: "FL", ad: "Florida" }, { kod: "IL", ad: "Illinois" },
-    ],
-  },
-  { kod: "AZ", ad: "Azerbaycan", iller: [{ kod: "BA", ad: "Bakı" }, { kod: "GA", ad: "Gəncə" }] },
-];
 
 type Hedef = { ulke: string; ilKod: string; ilAd: string };
 
 export function BolgeSecici() {
   const [hedefler, setHedefler] = React.useState<Hedef[]>([]);
   const [ulke, setUlke] = React.useState("TR");
-  const [il, setIl] = React.useState("");
+  const [bolge, setBolge] = React.useState("");
+  const [serbestSehir, setSerbestSehir] = React.useState("");
 
-  const secilenUlke = ULKELER.find((u) => u.kod === ulke)!;
+  const bolgeListesi = BOLGELER[ulke];
+  const listeVar = bolgeleriOlan(ulke);
+
+  // Öne çıkan pazarlar üstte ayrı grupta; kalanlar alfabetik.
+  const oneCikan = ONE_CIKAN_ULKELER
+    .map((k) => ULKELER.find((u) => u.kod === k))
+    .filter((u): u is { kod: string; ad: string } => Boolean(u));
+  const digerleri = ULKELER.filter((u) => !ONE_CIKAN_ULKELER.includes(u.kod));
 
   function ekle() {
-    const ilObj = secilenUlke.iller.find((i) => i.kod === il);
-    const yeni: Hedef = { ulke, ilKod: ilObj?.kod ?? "", ilAd: ilObj?.ad ?? "" };
-    // Aynı hedef iki kez eklenmesin.
-    const anahtar = (h: Hedef) => `${h.ulke}|${h.ilKod}`;
+    const yeni: Hedef = listeVar
+      ? { ulke, ilKod: bolge, ilAd: bolge ? bolgeAdi(ulke, bolge) : "" }
+      : { ulke, ilKod: "", ilAd: serbestSehir.trim() };
+
+    const anahtar = (h: Hedef) => `${h.ulke}|${h.ilKod}|${h.ilAd.toLowerCase()}`;
     if (hedefler.some((h) => anahtar(h) === anahtar(yeni))) return;
+
     setHedefler([...hedefler, yeni]);
-    setIl("");
+    setBolge("");
+    setSerbestSehir("");
   }
 
   function sil(i: number) {
     setHedefler(hedefler.filter((_, x) => x !== i));
   }
 
-  const adOf = (kod: string) => ULKELER.find((u) => u.kod === kod)?.ad ?? kod;
+  const etiket = (h: Hedef) =>
+    h.ilAd ? `${ulkeAdi(h.ulke)} · ${h.ilAd}` : `${ulkeAdi(h.ulke)} geneli`;
 
   return (
     <div style={{ display: "grid", gap: 10 }}>
       {/* Sunucuya tek alanda JSON olarak gider; server action parse eder. */}
       <input type="hidden" name="geoTargets" value={JSON.stringify(hedefler)} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8 }}>
-        <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, alignItems: "end" }}>
+        <label style={{ display: "grid", gap: 4, fontSize: 13, minWidth: 0 }}>
           Ülke
           <select className="gg-search" value={ulke}
-                  onChange={(e) => { setUlke(e.target.value); setIl(""); }}>
-            {ULKELER.map((u) => <option key={u.kod} value={u.kod}>{u.ad}</option>)}
+                  onChange={(e) => { setUlke(e.target.value); setBolge(""); setSerbestSehir(""); }}>
+            <optgroup label="Öne çıkan pazarlar">
+              {oneCikan.map((u) => <option key={u.kod} value={u.kod}>{u.ad}</option>)}
+            </optgroup>
+            <optgroup label="Tüm ülkeler">
+              {digerleri.map((u) => <option key={u.kod} value={u.kod}>{u.ad}</option>)}
+            </optgroup>
           </select>
         </label>
-        <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
-          Şehir / Bölge
-          <select className="gg-search" value={il} onChange={(e) => setIl(e.target.value)}>
-            <option value="">Tümü ({secilenUlke.ad} geneli)</option>
-            {secilenUlke.iller.map((i) => <option key={i.kod} value={i.kod}>{i.ad}</option>)}
-          </select>
-        </label>
-        <button type="button" className="gg-btn gg-btn-ghost" onClick={ekle} style={{ alignSelf: "end" }}>
-          + Ekle
-        </button>
+
+        {listeVar ? (
+          <label style={{ display: "grid", gap: 4, fontSize: 13, minWidth: 0 }}>
+            Şehir / Bölge
+            <select className="gg-search" value={bolge} onChange={(e) => setBolge(e.target.value)}>
+              <option value="">Tümü ({ulkeAdi(ulke)} geneli)</option>
+              {bolgeListesi.map((b) => <option key={b.kod} value={b.kod}>{b.ad}</option>)}
+            </select>
+          </label>
+        ) : (
+          <label style={{ display: "grid", gap: 4, fontSize: 13, minWidth: 0 }}>
+            Şehir (opsiyonel)
+            <input className="gg-search" value={serbestSehir} maxLength={80}
+                   placeholder={`Boş = ${ulkeAdi(ulke)} geneli`}
+                   onChange={(e) => setSerbestSehir(e.target.value)} />
+          </label>
+        )}
+
+        <button type="button" className="gg-btn gg-btn-ghost" onClick={ekle}>+ Ekle</button>
       </div>
 
       {hedefler.length === 0 ? (
-        <div style={{ fontSize: 12.5, color: "var(--gg-muted)" }}>
-          Hiç bölge eklemezsen reklam <strong>her yerde</strong> yayınlanır.
+        <div style={{
+          fontSize: 12.5, color: "var(--gg-muted)",
+          background: "var(--gg-primary-soft)", borderRadius: 8, padding: "8px 10px",
+        }}>
+          🌍 Şu an <strong>tüm dünya</strong> hedefleniyor. Belirli ülke/şehirlerle sınırlamak
+          istersen yukarıdan ekle.
         </div>
       ) : (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {hedefler.map((h, i) => (
-            <span key={`${h.ulke}-${h.ilKod}`} style={{
+            <span key={`${h.ulke}-${h.ilKod}-${h.ilAd}`} style={{
               background: "var(--gg-primary-soft)", color: "var(--gg-primary-dark)",
               borderRadius: 999, padding: "4px 10px", fontSize: 12.5,
               display: "inline-flex", alignItems: "center", gap: 6,
             }}>
-              📍 {adOf(h.ulke)}{h.ilAd ? ` · ${h.ilAd}` : " geneli"}
-              <button type="button" onClick={() => sil(i)} aria-label="Kaldır"
+              📍 {etiket(h)}
+              <button type="button" onClick={() => sil(i)} aria-label={`${etiket(h)} hedefini kaldır`}
                       style={{ border: 0, background: "transparent", cursor: "pointer", fontSize: 14, lineHeight: 1 }}>
                 ×
               </button>
             </span>
           ))}
+          <button type="button" className="gg-btn gg-btn-ghost" onClick={() => setHedefler([])}
+                  style={{ fontSize: 12 }}>
+            Tümünü temizle (dünya geneli)
+          </button>
         </div>
       )}
     </div>
