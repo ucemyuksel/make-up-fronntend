@@ -79,7 +79,10 @@ export default async function Feed() {
                   </button>
                 </form>
                 <DislikeButton id={p.id} />
-                <span>💬 {p.commentCount}</span>
+                {/* Yorumlar detay sayfasında (iş parçacıklı cevaplarla). */}
+                <a href={`/gonderi/${p.id}`} style={{ color: "var(--gg-muted)", textDecoration: "none" }}>
+                  💬 {p.commentCount}
+                </a>
                 <span style={{ marginLeft: "auto", display: "inline-flex", gap: 14, alignItems: "center" }}>
                   <ShareButton baslik={p.text.slice(0, 60)} />
                   <SaveButton id={p.id} tip="post" baslik={p.text.slice(0, 60)} />
