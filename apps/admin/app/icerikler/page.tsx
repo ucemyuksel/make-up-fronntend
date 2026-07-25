@@ -14,13 +14,14 @@ type Post = {
   likeCount: number;
   commentCount: number;
   createdAt: string;
-  visibility: "NORMAL" | "LIMITED" | "REMOVED";
+  visibility: "FEATURED" | "NORMAL" | "LIMITED" | "REMOVED";
   commentsClosed: boolean;
   moderationReason: string | null;
   moderatedAt: string | null;
 };
 
 const LEVELS = [
+  { value: "FEATURED", label: "Öne çıkar", hint: "Keşfette üst sırada gösterilir" },
   { value: "NORMAL", label: "Normal", hint: "Tam dağıtım" },
   { value: "LIMITED", label: "Sınırlı", hint: "Akışta kalır, keşfet/öneri dışı" },
   { value: "REMOVED", label: "Kaldırıldı", hint: "Yayından çıkarılır (silinmez)" },
@@ -31,7 +32,9 @@ const badge = (v: Post["visibility"]) =>
     ? { bg: "#FBE6E6", fg: "#B42318", text: "KALDIRILDI" }
     : v === "LIMITED"
       ? { bg: "#FCF2DE", fg: "#C98A1E", text: "SINIRLI" }
-      : { bg: "#E5F6EC", fg: "#1E9E5A", text: "NORMAL" };
+      : v === "FEATURED"
+        ? { bg: "#EDE7FB", fg: "#6D3FD1", text: "⭐ ÖNE ÇIKAN" }
+        : { bg: "#E5F6EC", fg: "#1E9E5A", text: "NORMAL" };
 
 const postApi = () => process.env.POST_API ?? "http://localhost:8085";
 const reelsApi = () => process.env.REELS_API ?? "http://localhost:8087";
@@ -47,7 +50,7 @@ type Reel = {
   likeCount: number;
   viewCount: number;
   createdAt: string;
-  visibility: "NORMAL" | "LIMITED" | "REMOVED";
+  visibility: "FEATURED" | "NORMAL" | "LIMITED" | "REMOVED";
   recommendable: boolean;
   moderationReason: string | null;
   moderatedAt: string | null;
