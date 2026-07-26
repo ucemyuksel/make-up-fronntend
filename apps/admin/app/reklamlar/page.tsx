@@ -2,6 +2,7 @@ import { auth } from "../../auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { adminApi, adminPost } from "../lib";
+import { DunyaHaritasi, type SehirSatiri, type UlkeSatiri } from "./DunyaHaritasi";
 
 export const metadata = { title: "Reklam Yönetimi — GlamGuide" };
 
@@ -62,6 +63,12 @@ export default async function Ads({
   const s = (await auth()) as { accessToken?: string; roles?: string[] } | null;
   if (!s?.accessToken) redirect("/");
   if (!s.roles?.includes("ADMIN")) redirect("/yetkisiz");
+
+  // Coğrafi pano verisi (ülke + şehir kırılımı tek çağrıda).
+  const geo = await adminApi<{
+    totalImpressions: number; totalClicks: number; totalSpend: number; ctr: number;
+    countries: UlkeSatiri[]; cities: SehirSatiri[];
+  }>(process.env.AD_API!, "/api/campaigns/moderation/geo", s.accessToken);
 
   const durum = searchParams.durum ?? "";
   const items =
@@ -134,6 +141,41 @@ export default async function Ads({
           </div>
         ))}
       </section>
+
+      {/* Coğrafi pano — gösterimlerin dünya üzerindeki dağılımı */}
+      {geo && geo.countries.length > 0 ? (
+        <section style={{ display: "grid", gap: 14 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+            <h2 style={{ fontSize: 17, margin: 0 }}>🌍 Coğrafi Dağılım</h2>
+            <span style={{ fontSize: 12.5, color: "var(--gg-muted)" }}>
+              {geo.totalImpressions.toLocaleString("tr-TR")} gösterim ·{" "}
+              {geo.totalClicks.toLocaleString("tr-TR")} tık · CTR {(geo.ctr * 100).toFixed(2)}% ·{" "}
+              {tl(Number(geo.totalSpend))}
+            </span>
+          </div>
+
+          <DunyaHaritasi ulkeler={geo.countries} sehirler={geo.cities} />
+
+          {/* Ülke kırılımı — haritanın yanındaki sıralı liste */}
+          <div style={{ display: "grid", gap: 6 }}>
+            {geo.countries.slice(0, 10).map((c) => {
+              const pay = geo.totalImpressions > 0 ? c.impressions / geo.totalImpressions : 0;
+              return (
+                <div key={c.countryCode}
+                     style={{ display: "grid", gridTemplateColumns: "42px 1fr 130px", gap: 10, alignItems: "center", fontSize: 12.5 }}>
+                  <strong>{c.countryCode}</strong>
+                  <span style={{ height: 8, background: "var(--gg-border, #EEE)", borderRadius: 999, overflow: "hidden" }}>
+                    <span style={{ display: "block", height: "100%", width: `${pay * 100}%`, background: "var(--gg-primary, #C56A7A)", borderRadius: 999 }} />
+                  </span>
+                  <span style={{ color: "var(--gg-muted)", textAlign: "right" }}>
+                    {c.impressions.toLocaleString("tr-TR")} gös · {c.clicks} tık · {(c.ctr * 100).toFixed(1)}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {SEKMELER.map((t) => (

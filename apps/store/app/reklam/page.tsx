@@ -3,6 +3,7 @@ import { SectionHeader, Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { auth } from "../../auth";
 import { saticiKapisi } from "../yetki";
+import { DunyaHaritasi, type SehirSatiri, type UlkeSatiri } from "../bilesenler/DunyaHaritasi";
 import { adApi, adSend, tl, type Advertiser, type AdCampaign, type LedgerDay } from "../lib";
 
 export const metadata = { title: "Reklam Paneli — GlamGuide" };
@@ -66,6 +67,11 @@ export default async function ReklamPanel({ searchParams }: { searchParams: { ok
 
   const campaigns = (await adApi<AdCampaign[]>("/api/campaigns/mine", token)) ?? [];
   const ledger = (await adApi<LedgerDay[]>("/api/advertisers/me/ledger", token)) ?? [];
+  // Reklamlarım nerede gösteriliyor — kendi coğrafi panom.
+  const geo = await adApi<{
+    totalImpressions: number; totalClicks: number; totalSpend: number; ctr: number;
+    countries: UlkeSatiri[]; cities: SehirSatiri[];
+  }>("/api/campaigns/geo/mine", token);
   const toplamHarcama = ledger.reduce((s, d) => s + Number(d.spend), 0);
 
   return (
@@ -87,6 +93,37 @@ export default async function ReklamPanel({ searchParams }: { searchParams: { ok
         <div className="gg-card"><div style={{ fontSize: 12, color: "var(--gg-muted)" }}>Toplam Harcama</div><strong style={{ fontSize: 22 }}>{tl(toplamHarcama)}</strong></div>
         <div className="gg-card"><div style={{ fontSize: 12, color: "var(--gg-muted)" }}>Bakiye</div><strong style={{ fontSize: 22 }}>{tl(advertiser.balance)}</strong></div>
       </div>
+
+      {/* Coğrafi pano — reklamlarım nerede gösteriliyor */}
+      {geo && geo.countries.length > 0 ? (
+        <section style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+            <h2 style={{ fontSize: 17, margin: 0 }}>🌍 Reklamlarım Nerede Gösteriliyor</h2>
+            <span style={{ fontSize: 12.5, color: "var(--gg-muted)" }}>
+              {geo.totalImpressions.toLocaleString("tr-TR")} gösterim ·{" "}
+              {geo.totalClicks.toLocaleString("tr-TR")} tık · CTR {(geo.ctr * 100).toFixed(2)}%
+            </span>
+          </div>
+          <DunyaHaritasi ulkeler={geo.countries} sehirler={geo.cities} />
+          <div style={{ display: "grid", gap: 6 }}>
+            {geo.countries.slice(0, 8).map((c) => {
+              const pay = geo.totalImpressions > 0 ? c.impressions / geo.totalImpressions : 0;
+              return (
+                <div key={c.countryCode}
+                     style={{ display: "grid", gridTemplateColumns: "42px 1fr 120px", gap: 10, alignItems: "center", fontSize: 12.5 }}>
+                  <strong>{c.countryCode}</strong>
+                  <span style={{ height: 8, background: "var(--gg-border)", borderRadius: 999, overflow: "hidden" }}>
+                    <span style={{ display: "block", height: "100%", width: `${pay * 100}%`, background: "var(--gg-primary)", borderRadius: 999 }} />
+                  </span>
+                  <span style={{ color: "var(--gg-muted)", textAlign: "right" }}>
+                    {c.impressions} gös · {c.clicks} tık
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {/* Kampanyalar */}
       <section>
