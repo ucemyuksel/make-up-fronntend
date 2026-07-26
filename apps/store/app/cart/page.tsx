@@ -37,6 +37,8 @@ export default function CartPage() {
   // Kurumsal fatura
   const [kurumsal, setKurumsal] = React.useState(false);
   const [siparisVerildi, setSiparisVerildi] = React.useState(false);
+  const [gonderiliyor, setGonderiliyor] = React.useState(false);
+  const [siparisHatasi, setSiparisHatasi] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setItems(JSON.parse(localStorage.getItem("gg_cart") || "[]"));
@@ -82,6 +84,34 @@ export default function CartPage() {
       {vurgu ? <strong>{deger}</strong> : <span>{deger}</span>}
     </div>
   );
+
+  /**
+   * Siparişi sunucuya yollar. Eskiden yalnızca ekranda "alındı" yazılıyordu;
+   * artık gerçekten sipariş oluşuyor ve satıcının kargo listesine düşüyor.
+   */
+  async function siparisVer(e: React.FormEvent) {
+    e.preventDefault();
+    setGonderiliyor(true);
+    setSiparisHatasi(null);
+    try {
+      const res = await fetch("/api/siparis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: items.map((i) => ({ productId: i.id, adet: i.qty })) }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setSiparisHatasi(j.error ?? "Sipariş oluşturulamadı");
+        return;
+      }
+      save([]); // sipariş oluştu → sepeti boşalt
+      setSiparisVerildi(true);
+    } catch {
+      setSiparisHatasi("Sunucuya ulaşılamadı");
+    } finally {
+      setGonderiliyor(false);
+    }
+  }
 
   if (siparisVerildi) {
     return (
@@ -199,7 +229,7 @@ export default function CartPage() {
       ) : (
         // ================= ADIM 2: ÖDEME & TESLİMAT =================
         <form
-          onSubmit={(e) => { e.preventDefault(); setSiparisVerildi(true); }}
+          onSubmit={siparisVer}
           style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 20, alignItems: "start" }}
           className="gg-checkout-grid"
         >
@@ -275,9 +305,15 @@ export default function CartPage() {
           {/* Sağ: özet + onay */}
           <div style={{ display: "grid", gap: 12 }}>
             {ozetKarti}
-            <button className="gg-btn gg-btn-primary" type="submit" style={{ justifyContent: "center" }}>
-              Siparişi Onayla · {tl(genelToplam)}
+            <button className="gg-btn gg-btn-primary" type="submit" disabled={gonderiliyor}
+                    style={{ justifyContent: "center" }}>
+              {gonderiliyor ? "Gönderiliyor…" : <>Siparişi Onayla · {tl(genelToplam)}</>}
             </button>
+            {siparisHatasi ? (
+              <div style={{ background: "#FBE6E6", color: "#B42318", padding: 10, borderRadius: 10, fontSize: 13 }}>
+                {siparisHatasi}
+              </div>
+            ) : null}
           </div>
         </form>
       )}
