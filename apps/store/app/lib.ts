@@ -10,7 +10,10 @@ export type Product = {
   stock: number;
   categoryId?: string;
 };
-export type Category = { id: string; name: string; slug: string };
+export type Category = {
+  id: string; name: string; slug: string;
+  subCategories?: { id: string; name: string; slug: string }[];
+};
 export type Store = {
   id: string; ownerUserId: string; name: string; slug: string; kind: string;
   colorHex: string; tagline: string; verified: boolean; productCount: number;

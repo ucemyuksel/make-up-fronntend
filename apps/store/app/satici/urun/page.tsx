@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
 import { saticiKapisi } from "../../yetki";
 import { api, send, type Category } from "../../lib";
+import { OzellikAlanlari } from "../../bilesenler/OzellikAlanlari";
 
 export const metadata = { title: "Ürün Tanımla — GlamGuide" };
 
@@ -21,6 +22,17 @@ export default async function UrunTanimla({ searchParams }: { searchParams: { st
     const t = (s as unknown as { accessToken?: string } | null)?.accessToken;
     if (!t) return;
     const catId = String(formData.get("categoryId") ?? "");
+    const altId = String(formData.get("subCategoryId") ?? "");
+
+    // Kategoriye özel özellikler tek gizli alanda JSON olarak gelir.
+    let attributes: Record<string, string> = {};
+    try {
+      const ham = JSON.parse(String(formData.get("attributes") ?? "{}"));
+      if (ham && typeof ham === "object") attributes = ham as Record<string, string>;
+    } catch {
+      attributes = {}; // bozuk gelirse backend zorunlu alan hatası verir
+    }
+
     const r = await send(`/api/stores/${store}/products`, "POST", t, {
       name: String(formData.get("name") ?? "").trim(),
       brand: String(formData.get("brand") ?? "").trim(),
@@ -30,8 +42,10 @@ export default async function UrunTanimla({ searchParams }: { searchParams: { st
       stock: Number(formData.get("stock") ?? 0),
       imageUrl: String(formData.get("imageUrl") ?? ""),
       categoryId: catId || null,
+      subCategoryId: altId || null,
       barcode: String(formData.get("barcode") ?? ""),
       variant: String(formData.get("variant") ?? ""),
+      attributes,
     });
     redirect(r.ok ? `/satici/urun?store=${store}&ok=1` : `/satici/urun?store=${store}&hata=${encodeURIComponent(r.error ?? "hata")}`);
   }
@@ -54,13 +68,10 @@ export default async function UrunTanimla({ searchParams }: { searchParams: { st
           <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Marka
             <input name="brand" className="gg-search" placeholder="Soft Colors" />
           </label>
-          <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Kategori
-            <select name="categoryId" className="gg-search">
-              <option value="">— Seç —</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </label>
         </div>
+
+        {/* Kategori + alt kategori + kategoriye özel özellikler (dinamik) */}
+        <OzellikAlanlari kategoriler={categories} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Fiyat (₺)
             <input name="price" type="number" step="0.01" min="0" required className="gg-search" placeholder="1249.00" />

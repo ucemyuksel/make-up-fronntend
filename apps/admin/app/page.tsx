@@ -13,6 +13,7 @@ export default async function AdminHome() {
     ["Mağaza talepleri", "Yeni mağazaları doğrula", "/magazalar"],
     ["Kullanıcı kısıtları", "Hesap yaptırımları ve itirazlar", "/kullanicilar"],
     ["İçerik dağıtımı", "Paylaşım ve video görünürlüğü", "/icerikler"],
+    ["Kategori & Özellik", "Kategori, alt kategori ve ürün özellikleri", "/kategoriler"],
   ];
   return <main style={{ maxWidth: 1000, margin: "0 auto", padding: "38px 20px" }}><p style={{ color: "var(--gg-primary)", fontWeight: 700 }}>GLAMGUIDE · YÖNETİM</p><h1>Platform Yönetim Merkezi</h1><p style={{ color: "var(--gg-muted)" }}>Tüm kararlar gerekçe ve denetim kaydıyla yürütülmelidir.</p><section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginTop: 26 }}>{cards.map(([title, detail, href]) => <a className="gg-card" style={{ color: "inherit", textDecoration: "none" }} href={href} key={href}><strong>{title}</strong><p style={{ color: "var(--gg-muted)", fontSize: 13 }}>{detail}</p><span className="gg-see-all">Yönet ›</span></a>)}</section></main>;
 }
