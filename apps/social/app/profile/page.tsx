@@ -60,7 +60,8 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
             <Stat value="392" label="Takip" />
           </div>
         </div>
-        <button className="gg-btn gg-btn-ghost">Profili Düzenle</button>
+        {/* Eskiden işlevsiz bir <button>'dı — artık düzenleme sayfasına gider. */}
+        <a href="/profile/duzenle" className="gg-btn gg-btn-ghost">Profili Düzenle</a>
       </div>
 
       {/* Öne çıkanlar */}
