@@ -6,3 +6,6 @@ export { SectionHeader, ProductCard, ReelCard, Stat } from "./cards";
 export { Carousel } from "./Carousel";
 export { MediaUpload } from "./MediaUpload";
 export { LoadingScreen, NotFoundScreen, ErrorScreen } from "./screens";
+export { GeoMap, type HaritaNoktasi } from "./GeoMap";
+export { DunyaHaritasi, type UlkeSatiri, type SehirSatiri } from "./DunyaHaritasi";
+export { koordinatBul } from "./koordinat";

@@ -2,7 +2,7 @@ import { auth } from "../../auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { adminApi, adminPost } from "../lib";
-import { DunyaHaritasi, type SehirSatiri, type UlkeSatiri } from "./DunyaHaritasi";
+import { DunyaHaritasi, type SehirSatiri, type UlkeSatiri } from "@makeup/ui";
 
 export const metadata = { title: "Reklam Yönetimi — GlamGuide" };
 

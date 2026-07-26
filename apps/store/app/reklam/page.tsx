@@ -1,9 +1,9 @@
 import * as React from "react";
-import { SectionHeader, Badge } from "@makeup/ui";
+import { SectionHeader, Badge, DunyaHaritasi, type SehirSatiri, type UlkeSatiri } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { auth } from "../../auth";
 import { saticiKapisi } from "../yetki";
-import { DunyaHaritasi, type SehirSatiri, type UlkeSatiri } from "../bilesenler/DunyaHaritasi";
+
 import { adApi, adSend, tl, type Advertiser, type AdCampaign, type LedgerDay } from "../lib";
 
 export const metadata = { title: "Reklam Paneli — GlamGuide" };
