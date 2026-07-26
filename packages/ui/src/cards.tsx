@@ -78,9 +78,21 @@ export function ProductCard({
   return href ? <a href={href}>{inner}</a> : inner;
 }
 
-export function ReelCard({ caption, meta, image }: { caption?: string; meta?: string; image?: string }) {
+export function ReelCard({
+  caption,
+  meta,
+  image,
+  href,
+}: {
+  caption?: string;
+  meta?: string;
+  image?: string;
+  /** Verilirse kart tıklanabilir olur (ana sayfadaki kartlar ölü görünüyordu). */
+  href?: string;
+}) {
+  const Sarmal: React.ElementType = href ? "a" : "div";
   return (
-    <div>
+    <Sarmal {...(href ? { href, style: { color: "inherit", textDecoration: "none", display: "block" } } : {})}>
       <div
         className="gg-reel"
         style={image ? { backgroundImage: `url(${image})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
@@ -93,7 +105,7 @@ export function ReelCard({ caption, meta, image }: { caption?: string; meta?: st
           {meta ? <div style={{ color: "var(--gg-muted)" }}>{meta}</div> : null}
         </div>
       ) : null}
-    </div>
+    </Sarmal>
   );
 }
 

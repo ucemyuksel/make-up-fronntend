@@ -66,10 +66,13 @@ export function AppShell({
   roles?: string[];
   children: React.ReactNode;
 }) {
-  // Mağaza sahibi satıcı menüsünü görür; hem satıcı hem admin ise ikisi birleşir.
+  // Mağaza sahibine ayrıca satıcı menüsü verilir; tüketici menüsü KALDIRILMAZ —
+  // aynı hesap hem alışveriş yapıyor hem satıyor. Kullanıcı kenar çubuğundaki
+  // mod anahtarıyla geçiş yapar.
   const satici = roles.includes("STORE_OWNER");
-  const temel = satici ? SATICI_NAV : NAV;
-  const nav = isAdmin || roles.includes("ADMIN") ? [...temel, ADMIN_NAV] : temel;
+  const yonetici = isAdmin || roles.includes("ADMIN");
+  const nav = yonetici ? [...NAV, ADMIN_NAV] : NAV;
+  const saticiNav = satici ? (yonetici ? [...SATICI_NAV, ADMIN_NAV] : SATICI_NAV) : undefined;
   return (
     <div className="gg-shell">
       <aside className="gg-sidebar">
@@ -78,7 +81,7 @@ export function AppShell({
           <span className="txt">GlamGuide</span>
         </a>
         {/* Aktif sekme konumdan otomatik (client); active prop SSR fallback'i. */}
-        <ShellNav nav={nav} fallbackActive={active} />
+        <ShellNav nav={nav} saticiNav={saticiNav} fallbackActive={active} />
         {/* Premium tüketiciye satılır; satıcıya bunun yerine mağaza özeti gösterilir. */}
         {satici ? (
           <div className="gg-premium">

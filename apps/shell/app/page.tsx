@@ -116,7 +116,8 @@ export default async function Dashboard() {
           <SectionHeader title={live ? `Sana Özel Öneriler (canlı · ${products.length})` : "Sana Özel Öneriler"} href={`${STORE}/`} />
           <div className="gg-grid cols-5">
             {products.map((p) => (
-              <ProductCard key={p.id} name={p.name} brand={p.brand} price={tl(p.priceAmount)} />
+              <ProductCard key={p.id} name={p.name} brand={p.brand} price={tl(p.priceAmount)}
+                           href={live ? `${STORE}/product/${p.id}` : `${STORE}/`} />
             ))}
           </div>
         </section>
@@ -124,7 +125,7 @@ export default async function Dashboard() {
         <section>
           <SectionHeader title="Trend Olan Reels" href={`${SOCIAL}/reels`} />
           <div className="gg-grid cols-4">
-            {reels.map((r) => <ReelCard key={r.caption} caption={r.caption} meta={r.meta} />)}
+            {reels.map((r) => <ReelCard key={r.caption} caption={r.caption} meta={r.meta} href={`${SOCIAL}/reels`} />)}
           </div>
         </section>
       </div>
@@ -176,7 +177,11 @@ export default async function Dashboard() {
               </div>
             </div>
           )}
-          <div style={{ marginTop: 10, background: "var(--gg-primary-soft)", color: "var(--gg-primary)", borderRadius: "var(--gg-r-pill)", padding: "8px 0", textAlign: "center", fontSize: 12.5, fontWeight: 700 }}>🚚 Kargoyu Takip Et</div>
+          {/* Eskiden düz <div>'di — tıklanmıyordu. Artık siparişlerime gider. */}
+          <a href={`${STORE}/orders`}
+             style={{ display: "block", marginTop: 10, background: "var(--gg-primary-soft)", color: "var(--gg-primary)", borderRadius: "var(--gg-r-pill)", padding: "8px 0", textAlign: "center", fontSize: 12.5, fontWeight: 700, textDecoration: "none" }}>
+            🚚 Kargoyu Takip Et
+          </a>
         </Card>
 
         <Card>
@@ -190,7 +195,9 @@ export default async function Dashboard() {
               }))
             : MOCK_MESSAGES
           ).map((m) => (
-            <div key={m.name + m.time} style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--gg-border)" }}>
+            /* Satırlar düz <div>'di — tıklanmıyordu. Artık sohbete gider. */
+            <a key={m.name + m.time} href={`${SOCIAL}/messages`}
+               style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--gg-border)", color: "inherit", textDecoration: "none" }}>
               <span style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--gg-primary-light)", flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{m.name}</div>
@@ -200,7 +207,7 @@ export default async function Dashboard() {
                 <div style={{ fontSize: 11, color: "var(--gg-muted)" }}>{m.time}</div>
                 {m.unread ? <span className="gg-badge-count">{m.unread}</span> : null}
               </div>
-            </div>
+            </a>
           ))}
         </Card>
       </aside>
