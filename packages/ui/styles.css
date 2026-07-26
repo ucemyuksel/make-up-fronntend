@@ -38,6 +38,30 @@ a { color: inherit; text-decoration: none; }
   font-weight: 800; font-size: 20px; color: var(--gg-primary); }
 .gg-logo-mark { display: inline-flex; width: 30px; height: 30px; border-radius: 9px;
   background: var(--gg-primary); color: #fff; align-items: center; justify-content: center; font-size: 16px; }
+/* --- Reels kartı ---------------------------------------------------------
+   Dikey video + altında sabit yükseklikli eylem satırı. Eylemler eskiden
+   satır içi <span>/<form> karışımıydı ve hizasız görünüyordu; hepsi aynı
+   .gg-icon-btn kalıbına oturur. */
+.gg-reel-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.gg-reel-video { width: 100%; aspect-ratio: 9 / 14; object-fit: cover; display: block;
+  background: #111; }
+.gg-reel-placeholder { display: grid; place-items: center; font-size: 34px;
+  background: linear-gradient(160deg, var(--gg-primary-soft), var(--gg-coral-soft)); }
+.gg-reel-body { padding: 10px 12px 12px; display: grid; gap: 8px; }
+.gg-reel-caption { margin: 0; font-size: 13.5px; font-weight: 600; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; min-height: 2.7em; }
+.gg-reel-actions { display: flex; align-items: center; gap: 14px; }
+.gg-reel-actions form { display: flex; }
+.gg-reel-actions-end { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; }
+/* Tüm eylem ögeleri (buton/span) aynı hizada ve aynı yükseklikte */
+.gg-icon-btn { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 2px;
+  background: none; border: 0; cursor: pointer; font-size: 13px; color: var(--gg-muted);
+  line-height: 1; font-family: inherit; }
+.gg-icon-btn:hover { color: var(--gg-text); }
+/* Dar kartlarda etiket gizlenir, ikon kalır — satır taşmaz */
+@media (max-width: 1180px) { .gg-icon-btn-label { display: none; } }
+
 /* Alışveriş ↔ Satıcı mod anahtarı (yalnız mağaza sahibi hesaplarda görünür) */
 .gg-mode-switch { display: flex; gap: 4px; padding: 4px; margin-bottom: 10px;
   background: var(--gg-bg); border-radius: var(--gg-r-md); }

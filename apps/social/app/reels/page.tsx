@@ -33,36 +33,44 @@ export default async function ReelsPage() {
       <SectionHeader title={`Reels (${reels.length})`} />
       <div className="gg-grid cols-3">
         {reels.map((r) => (
-          <div key={r.id} className="gg-card" style={{ padding: 0, overflow: "hidden" }}>
+          <article key={r.id} className="gg-card gg-reel-card">
             {r.videoUrl ? (
+              /* poster: ilk karede siyah kutu yerine kapak görseli görünsün */
               <video
                 src={r.videoUrl}
+                poster={r.thumbnailUrl ?? undefined}
                 controls
                 loop
                 muted
                 playsInline
                 preload="metadata"
-                style={{ width: "100%", aspectRatio: "9/12", objectFit: "cover", display: "block", background: "#000" }}
+                className="gg-reel-video"
               />
             ) : (
-              <div style={{ aspectRatio: "9/12", background: "linear-gradient(160deg, var(--gg-primary-soft), var(--gg-coral-soft))", display: "grid", placeItems: "center", fontSize: 30 }}>🎬</div>
+              <div className="gg-reel-video gg-reel-placeholder">🎬</div>
             )}
-            <div style={{ padding: 12 }}>
-              <p style={{ margin: "0 0 8px", fontSize: 13.5, fontWeight: 600 }}>{r.caption}</p>
-              <div style={{ display: "flex", gap: 12, alignItems: "center", fontSize: 13, color: "var(--gg-muted)" }}>
-                <form action={likeReel.bind(null, r.id)} style={{ display: "inline" }}>
-                  <button type="submit" title="Beğen" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--gg-muted)" }}>
-                    ❤️ {r.likeCount}
+
+            <div className="gg-reel-body">
+              <p className="gg-reel-caption">{r.caption}</p>
+
+              <div className="gg-reel-actions">
+                <form action={likeReel.bind(null, r.id)}>
+                  <button type="submit" className="gg-icon-btn" title="Beğen" aria-label="Beğen">
+                    <span aria-hidden="true">❤️</span>
+                    <span>{r.likeCount}</span>
                   </button>
                 </form>
-                <span>👁 {r.viewCount}</span>
-                <span style={{ marginLeft: "auto", display: "inline-flex", gap: 12, alignItems: "center" }}>
+                <span className="gg-icon-btn" title="İzlenme">
+                  <span aria-hidden="true">👁</span>
+                  <span>{r.viewCount}</span>
+                </span>
+                <span className="gg-reel-actions-end">
                   <ShareButton baslik={r.caption} />
                   <SaveButton id={r.id} tip="reel" baslik={r.caption} />
                 </span>
               </div>
             </div>
-          </div>
+          </article>
         ))}
       </div>
       {reels.length === 0 && <p style={{ color: "var(--gg-muted)" }}>Reel yok.</p>}

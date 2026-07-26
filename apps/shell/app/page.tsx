@@ -7,24 +7,9 @@ const CATEGORIES = [
   ["🧴", "Cilt Bakımı"], ["💇", "Saç"], ["🌷", "Parfüm"], ["⋯", "Tümü"],
 ];
 
-// Oturum yokken gösterilen örnek içerik (mockup ile birebir).
-const MOCK_PRODUCTS = [
-  { id: "m1", name: "Nude Far Paleti", brand: "Soft Colors", priceAmount: 1249 },
-  { id: "m2", name: "Double Wear Fondöten", brand: "Estée Lauder", priceAmount: 1599 },
-  { id: "m3", name: "Mat Ruj - Velvet Teddy", brand: "MAC", priceAmount: 899 },
-  { id: "m4", name: "Lash Sensational", brand: "Maybelline", priceAmount: 439.9 },
-  { id: "m5", name: "Vanilla Highlighter", brand: "Becca", priceAmount: 699 },
-];
-const MOCK_MESSAGES = [
-  { name: "İrem Kaya", text: "Ürün linkini atabilir misin?", time: "10:30", unread: 2 },
-  { name: "Melisa A.", text: "Harika, teşekkürler! 💕", time: "09:45", unread: 1 },
-  { name: "Sena Yıldız", text: "Tamamdır görüşürüz 😊", time: "Dün", unread: 0 },
-];
-const MOCK_REELS = [
-  { caption: "Doğal Günlük Makyaj", meta: "12 Adım" },
-  { caption: "Bronz & Glow Makyaj", meta: "10 Adım" },
-  { caption: "Dumanlı Göz Makyajı", meta: "11 Adım" },
-];
+// Sahte içerik YOK. Ana sayfa yalnızca veritabanındaki gerçek veriyi gösterir;
+// veri yoksa boş durum yazılır. (Eskiden mock mesaj/ürün/reels gösteriliyordu ve
+// mesajlar sayfasıyla tutarsız görünüyordu.)
 
 // Zone origin'leri (AppShell ile aynı mantık) — zone'lar arası linkler tam URL.
 const STORE = process.env.NEXT_PUBLIC_STORE_URL || "http://localhost:3002";
@@ -58,10 +43,10 @@ export default async function Dashboard() {
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   const live = Boolean(token);
 
-  // Canlı veri (oturum varsa) — her widget kendi servisinden.
-  let products = MOCK_PRODUCTS as { id: string; name: string; brand: string; priceAmount: number }[];
+  // Canlı veri — her widget kendi servisinden. Oturum yoksa listeler boş kalır.
+  let products: { id: string; name: string; brand: string; priceAmount: number }[] = [];
   let conversations: { id: string; otherUserId: string; lastMessageText: string | null; lastMessageAt: string | null; unread: number }[] = [];
-  let reels = MOCK_REELS as { caption: string; meta?: string }[];
+  let reels: { id?: string; caption: string; meta?: string }[] = [];
   let postCount: number | null = null;
   let lastOrder: { id: string; status: string; amountTry: number } | null = null;
 
@@ -125,8 +110,13 @@ export default async function Dashboard() {
         <section>
           <SectionHeader title="Trend Olan Reels" href={`${SOCIAL}/reels`} />
           <div className="gg-grid cols-4">
-            {reels.map((r) => <ReelCard key={r.caption} caption={r.caption} meta={r.meta} href={`${SOCIAL}/reels`} />)}
+            {reels.map((r) => <ReelCard key={r.id ?? r.caption} caption={r.caption} meta={r.meta} href={`${SOCIAL}/reels`} />)}
           </div>
+          {reels.length === 0 ? (
+            <p style={{ color: "var(--gg-muted)", fontSize: 13.5 }}>
+              {live ? "Henüz video yok." : "Videoları görmek için giriş yap."}
+            </p>
+          ) : null}
         </section>
       </div>
 
@@ -186,15 +176,19 @@ export default async function Dashboard() {
 
         <Card>
           <SectionHeader title={live ? "Son Mesajlar (canlı)" : "Son Mesajlar"} href={`${SOCIAL}/messages`} small />
-          {(live && conversations.length > 0
-            ? conversations.map((cv) => ({
-                name: "Kullanıcı " + cv.otherUserId.slice(0, 4).toUpperCase(),
-                text: cv.lastMessageText ?? "—",
-                time: cv.lastMessageAt ? timeAgo(cv.lastMessageAt) : "",
-                unread: cv.unread,
-              }))
-            : MOCK_MESSAGES
-          ).map((m) => (
+          {conversations.length === 0 ? (
+            <p style={{ fontSize: 12.5, color: "var(--gg-muted)", margin: "8px 0 0" }}>
+              {live ? "Henüz mesajın yok." : "Mesajlarını görmek için giriş yap."}
+            </p>
+          ) : null}
+          {conversations
+            .map((cv) => ({
+              name: "Kullanıcı " + cv.otherUserId.slice(0, 4).toUpperCase(),
+              text: cv.lastMessageText ?? "—",
+              time: cv.lastMessageAt ? timeAgo(cv.lastMessageAt) : "",
+              unread: cv.unread,
+            }))
+            .map((m) => (
             /* Satırlar düz <div>'di — tıklanmıyordu. Artık sohbete gider. */
             <a key={m.name + m.time} href={`${SOCIAL}/messages`}
                style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--gg-border)", color: "inherit", textDecoration: "none" }}>

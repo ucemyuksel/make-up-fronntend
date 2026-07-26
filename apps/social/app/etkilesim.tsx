@@ -29,8 +29,9 @@ export function ShareButton({ baslik, metin, url }: { baslik: string; metin?: st
   const enc = encodeURIComponent;
   return (
     <span style={{ position: "relative", display: "inline-flex" }}>
-      <button onClick={paylas} title="Paylaş" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "var(--gg-muted)" }}>
-        ↗ Paylaş
+      <button onClick={paylas} title="Paylaş" aria-label="Paylaş" className="gg-icon-btn">
+        <span aria-hidden="true">↗</span>
+        <span className="gg-icon-btn-label">Paylaş</span>
       </button>
       {acik && (
         <span style={{ position: "absolute", bottom: "120%", right: 0, background: "#fff", border: "1px solid var(--gg-border)", borderRadius: 10, boxShadow: "0 4px 14px rgba(0,0,0,.12)", padding: 8, display: "grid", gap: 4, zIndex: 20, minWidth: 170 }}>
@@ -65,8 +66,12 @@ export function SaveButton({ id, tip, baslik }: Kayit) {
 
   return (
     <button onClick={degistir} title={kayitli ? "Kaydedilenlerden çıkar" : "Kaydet"}
-            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, color: kayitli ? "var(--gg-primary)" : "var(--gg-muted)" }}>
-      {kayitli ? "🔖 Kaydedildi" : "🔖"}
+            aria-label={kayitli ? "Kaydedilenlerden çıkar" : "Kaydet"}
+            aria-pressed={kayitli}
+            className="gg-icon-btn"
+            style={{ color: kayitli ? "var(--gg-primary)" : undefined }}>
+      <span aria-hidden="true">🔖</span>
+      {kayitli ? <span className="gg-icon-btn-label">Kaydedildi</span> : null}
     </button>
   );
 }
@@ -113,7 +118,16 @@ export function DislikeButton({ id }: { id: string }) {
 }
 
 /** Hikâye şeridi + tam ekran görüntüleyici (ilerleme çubuklu, otomatik geçiş). */
-export type Hikaye = { ad: string; metin: string; renk: string };
+export type Hikaye = {
+  ad: string;
+  metin: string;
+  renk: string;
+  /** Gerçek hikaye medyası (post-service). Yoksa düz renk zemin gösterilir. */
+  medyaUrl?: string;
+  medyaTuru?: string;
+  /** Doluysa halka tıklanınca görüntüleyici yerine bu adrese gidilir (hikaye paylaş). */
+  href?: string;
+};
 
 type ServedAd = {
   campaignId: string; advertiserName: string; placement: string;
@@ -153,14 +167,46 @@ export function StoryBar({ hikayeler }: { hikayeler: Hikaye[] }) {
   return (
     <>
       <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 4 }}>
-        {hikayeler.map((s, i) => (
-          <button key={s.ad + i} onClick={() => setAktif(i)} style={{ display: "grid", justifyItems: "center", gap: 6, minWidth: 62, background: "none", border: "none", cursor: "pointer" }}>
-            <span style={{ width: 58, height: 58, borderRadius: "50%", padding: 2, background: i === 0 ? "var(--gg-border)" : "linear-gradient(135deg, var(--gg-primary), var(--gg-coral))" }}>
-              <span style={{ display: "block", width: "100%", height: "100%", borderRadius: "50%", background: s.renk, border: "2px solid #fff" }} />
+        {hikayeler.map((s, i) => {
+          // Halka içi: gerçek medya varsa küçük önizleme, yoksa düz renk.
+          const ic = (
+            <span style={{ display: "block", width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", background: s.renk, border: "2px solid #fff" }}>
+              {s.medyaUrl && s.medyaTuru !== "VIDEO" ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={s.medyaUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : s.medyaUrl ? (
+                <video src={s.medyaUrl} muted playsInline preload="metadata"
+                       style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : null}
             </span>
-            <span style={{ fontSize: 11.5, whiteSpace: "nowrap", color: "var(--gg-text)" }}>{s.ad}</span>
-          </button>
-        ))}
+          );
+          const halka = (
+            <span style={{ width: 58, height: 58, borderRadius: "50%", padding: 2, display: "block", background: s.href ? "var(--gg-border)" : "linear-gradient(135deg, var(--gg-primary), var(--gg-coral))" }}>
+              {ic}
+            </span>
+          );
+          const etiket = <span style={{ fontSize: 11.5, whiteSpace: "nowrap", color: "var(--gg-text)" }}>{s.ad}</span>;
+          const kutu: React.CSSProperties = {
+            display: "grid", justifyItems: "center", gap: 6, minWidth: 62,
+            background: "none", border: "none", cursor: "pointer", textDecoration: "none",
+          };
+
+          // "Hikaye paylaş" halkası görüntüleyici açmaz, paylaşma sayfasına gider.
+          return s.href ? (
+            <a key={s.ad + i} href={s.href} style={kutu} aria-label="Hikaye paylaş">
+              <span style={{ position: "relative", display: "block" }}>
+                {halka}
+                <span style={{ position: "absolute", right: -2, bottom: -2, width: 20, height: 20, borderRadius: "50%", background: "var(--gg-primary)", color: "#fff", fontSize: 14, lineHeight: "20px", textAlign: "center", border: "2px solid #fff" }}>+</span>
+              </span>
+              {etiket}
+            </a>
+          ) : (
+            <button key={s.ad + i} onClick={() => setAktif(i)} style={kutu}>
+              {halka}
+              {etiket}
+            </button>
+          );
+        })}
       </div>
       {aktif !== null && <StoryViewer hikayeler={hikayeler} reklamlar={reklamlar} baslangic={aktif} kapat={() => setAktif(null)} />}
     </>

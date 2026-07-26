@@ -18,6 +18,7 @@ export type Reel = {
   authorAvatarColorHex: string | null;
   caption: string;
   videoUrl: string;
+  thumbnailUrl: string | null;
   likeCount: number;
   viewCount: number;
   shareCount: number;

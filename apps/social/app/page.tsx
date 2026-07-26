@@ -5,6 +5,16 @@ import { auth } from "../auth";
 import { api, timeAgo, authorName, yazarAdi, img, type Post, type Reel } from "./lib";
 import { StoryBar, ShareButton, SaveButton, DislikeButton, type Hikaye } from "./etkilesim";
 
+/** post-service /api/stories yanıtı. */
+type ApiStory = {
+  id: string;
+  authorUserId: string;
+  mediaUrl: string;
+  mediaType: string;
+  text: string;
+  backgroundHex: string | null;
+};
+
 const RENKLER = ["#F6C6D8", "#EFB3C8", "#F3D9DE", "#E8B48F", "#E79A9A", "#C56A7A", "#F0C6A0", "#DCA8B9"];
 
 export default async function Feed() {
@@ -22,18 +32,22 @@ export default async function Feed() {
     );
   }
 
-  const [posts, reels] = await Promise.all([
+  const [posts, reels, storiesRaw] = await Promise.all([
     api<Post[]>(process.env.POST_API, "/api/posts", token),
     api<Reel[]>(process.env.REELS_API, "/api/reels", token),
+    api<ApiStory[]>(process.env.POST_API, "/api/stories", token),
   ]);
 
-  // Hikâyeler: son gönderilerden türetilir (ayrı story backend'i yok — dürüst MVP).
+  // Hikâyeler artık gerçek: post-service'teki stories tablosundan gelir ve
+  // 24 saat sonra kendiliğinden düşer. İlk halka her zaman "hikaye paylaş".
   const hikayeler: Hikaye[] = [
-    { ad: "Sen", metin: "Hikayeni paylaşmak için gönderi oluştur ✨", renk: "#F3D9DE" },
-    ...(posts ?? []).slice(0, 7).map((p, i) => ({
-      ad: yazarAdi(p, i),
-      metin: p.text,
-      renk: p.authorAvatarColorHex ?? RENKLER[i % RENKLER.length],
+    { ad: "Hikayen", metin: "Hikaye paylaş ✨", renk: "#F3D9DE", href: "/hikaye" },
+    ...(storiesRaw ?? []).slice(0, 12).map((s, i) => ({
+      ad: `Kullanıcı ${s.authorUserId.slice(0, 4).toUpperCase()}`,
+      metin: s.text,
+      renk: s.backgroundHex ?? RENKLER[i % RENKLER.length],
+      medyaUrl: s.mediaUrl,
+      medyaTuru: s.mediaType,
     })),
   ];
 
