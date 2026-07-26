@@ -17,7 +17,21 @@ const DURUM: Record<string, { etiket: string; renk: string; bg: string }> = {
   DRAFT: { etiket: "Taslak", renk: "#6B7280", bg: "#F1F1F3" },
 };
 
-export default async function ReklamPanel({ searchParams }: { searchParams: { ok?: string; hata?: string } }) {
+/** Satıcı sekmesi — eski/biten reklamlar da görülebilsin. */
+const SEKMELER: { key: string; label: string }[] = [
+  { key: "", label: "Tümü" },
+  { key: "ACTIVE", label: "Yayında" },
+  { key: "PENDING", label: "Onay bekleyen" },
+  { key: "PAUSED", label: "Duraklatılan" },
+  { key: "ENDED", label: "Sona eren" },
+  { key: "REJECTED", label: "Reddedilen" },
+];
+
+export default async function ReklamPanel({
+  searchParams,
+}: {
+  searchParams: { ok?: string; hata?: string; durum?: string };
+}) {
   // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
   const { token } = await saticiKapisi("/reklam");
 
@@ -65,7 +79,12 @@ export default async function ReklamPanel({ searchParams }: { searchParams: { ok
     );
   }
 
-  const campaigns = (await adApi<AdCampaign[]>("/api/campaigns/mine", token)) ?? [];
+  const tumKampanyalar = (await adApi<AdCampaign[]>("/api/campaigns/mine", token)) ?? [];
+  const durum = searchParams.durum ?? "";
+  // Süzgeç istemci tarafında: reklam veren kendi kampanyalarının tamamını zaten
+  // çekiyor, ayrı bir istek atmaya gerek yok.
+  const campaigns = durum ? tumKampanyalar.filter((c) => c.status === durum) : tumKampanyalar;
+  const sayim = (d: string) => (d ? tumKampanyalar.filter((c) => c.status === d).length : tumKampanyalar.length);
   const ledger = (await adApi<LedgerDay[]>("/api/advertisers/me/ledger", token)) ?? [];
   // Reklamlarım nerede gösteriliyor — kendi coğrafi panom.
   const geo = await adApi<{
@@ -127,7 +146,19 @@ export default async function ReklamPanel({ searchParams }: { searchParams: { ok
 
       {/* Kampanyalar */}
       <section>
-        <SectionHeader title={`Kampanyalarım (${campaigns.length})`} />
+        <SectionHeader title={`Reklamlarım (${campaigns.length})`} />
+
+        {/* Durum sekmeleri — biten/reddedilen eski reklamlar da görülebilsin. */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "0 0 12px" }}>
+          {SEKMELER.map((t) => (
+            <a key={t.key} href={t.key ? `/reklam?durum=${t.key}` : "/reklam"}
+               className={`gg-btn ${durum === t.key ? "gg-btn-primary" : "gg-btn-ghost"}`}
+               style={{ fontSize: 12.5, padding: "5px 12px" }}>
+              {t.label} ({sayim(t.key)})
+            </a>
+          ))}
+        </div>
+
         <div style={{ display: "grid", gap: 12 }}>
           {campaigns.map((c) => {
             const d = DURUM[c.status] ?? DURUM.DRAFT;

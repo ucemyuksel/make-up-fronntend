@@ -58,7 +58,7 @@ const hedef = (g: GeoTarget[]) =>
 export default async function Ads({
   searchParams,
 }: {
-  searchParams: { durum?: string; ok?: string; hata?: string };
+  searchParams: { durum?: string; ok?: string; hata?: string; q?: string };
 }) {
   const s = (await auth()) as { accessToken?: string; roles?: string[] } | null;
   if (!s?.accessToken) redirect("/");
@@ -68,13 +68,24 @@ export default async function Ads({
   const geo = await adminApi<{
     totalImpressions: number; totalClicks: number; totalSpend: number; ctr: number;
     countries: UlkeSatiri[]; cities: SehirSatiri[];
-  }>(process.env.AD_API!, "/api/campaigns/moderation/geo", s.accessToken);
+  }>(
+    process.env.AD_API!,
+    // Durum süzgeci haritaya da uygulanır: "Yayında" seçilince harita yalnız
+    // yayındaki kampanyaların şehirlerini gösterir ve kendiliğinden odaklanır.
+    `/api/campaigns/moderation/geo${searchParams.durum ? `?status=${searchParams.durum}` : ""}`,
+    s.accessToken,
+  );
 
   const durum = searchParams.durum ?? "";
+  const q = (searchParams.q ?? "").trim();
+  // Arama varsa durum sekmesi yerine arama sonucu gösterilir (kullanıcı adı,
+  // e-posta, telefon ya da kampanya adı).
   const items =
     (await adminApi<Campaign[]>(
       process.env.AD_API!,
-      `/api/campaigns/moderation/all${durum ? `?status=${durum}` : ""}`,
+      q
+        ? `/api/campaigns/moderation/search?q=${encodeURIComponent(q)}`
+        : `/api/campaigns/moderation/all${durum ? `?status=${durum}` : ""}`,
       s.accessToken,
     )) ?? [];
 
@@ -128,18 +139,43 @@ export default async function Ads({
         </div>
       ) : null}
 
+      {/* Kullanıcı adı, e-posta, telefon veya kampanya adıyla arama */}
+      <form method="get" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <input name="q" defaultValue={q} className="gg-search" style={{ flex: 1, minWidth: 260 }}
+               placeholder="Kullanıcı adı, e-posta, telefon veya reklam adı ara…" />
+        <button className="gg-btn gg-btn-primary" type="submit">Ara</button>
+        {q ? <a href="/reklamlar" className="gg-btn gg-btn-ghost">Temizle</a> : null}
+      </form>
+      {q ? (
+        <div style={{ fontSize: 13, color: "var(--gg-muted)" }}>
+          &quot;{q}&quot; için {items.length} reklam bulundu.
+        </div>
+      ) : null}
+
+      {/* Kartlar süzgeç görevi görür: tıklanınca hem liste hem harita daralır. */}
       <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
         {[
-          { l: "Onay bekleyen", v: String(bekleyen) },
-          { l: "Yayında", v: String(yayinda) },
-          { l: "Bugünkü harcama", v: tl(gunlukHarcama) },
-          { l: "Toplam gösterim", v: toplamGosterim.toLocaleString("tr-TR") },
-        ].map((k) => (
-          <div key={k.l} className="gg-card" style={{ display: "grid", gap: 4 }}>
-            <span style={{ fontSize: 12, color: "var(--gg-muted)" }}>{k.l}</span>
-            <strong style={{ fontSize: 20 }}>{k.v}</strong>
-          </div>
-        ))}
+          { l: "Onay bekleyen", v: String(bekleyen), d: "PENDING" },
+          { l: "Yayında", v: String(yayinda), d: "ACTIVE" },
+          { l: "Bugünkü harcama", v: tl(gunlukHarcama), d: "ACTIVE" },
+          { l: "Toplam gösterim", v: toplamGosterim.toLocaleString("tr-TR"), d: "" },
+        ].map((k) => {
+          const secili = durum === k.d;
+          return (
+            <a key={k.l} href={k.d ? `/reklamlar?durum=${k.d}` : "/reklamlar"}
+               className="gg-card"
+               style={{
+                 display: "grid", gap: 4, textDecoration: "none", color: "inherit",
+                 outline: secili ? "2px solid var(--gg-primary, #C56A7A)" : "none",
+               }}>
+              <span style={{ fontSize: 12, color: "var(--gg-muted)" }}>{k.l}</span>
+              <strong style={{ fontSize: 20 }}>{k.v}</strong>
+              <span style={{ fontSize: 11, color: "var(--gg-primary, #C56A7A)" }}>
+                {secili ? "✓ haritada gösteriliyor" : "haritada göster ›"}
+              </span>
+            </a>
+          );
+        })}
       </section>
 
       {/* Coğrafi pano — gösterimlerin dünya üzerindeki dağılımı */}
