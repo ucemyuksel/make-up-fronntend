@@ -106,6 +106,22 @@ export default async function ReklamPanel({
 
       {searchParams.ok ? <div style={{ background: "#E5F6EC", color: "#1E9E5A", padding: 12, borderRadius: 10 }}>✓ Kampanya oluşturuldu — onaydan sonra yayına çıkar.</div> : null}
 
+      {/* Ön ödemeli model: bakiye bitince gösterim ücretlendirilmez ve
+          kampanyalar otomatik durur. */}
+      {Number(advertiser.balance) <= 0 ? (
+        <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10, display: "grid", gap: 4 }}>
+          <strong>⚠️ Bakiyen bitti — reklamların durduruldu.</strong>
+          <span style={{ fontSize: 13 }}>
+            Reklamlar ön ödemelidir. Bakiye yüklendiğinde duraklatılan kampanyaları
+            &quot;Sürdür&quot; ile yeniden yayına alabilirsin.
+          </span>
+        </div>
+      ) : Number(advertiser.balance) < 50 ? (
+        <div style={{ background: "#FCF2DE", color: "#C98A1E", padding: 12, borderRadius: 10, fontSize: 13.5 }}>
+          Bakiyen azaldı ({tl(advertiser.balance)}) — bitince reklamların otomatik durur.
+        </div>
+      ) : null}
+
       {/* Özet */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
         <div className="gg-card"><div style={{ fontSize: 12, color: "var(--gg-muted)" }}>Kampanya</div><strong style={{ fontSize: 22 }}>{campaigns.length}</strong></div>
