@@ -35,7 +35,7 @@ const userApi = () => process.env.USER_API ?? "http://localhost:8082";
 export default async function Users({
   searchParams,
 }: {
-  searchParams: { user?: string; ok?: string; hata?: string };
+  searchParams: { user?: string; ok?: string; error?: string };
 }) {
   const session = (await auth()) as { accessToken?: string; roles?: string[] } | null;
   if (!session?.accessToken) redirect("/");
@@ -60,7 +60,7 @@ export default async function Users({
       endsAt,
     });
     revalidatePath("/kullanicilar");
-    redirect(result.ok ? "/kullanicilar?ok=1" : "/kullanicilar?hata=" + encodeURIComponent(result.error ?? "hata"));
+    redirect(result.ok ? "/kullanicilar?ok=1" : "/kullanicilar?error=" + encodeURIComponent(result.error ?? "error"));
   }
 
   async function liftRestriction(form: FormData) {
@@ -93,9 +93,9 @@ export default async function Users({
           ✓ Kısıt uygulandı.
         </div>
       ) : null}
-      {searchParams.hata ? (
+      {searchParams.error ? (
         <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
-          Hata: {searchParams.hata}
+          Hata: {searchParams.error}
         </div>
       ) : null}
 

@@ -36,9 +36,9 @@ type Yama = {
   hull?: boolean;
   serit?: boolean;
 };
-type BolgeTanim = { yamalar: Yama[]; firca: string; yon: string; arac: "firca" | "ruj" | "sunger" };
+type RegionDef = { yamalar: Yama[]; firca: string; yon: string; arac: "firca" | "ruj" | "sunger" };
 
-const BOLGELER: Record<string, BolgeTanim> = {
+const REGIONS: Record<string, RegionDef> = {
   yuz: {
     yamalar: [
       { pts: [10, 338, 297, 332, 284, 454, 366, 361, 397, 152, 172, 132, 137, 234, 54, 103, 67, 109, 1, 4, 5, 19, 94, 197], arrows: [[4, 205], [4, 425], [168, 10]], alinUzat: true, hull: true },
@@ -99,9 +99,9 @@ const BOLGELER: Record<string, BolgeTanim> = {
 /** /analysis'in ölçtüğü yüz şekline göre ek kontür yamaları ve ipuçları.
  *  (Makyöz kuralı: kalp yüzde alın kenarları yumuşatılır; yuvarlak/kare yüzde
  *  çene hattı belirginleştirilir.) */
-const SEKIL_EK: Record<string, { bolge: "kontur"; yama: Yama[]; ipucu: string }> = {
+const SEKIL_EK: Record<string, { region: "kontur"; yama: Yama[]; ipucu: string }> = {
   Kalp: {
-    bolge: "kontur",
+    region: "kontur",
     yama: [
       { pts: [54, 103, 67], arrows: [[67, 54]], serit: true },     // sol alın kenarı
       { pts: [284, 332, 297], arrows: [[297, 284]], serit: true }, // sağ alın kenarı
@@ -109,7 +109,7 @@ const SEKIL_EK: Record<string, { bolge: "kontur"; yama: Yama[]; ipucu: string }>
     ipucu: "Kalp yüz: alın kenarlarını da hafifçe karart, çene ucunu dengede tut.",
   },
   Yuvarlak: {
-    bolge: "kontur",
+    region: "kontur",
     yama: [
       { pts: [58, 172, 136, 150, 149], arrows: [[149, 58]], serit: true },     // sol çene hattı
       { pts: [288, 397, 365, 379, 378], arrows: [[378, 288]], serit: true },   // sağ çene hattı
@@ -117,7 +117,7 @@ const SEKIL_EK: Record<string, { bolge: "kontur"; yama: Yama[]; ipucu: string }>
     ipucu: "Yuvarlak yüz: çene hattını da karart — yüz belirginleşir ve incelir.",
   },
   Kare: {
-    bolge: "kontur",
+    region: "kontur",
     yama: [
       { pts: [58, 172, 136, 150], arrows: [[150, 58]], serit: true },
       { pts: [288, 397, 365, 379], arrows: [[379, 288]], serit: true },
@@ -125,29 +125,29 @@ const SEKIL_EK: Record<string, { bolge: "kontur"; yama: Yama[]; ipucu: string }>
     ipucu: "Kare yüz: çene köşelerini yumuşat; allığı üst elmacıkta tut, buruna yaklaştırma.",
   },
   Uzun: {
-    bolge: "kontur",
+    region: "kontur",
     yama: [],
     ipucu: "Uzun yüz: kontürü yatay tut (alın üstü + çene ucu); dikey hatlardan kaçın.",
   },
 };
 
-function bolgeleriBul(region: string, sekil?: string | null): BolgeTanim[] {
+function findRegions(region: string, sekil?: string | null): RegionDef[] {
   const r = region.toLocaleLowerCase("tr").trim();
-  const out: BolgeTanim[] = [];
-  if (r.includes("kaş") || r.includes("kas")) out.push(BOLGELER["kas"]);
+  const out: RegionDef[] = [];
+  if (r.includes("kaş") || r.includes("kas")) out.push(REGIONS["kas"]);
   if (r.includes("kontür") || r.includes("kontur")) {
     const ek = sekil ? SEKIL_EK[sekil] : undefined;
     // Yüz şekline göre ek kontür yamaları (kalp: alın kenarı, yuvarlak/kare: çene hattı).
     out.push(ek && ek.yama.length > 0
-      ? { ...BOLGELER["kontur"], yamalar: [...BOLGELER["kontur"].yamalar, ...ek.yama] }
-      : BOLGELER["kontur"]);
+      ? { ...REGIONS["kontur"], yamalar: [...REGIONS["kontur"].yamalar, ...ek.yama] }
+      : REGIONS["kontur"]);
   }
-  if (r.includes("göz altı") || r.includes("goz alti")) out.push(BOLGELER["goz alti"]);
-  else if (r.includes("göz") || r.includes("goz")) out.push(BOLGELER["goz"]);
-  if (r.includes("elmacık") || r.includes("elmacik")) out.push(BOLGELER["elmacik kemigi"]);
-  else if (r.includes("yanak")) out.push(BOLGELER["yanak"]);
-  if (r.includes("dudak")) out.push(BOLGELER["dudak"]);
-  if (out.length === 0 || r.includes("yüz") || r.includes("yuz")) out.push(BOLGELER["yuz"]);
+  if (r.includes("göz altı") || r.includes("goz alti")) out.push(REGIONS["goz alti"]);
+  else if (r.includes("göz") || r.includes("goz")) out.push(REGIONS["goz"]);
+  if (r.includes("elmacık") || r.includes("elmacik")) out.push(REGIONS["elmacik kemigi"]);
+  else if (r.includes("yanak")) out.push(REGIONS["yanak"]);
+  if (r.includes("dudak")) out.push(REGIONS["dudak"]);
+  if (out.length === 0 || r.includes("yüz") || r.includes("yuz")) out.push(REGIONS["yuz"]);
   return out;
 }
 
@@ -264,7 +264,7 @@ function swooshCiz(ctx: CanvasRenderingContext2D, a: Pt, b: Pt, boyOlcek: number
   ctx.restore();
 }
 
-function aracCiz(ctx: CanvasRenderingContext2D, tip: "firca" | "ruj" | "sunger", x: number, y: number, boy: number) {
+function drawTool(ctx: CanvasRenderingContext2D, tip: "firca" | "ruj" | "sunger", x: number, y: number, boy: number) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(0.85);
@@ -341,8 +341,8 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
   const zoomAcikRef = React.useRef(true);
   cfgRef.current = { region, colorHex };
 
-  const [durum, setDurum] = React.useState<"kapalı" | "yükleniyor" | "açık" | "hata">("kapalı");
-  const [hata, setHata] = React.useState("");
+  const [status, setStatus] = React.useState<"closed" | "loading" | "open" | "error">("closed");
+  const [error, setHata] = React.useState("");
   const [ilerleme, setIlerleme] = React.useState(0);
   const [tamam, setTamam] = React.useState(false);
   const [fazla, setFazla] = React.useState(false);
@@ -359,7 +359,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
     setSekil(s); sekilRef.current = s;
   }, []);
 
-  const tanimlar = bolgeleriBul(region, sekil);
+  const tanimlar = findRegions(region, sekil);
   const sekilIpucu = sekil ? SEKIL_EK[sekil]?.ipucu : undefined;
 
   const durdur = React.useCallback(() => {
@@ -369,7 +369,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
       (v.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
       v.srcObject = null;
     }
-    setDurum("kapalı");
+    setStatus("closed");
   }, []);
 
   React.useEffect(() => () => durdur(), [durdur]);
@@ -390,10 +390,10 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
     const hedef = hexRgb(col);
 
     // Yamaları hesapla (+ profil işleme).
-    const tumYamalar: { path: Pt[]; yama: Yama; tanim: BolgeTanim; anahtar: string }[] = [];
+    const tumYamalar: { path: Pt[]; yama: Yama; tanim: RegionDef; anahtar: string }[] = [];
     if (lms) {
-      for (const tanim of bolgeleriBul(reg, sekilRef.current)) {
-        const adaylar: { path: Pt[]; yama: Yama; tanim: BolgeTanim; z: number; anahtar: string }[] = [];
+      for (const tanim of findRegions(reg, sekilRef.current)) {
+        const candidates: { path: Pt[]; yama: Yama; tanim: RegionDef; z: number; anahtar: string }[] = [];
         for (const yama of tanim.yamalar) {
           const ham = yama.pts.map((i) => lms[i]).filter(Boolean);
           if (ham.length < 3) continue;
@@ -411,13 +411,13 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
             }
             if (yama.hull) path = zarf(path);
           }
-          adaylar.push({ path, yama, tanim, z: zOrt, anahtar: `${tanim.firca}:${yama.pts[0]}` });
+          candidates.push({ path, yama, tanim, z: zOrt, anahtar: `${tanim.firca}:${yama.pts[0]}` });
         }
-        if (adaylar.length === 2 && Math.abs(adaylar[0].z - adaylar[1].z) > 0.06) {
-          adaylar.sort((a, b) => a.z - b.z);
-          adaylar.pop();
+        if (candidates.length === 2 && Math.abs(candidates[0].z - candidates[1].z) > 0.06) {
+          candidates.sort((a, b) => a.z - b.z);
+          candidates.pop();
         }
-        for (const a of adaylar) tumYamalar.push(a);
+        for (const a of candidates) tumYamalar.push(a);
       }
     }
 
@@ -498,7 +498,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
       ctx.clip(); // hücre çizimleri alan dışına taşmasın
 
       let yamaIci = 0, yamaBittiSay = 0, yamaFazla = 0, yamaOranTop = 0;
-      const aralik = Math.max(6, w * 0.012) / z.s;
+      const range = Math.max(6, w * 0.012) / z.s;
       const nokta = Math.max(1.2, w * 0.003) / Math.sqrt(z.s);
 
       for (let i = 0; i < nx; i++) {
@@ -600,7 +600,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
             }
             ctx.stroke();
             ctx.restore();
-            aracCiz(ctx, tanim.arac, p[0], p[1], Math.max(38, Math.min(85, L * 0.7)));
+            drawTool(ctx, tanim.arac, p[0], p[1], Math.max(38, Math.min(85, L * 0.7)));
           }
         }
       } else {
@@ -625,7 +625,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
   }, []);
 
   const baslat = React.useCallback(async () => {
-    setDurum("yükleniyor");
+    setStatus("loading");
     setHata("");
     try {
       if (!lmRef.current) {
@@ -647,7 +647,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
       tonRef.current = { region: "", kare: 0, hucreler: {} };
       zoomRef.current = { s: 1, cx: v.videoWidth / 2 || 640, cy: v.videoHeight / 2 || 360 };
       setTamam(false); setFazla(false); setIlerleme(0);
-      setDurum("açık");
+      setStatus("open");
       const dongu = () => {
         if (!v.srcObject) return;
         const simdi = performance.now();
@@ -657,7 +657,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
       };
       rafRef.current = requestAnimationFrame(dongu);
     } catch (e) {
-      setDurum("hata");
+      setStatus("error");
       setHata(e instanceof Error ? e.message : String(e));
     }
   }, [ciz]);
@@ -666,8 +666,8 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
     <div style={{ display: "grid", gap: 10 }}>
       <div style={{ position: "relative", background: "var(--gg-surface)", borderRadius: "var(--gg-r-lg)", overflow: "hidden", aspectRatio: "4 / 3" }}>
         <video ref={videoRef} playsInline muted style={{ display: "none" }} />
-        <canvas ref={canvasRef} style={{ width: "100%", height: "100%", objectFit: "cover", display: durum === "açık" ? "block" : "none" }} />
-        {durum === "açık" && (
+        <canvas ref={canvasRef} style={{ width: "100%", height: "100%", objectFit: "cover", display: status === "open" ? "block" : "none" }} />
+        {status === "open" && (
           <div style={{ position: "absolute", top: 10, left: 10, display: "grid", gap: 6, maxWidth: "70%" }}>
             {tanimlar.map((t) => (
               <span key={t.firca} style={{ background: "rgba(255,255,255,.92)", borderRadius: 999, padding: "5px 12px", fontSize: 12.5, fontWeight: 600, boxShadow: "0 1px 4px rgba(0,0,0,.15)" }}>
@@ -691,22 +691,22 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
             )}
           </div>
         )}
-        {durum !== "açık" && (
+        {status !== "open" && (
           <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center", padding: 20, gap: 10 }}>
             <div style={{ fontSize: 34 }}>📷</div>
             <div style={{ fontSize: 14, color: "var(--gg-muted)", maxWidth: 340 }}>
-              {durum === "hata"
-                ? "Kamera açılamadı: " + hata
-                : durum === "yükleniyor"
+              {status === "error"
+                ? "Kamera açılamadı: " + error
+                : status === "loading"
                 ? "Model yükleniyor…"
                 : `Kamerayı aç: "${stepTitle}" adımında doğru tona ulaşan bölgelerin taraması silinir — kalan taralı yerlere sür.`}
             </div>
-            {durum !== "yükleniyor" && (
+            {status !== "loading" && (
               <button className="gg-btn gg-btn-primary" onClick={baslat}>📷 Kamerayı Aç</button>
             )}
           </div>
         )}
-        {durum === "açık" && (
+        {status === "open" && (
           <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 8 }}>
             <button className="gg-btn gg-btn-ghost" onClick={() => setZoomAcik((x) => !x)} style={{ background: "rgba(255,255,255,.85)" }}>
               🔍 {zoomAcik ? "Uzaklaş" : "Yakınlaş"}
@@ -717,7 +717,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
           </div>
         )}
       </div>
-      {durum === "açık" && (
+      {status === "open" && (
         <div style={{ display: "grid", gap: 6 }}>
           {/* KAPLAMA PROGRESS BAR: taralı alanın ne kadarı doğru tona ulaştı */}
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5 }}>

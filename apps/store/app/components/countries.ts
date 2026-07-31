@@ -6,7 +6,7 @@
  */
 export type Ulke = { kod: string; ad: string };
 
-export const ULKELER: Ulke[] = [
+export const COUNTRIES: Ulke[] = [
   { kod: "AF", ad: "Afganistan" },
   { kod: "DE", ad: "Almanya" },
   { kod: "US", ad: "Amerika Birleşik Devletleri" },
@@ -209,6 +209,6 @@ export const ULKELER: Ulke[] = [
 ];
 
 /** Reklam hacmi yüksek pazarlar — listenin başında ayrı grupta gösterilir. */
-export const ONE_CIKAN_ULKELER = ["TR", "DE", "US", "GB", "NL", "FR", "AE", "AZ"];
+export const FEATURED_COUNTRIES = ["TR", "DE", "US", "GB", "NL", "FR", "AE", "AZ"];
 
-export const ulkeAdi = (kod: string) => ULKELER.find((u) => u.kod === kod)?.ad ?? kod;
+export const countryName = (kod: string) => COUNTRIES.find((u) => u.kod === kod)?.ad ?? kod;

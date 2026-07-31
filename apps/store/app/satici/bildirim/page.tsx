@@ -3,7 +3,7 @@ import { Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
-import { requireSeller } from "../../yetki";
+import { requireSeller } from "../../authGuard";
 
 export const metadata = { title: "Mesaj & Bildirimler — GlamGuide" };
 
@@ -50,10 +50,10 @@ async function getir<T>(base: string, path: string, token: string): Promise<T | 
 }
 
 /**
- * Satıcının mesaj ve bildirim merkezi. Sipariş, yorum ve reklam bildirimleri
+ * Satıcının message ve bildirim merkezi. Sipariş, yorum ve reklam bildirimleri
  * tek yerde; sohbetler sosyal uygulamada sürüyor (aynı messaging-service).
  */
-export default async function SaticiBildirim({
+export default async function SellerNotifications({
   searchParams,
 }: {
   searchParams: { ok?: string };
@@ -64,12 +64,12 @@ export default async function SaticiBildirim({
     getir<Notification[]>(NOTIF_API(), "/api/notifications", token),
     getir<Conversation[]>(MSG_API(), "/api/conversations", token),
   ]);
-  const liste = bildirimler ?? [];
-  const okunmamis = liste.filter((n) => !n.read).length;
+  const list = bildirimler ?? [];
+  const okunmamis = list.filter((n) => !n.read).length;
   const sohbetListesi = sohbetler ?? [];
-  const okunmamisMesaj = sohbetListesi.reduce((t, c) => t + Number(c.unread ?? 0), 0);
+  const unreadMessages = sohbetListesi.reduce((t, c) => t + Number(c.unread ?? 0), 0);
 
-  async function hepsiniOkunduYap() {
+  async function markAllRead() {
     "use server";
     const s = await auth();
     const t = (s as unknown as { accessToken?: string } | null)?.accessToken;
@@ -105,7 +105,7 @@ export default async function SaticiBildirim({
       <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
         {[
           { l: "Okunmamış bildirim", v: String(okunmamis) },
-          { l: "Okunmamış mesaj", v: String(okunmamisMesaj) },
+          { l: "Okunmamış mesaj", v: String(unreadMessages) },
           { l: "Aktif sohbet", v: String(sohbetListesi.length) },
         ].map((k) => (
           <div key={k.l} className="gg-card" style={{ display: "grid", gap: 4 }}>
@@ -148,10 +148,10 @@ export default async function SaticiBildirim({
       {/* Bildirimler */}
       <section style={{ display: "grid", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <h2 style={{ fontSize: 17, margin: 0 }}>🔔 Bildirimler ({liste.length})</h2>
+          <h2 style={{ fontSize: 17, margin: 0 }}>🔔 Bildirimler ({list.length})</h2>
           <span style={{ flex: 1 }} />
           {okunmamis > 0 ? (
-            <form action={hepsiniOkunduYap}>
+            <form action={markAllRead}>
               <button className="gg-btn gg-btn-ghost" type="submit" style={{ fontSize: 12.5 }}>
                 Hepsini okundu işaretle
               </button>
@@ -159,13 +159,13 @@ export default async function SaticiBildirim({
           ) : null}
         </div>
 
-        {liste.length === 0 ? (
+        {list.length === 0 ? (
           <p style={{ color: "var(--gg-muted)", fontSize: 13.5, margin: 0 }}>
             Henüz bildirim yok. Sipariş, yorum ve reklam olayları burada görünecek.
           </p>
         ) : (
           <div style={{ display: "grid", gap: 8 }}>
-            {liste.slice(0, 30).map((n) => (
+            {list.slice(0, 30).map((n) => (
               <article key={n.id} className="gg-card"
                        style={{
                          display: "flex", gap: 10, alignItems: "center",

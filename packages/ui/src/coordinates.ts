@@ -5,7 +5,7 @@
  * haritada gösterilmez (uydurma konum çizmektense eksik göstermek yeğdir).
  */
 
-export const SEHIR_KOORD: Record<string, [number, number]> = {
+export const CITY_COORDS: Record<string, [number, number]> = {
   "TR|İstanbul": [41.01, 28.98], "TR|Istanbul": [41.01, 28.98],
   "TR|Ankara": [39.93, 32.86], "TR|İzmir": [38.42, 27.14], "TR|Izmir": [38.42, 27.14],
   "TR|Bursa": [40.19, 29.06], "TR|Antalya": [36.9, 30.7], "TR|Adana": [37.0, 35.32],
@@ -27,7 +27,7 @@ export const SEHIR_KOORD: Record<string, [number, number]> = {
   "IT|Milano": [45.46, 9.19], "IT|Roma": [41.9, 12.5],
 };
 
-export const ULKE_KOORD: Record<string, [number, number]> = {
+export const COUNTRY_COORDS: Record<string, [number, number]> = {
   TR: [39.0, 35.0], DE: [51.2, 10.4], NL: [52.1, 5.3], GB: [54.0, -2.0], FR: [46.6, 2.2],
   US: [39.8, -98.6], AE: [24.0, 54.0], AZ: [40.3, 47.7], JP: [36.2, 138.3], BR: [-14.2, -51.9],
   CA: [56.1, -106.3], AU: [-25.3, 133.8], ES: [40.0, -3.7], IT: [42.8, 12.6], RU: [61.5, 105.3],
@@ -42,10 +42,10 @@ export const ULKE_KOORD: Record<string, [number, number]> = {
 };
 
 /** Şehir → koordinat; yoksa ülke merkezi; o da yoksa null. */
-export function koordinatBul(ulkeKodu: string, sehir?: string | null): [number, number] | null {
-  if (sehir) {
-    const s = SEHIR_KOORD[`${ulkeKodu}|${sehir}`];
+export function findCoordinates(ulkeKodu: string, city?: string | null): [number, number] | null {
+  if (city) {
+    const s = CITY_COORDS[`${ulkeKodu}|${city}`];
     if (s) return s;
   }
-  return ULKE_KOORD[ulkeKodu] ?? null;
+  return COUNTRY_COORDS[ulkeKodu] ?? null;
 }

@@ -10,22 +10,22 @@ import { reviewApi, reviewSend, yildiz, type Review, type ReviewSummary } from "
  * <p>Form yalnızca <b>satın almış</b> kullanıcıya açılır — bu kontrol backend'de
  * de var (403), buradaki yalnızca kullanıcıyı boşuna yazdırmamak için.
  */
-export async function Degerlendirmeler({
+export async function Ratings({
   tur,
   subjectId,
   donusYolu,
-  hata,
+  error,
 }: {
   tur: "PRODUCT" | "RECIPE";
   subjectId: string;
   /** Kaydettikten sonra dönülecek sayfa (revalidate + redirect için). */
   donusYolu: string;
-  hata?: string;
+  error?: string;
 }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
 
-  const [ozet, yorumlar, izin] = await Promise.all([
+  const [summary, yorumlar, izin] = await Promise.all([
     reviewApi<ReviewSummary>(`/api/reviews/summary/${tur}/${subjectId}`),
     reviewApi<Review[]>(`/api/reviews/list/${tur}/${subjectId}`),
     token
@@ -33,8 +33,8 @@ export async function Degerlendirmeler({
       : Promise.resolve(null),
   ]);
 
-  const adet = ozet?.count ?? 0;
-  const ortalama = Number(ozet?.average ?? 0);
+  const adet = summary?.count ?? 0;
+  const ortalama = Number(summary?.average ?? 0);
   const yazabilir = izin?.canReview === true;
 
   async function kaydet(formData: FormData) {
@@ -48,16 +48,16 @@ export async function Degerlendirmeler({
     });
     revalidatePath(donusYolu);
     // redirect() try/catch dışında olmalı — NEXT_REDIRECT yutulmasın.
-    redirect(r.ok ? donusYolu : `${donusYolu}?yhata=${encodeURIComponent(r.error ?? "hata")}`);
+    redirect(r.ok ? donusYolu : `${donusYolu}?yhata=${encodeURIComponent(r.error ?? "error")}`);
   }
 
   // Yıldız dağılımı çubukları için en yüksek değer (oransal genişlik).
   const dagilim = [
-    { yildizSayisi: 5, adet: ozet?.five ?? 0 },
-    { yildizSayisi: 4, adet: ozet?.four ?? 0 },
-    { yildizSayisi: 3, adet: ozet?.three ?? 0 },
-    { yildizSayisi: 2, adet: ozet?.two ?? 0 },
-    { yildizSayisi: 1, adet: ozet?.one ?? 0 },
+    { yildizSayisi: 5, adet: summary?.five ?? 0 },
+    { yildizSayisi: 4, adet: summary?.four ?? 0 },
+    { yildizSayisi: 3, adet: summary?.three ?? 0 },
+    { yildizSayisi: 2, adet: summary?.two ?? 0 },
+    { yildizSayisi: 1, adet: summary?.one ?? 0 },
   ];
 
   return (
@@ -93,9 +93,9 @@ export async function Degerlendirmeler({
         </div>
       )}
 
-      {hata ? (
+      {error ? (
         <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
-          Değerlendirme kaydedilemedi: {hata}
+          Değerlendirme kaydedilemedi: {error}
         </div>
       ) : null}
 

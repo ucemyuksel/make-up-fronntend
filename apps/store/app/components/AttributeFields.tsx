@@ -10,7 +10,7 @@ import * as React from "react";
  * action tarafında {@code attributes} olarak parse edilir.
  */
 
-type Secenek = { value: string; label: string };
+type Option = { value: string; label: string };
 type Ozellik = {
   id: string;
   key: string;
@@ -19,12 +19,12 @@ type Ozellik = {
   unit: string | null;
   required: boolean;
   variantDefining: boolean;
-  options: Secenek[];
+  options: Option[];
 };
 
 type Kategori = { id: string; name: string; subCategories?: { id: string; name: string }[] };
 
-export function OzellikAlanlari({ kategoriler }: { kategoriler: Kategori[] }) {
+export function AttributeFields({ kategoriler }: { kategoriler: Kategori[] }) {
   const [kategoriId, setKategoriId] = React.useState("");
   const [altId, setAltId] = React.useState("");
   const [ozellikler, setOzellikler] = React.useState<Ozellik[]>([]);

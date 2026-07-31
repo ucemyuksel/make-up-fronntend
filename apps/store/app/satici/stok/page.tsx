@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Badge } from "@makeup/ui";
-import { requireSeller } from "../../yetki";
+import { requireSeller } from "../../authGuard";
 import { api, tl, type Product, type Store } from "../../lib";
 
 export const metadata = { title: "Stok Durumu — GlamGuide" };
@@ -9,7 +9,7 @@ export const metadata = { title: "Stok Durumu — GlamGuide" };
 const KRITIK = 5;
 const AZ = 20;
 
-function durum(stok: number) {
+function status(stok: number) {
   if (stok <= 0) return { bg: "#FBE6E6", fg: "#B42318", text: "TÜKENDİ" };
   if (stok <= KRITIK) return { bg: "#FBE6E6", fg: "#B42318", text: "KRİTİK" };
   if (stok <= AZ) return { bg: "#FCF2DE", fg: "#C98A1E", text: "AZALDI" };
@@ -20,7 +20,7 @@ function durum(stok: number) {
  * Stok görünümü. Ürün <b>silinemez</b> — platformda satılmış bir ürünün kaydı
  * sipariş/yorum geçmişine bağlıdır; satıştan kaldırmak için stok sıfırlanır.
  */
-export default async function StokDurumu({
+export default async function StockStatus({
   searchParams,
 }: {
   searchParams: { store?: string; filtre?: string };
@@ -40,7 +40,7 @@ export default async function StokDurumu({
 
   const tumUrunler = (await api<Product[]>(`/api/products?storeId=${secili}`, token)) ?? [];
   const filtre = searchParams.filtre ?? "";
-  const urunler =
+  const products =
     filtre === "kritik" ? tumUrunler.filter((u) => u.stock <= KRITIK)
       : filtre === "azaldi" ? tumUrunler.filter((u) => u.stock > KRITIK && u.stock <= AZ)
         : tumUrunler;
@@ -101,12 +101,12 @@ export default async function StokDurumu({
         {sekme("azaldi", "Azalan", azSayi)}
       </div>
 
-      {urunler.length === 0 ? (
+      {products.length === 0 ? (
         <p style={{ color: "var(--gg-muted)" }}>Bu süzgeçle eşleşen ürün yok.</p>
       ) : (
         <div style={{ display: "grid", gap: 8 }}>
-          {[...urunler].sort((a, b) => a.stock - b.stock).map((u) => {
-            const d = durum(u.stock);
+          {[...products].sort((a, b) => a.stock - b.stock).map((u) => {
+            const d = status(u.stock);
             return (
               <article key={u.id} className="gg-card"
                        style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>

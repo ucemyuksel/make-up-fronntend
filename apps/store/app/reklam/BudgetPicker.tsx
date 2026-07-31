@@ -16,7 +16,7 @@ const PAKETLER = [
 
 const tl = (n: number) => "₺" + n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export function ButceSecici() {
+export function BudgetPicker() {
   const [butce, setButce] = React.useState(150);
   const [cpm, setCpm] = React.useState(18);
   const [cpc, setCpc] = React.useState(2.5);

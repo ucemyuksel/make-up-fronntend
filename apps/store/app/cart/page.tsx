@@ -64,15 +64,15 @@ export default function CartPage() {
   };
 
   // --- Tutar hesabı ---
-  const araToplam = items.reduce((s, i) => s + i.priceAmount * i.qty, 0);
+  const subtotal = items.reduce((s, i) => s + i.priceAmount * i.qty, 0);
   const k = kupon ? KUPONLAR[kupon] : null;
-  const kuponIndirim = !k ? 0 : k.tip === "yuzde" ? (araToplam * k.deger) / 100 : Math.min(k.deger, araToplam);
-  const puanIndirim = puanKullan ? Math.min(GLAMPUAN_BAKIYE, Math.max(0, araToplam - kuponIndirim)) : 0;
+  const kuponIndirim = !k ? 0 : k.tip === "yuzde" ? (subtotal * k.deger) / 100 : Math.min(k.deger, subtotal);
+  const puanIndirim = puanKullan ? Math.min(GLAMPUAN_BAKIYE, Math.max(0, subtotal - kuponIndirim)) : 0;
   const kargo = 0; // Ücretsiz
-  const genelToplam = Math.max(0, araToplam - kuponIndirim - puanIndirim + kargo);
-  const kdvHaric = genelToplam / (1 + KDV_ORANI);
-  const kdv = genelToplam - kdvHaric;
-  const indirimOrani = araToplam > 0 ? Math.round(((kuponIndirim + puanIndirim) / araToplam) * 100) : 0;
+  const grandTotal = Math.max(0, subtotal - kuponIndirim - puanIndirim + kargo);
+  const kdvHaric = grandTotal / (1 + KDV_ORANI);
+  const kdv = grandTotal - kdvHaric;
+  const indirimOrani = subtotal > 0 ? Math.round(((kuponIndirim + puanIndirim) / subtotal) * 100) : 0;
 
   const stepBox: React.CSSProperties = {
     width: 28, height: 28, borderRadius: 7, border: "1px solid var(--gg-border)",
@@ -118,7 +118,7 @@ export default function CartPage() {
       <div style={{ maxWidth: 520, textAlign: "center", padding: "40px 0" }}>
         <div style={{ fontSize: 54 }}>✅</div>
         <h2 style={{ margin: "8px 0" }}>Siparişiniz alındı!</h2>
-        <p style={{ color: "var(--gg-muted)" }}>Toplam {tl(genelToplam)} · Ödeme ve kargo süreci başlatıldı.</p>
+        <p style={{ color: "var(--gg-muted)" }}>Toplam {tl(grandTotal)} · Ödeme ve kargo süreci başlatıldı.</p>
         <a href="/orders" className="gg-btn gg-btn-primary" style={{ marginTop: 12 }}>Siparişlerime Git</a>
       </div>
     );
@@ -153,13 +153,13 @@ export default function CartPage() {
 
       {/* Tutar kırılımı */}
       <div style={{ display: "grid", gap: 6, borderTop: "1px solid var(--gg-border)", paddingTop: 10 }}>
-        {satir("Ara Toplam", tl(araToplam))}
-        {kuponIndirim > 0 ? satir(`Kupon (%${k?.tip === "yuzde" ? k.deger : Math.round((kuponIndirim / araToplam) * 100)})`, <span style={{ color: "var(--gg-primary)" }}>−{tl(kuponIndirim)}</span>) : null}
+        {satir("Ara Toplam", tl(subtotal))}
+        {kuponIndirim > 0 ? satir(`Kupon (%${k?.tip === "yuzde" ? k.deger : Math.round((kuponIndirim / subtotal) * 100)})`, <span style={{ color: "var(--gg-primary)" }}>−{tl(kuponIndirim)}</span>) : null}
         {puanIndirim > 0 ? satir("GlamPuan", <span style={{ color: "var(--gg-primary)" }}>−{tl(puanIndirim)}</span>) : null}
         {satir("Kargo", <span style={{ color: "var(--gg-primary)" }}>Ücretsiz</span>)}
         {satir(<span>KDV (%20 dahil)</span>, tl(kdv))}
         <div style={{ borderTop: "1px dashed var(--gg-border)", paddingTop: 8 }}>
-          {satir("Toplam", <span>{indirimOrani > 0 ? <span style={{ fontSize: 12, color: "var(--gg-primary)", marginRight: 8 }}>%{indirimOrani} tasarruf</span> : null}{tl(genelToplam)}</span>, true)}
+          {satir("Toplam", <span>{indirimOrani > 0 ? <span style={{ fontSize: 12, color: "var(--gg-primary)", marginRight: 8 }}>%{indirimOrani} tasarruf</span> : null}{tl(grandTotal)}</span>, true)}
         </div>
         <div style={{ fontSize: 11.5, color: "var(--gg-muted)" }}>KDV hariç {tl(kdvHaric)} + KDV {tl(kdv)}</div>
       </div>
@@ -307,7 +307,7 @@ export default function CartPage() {
             {ozetKarti}
             <button className="gg-btn gg-btn-primary" type="submit" disabled={gonderiliyor}
                     style={{ justifyContent: "center" }}>
-              {gonderiliyor ? "Gönderiliyor…" : <>Siparişi Onayla · {tl(genelToplam)}</>}
+              {gonderiliyor ? "Gönderiliyor…" : <>Siparişi Onayla · {tl(grandTotal)}</>}
             </button>
             {siparisHatasi ? (
               <div style={{ background: "#FBE6E6", color: "#B42318", padding: 10, borderRadius: 10, fontSize: 13 }}>

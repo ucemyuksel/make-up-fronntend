@@ -38,7 +38,7 @@ const NAV = [
  * Satıcı menüsü. Mağaza sahibi işini yönetir — Reels ve Yüz Analizi gibi
  * tüketici içerikleri menüsünde yer almaz. Reklam verme yalnızca burada.
  */
-const SATICI_NAV = [
+const SELLER_NAV = [
   { key: "satici", label: "Satıcı Paneli", icon: "🏪", href: `${ORIGINS.store}/satici` },
   { key: "urun", label: "Ürünlerim", icon: "📦", href: `${ORIGINS.store}/satici/urun` },
   { key: "siparis", label: "Siparişler & Kargo", icon: "🚚", href: `${ORIGINS.store}/satici/siparis` },
@@ -74,7 +74,7 @@ export function AppShell({
   const satici = roles.includes("STORE_OWNER");
   const yonetici = isAdmin || roles.includes("ADMIN");
   const nav = yonetici ? [...NAV, ADMIN_NAV] : NAV;
-  const saticiNav = satici ? (yonetici ? [...SATICI_NAV, ADMIN_NAV] : SATICI_NAV) : undefined;
+  const saticiNav = satici ? (yonetici ? [...SELLER_NAV, ADMIN_NAV] : SELLER_NAV) : undefined;
   return (
     <div className="gg-shell">
       <aside className="gg-sidebar">

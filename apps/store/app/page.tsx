@@ -7,7 +7,7 @@ import { api, tl, type Product, type Category } from "./lib";
 const img = (seed: string, w = 320, h = 320) => `https://picsum.photos/seed/gg${seed}/${w}/${h}`;
 
 // Mağazalar (marketplace) — geçici veri; prod'da store-service'ten gelir.
-const MAGAZALAR = [
+const STORES = [
   { ad: "Gratis", renk: "#E6007E", slug: "gratis" },
   { ad: "Watsons", renk: "#00A9CE", slug: "watsons" },
   { ad: "L'Oréal Paris", renk: "#111827", slug: "loreal" },
@@ -29,7 +29,7 @@ const KATEGORI_AGACI: { ad: string; ikon: string; alt: string[] }[] = [
 ];
 
 // Ürünler (kategori + mağaza + indirim ile). Geçici veri — her mağazanın kendi ürün/kategorileri var.
-const MOCK_URUNLER = [
+const MOCK_PRODUCTS = [
   // Gratis (geniş yelpaze)
   { id: "g1", name: "Nude Far Paleti", brand: "Note", magaza: "gratis", kategori: "Makyaj", priceAmount: 349, rating: 4.6, count: 210, ciltTipi: "Tüm ciltler", indirim: 30 },
   { id: "g2", name: "Micellar Temizleme Suyu", brand: "Garnier", magaza: "gratis", kategori: "Cilt Bakımı", priceAmount: 129, rating: 4.7, count: 540, ciltTipi: "Hassas", indirim: 15 },
@@ -68,10 +68,10 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
 
-  let products: (Product & { rating?: number; count?: number; ciltTipi?: string; kategori?: string; magaza?: string; indirim?: number })[] = MOCK_URUNLER as never;
+  let products: (Product & { rating?: number; count?: number; ciltTipi?: string; kategori?: string; magaza?: string; indirim?: number })[] = MOCK_PRODUCTS as never;
   if (token) {
     const live = await api<Product[]>("/api/products", token);
-    if (live && live.length > 0) products = [...live, ...(MOCK_URUNLER as never[])].slice(0, 20) as never;
+    if (live && live.length > 0) products = [...live, ...(MOCK_PRODUCTS as never[])].slice(0, 20) as never;
   }
 
   // Filtreler (birleşik): arama + cilt + kategori + mağaza.
@@ -79,10 +79,10 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
   const cilt = searchParams.cilt && searchParams.cilt !== "Tümü" ? searchParams.cilt.toLocaleLowerCase("tr") : "";
   const kategori = searchParams.kategori ?? "";
   const magaza = searchParams.magaza ?? "";
-  const aktifMagaza = MAGAZALAR.find((m) => m.slug === magaza);
+  const activeStore = STORES.find((m) => m.slug === magaza);
 
-  const magazalar = q ? MAGAZALAR.filter((m) => m.ad.toLocaleLowerCase("tr").includes(q)) : MAGAZALAR;
-  const urunler = products.filter((p) => {
+  const magazalar = q ? STORES.filter((m) => m.ad.toLocaleLowerCase("tr").includes(q)) : STORES;
+  const filteredProducts = products.filter((p) => {
     if (q && !`${p.name} ${p.brand}`.toLocaleLowerCase("tr").includes(q)) return false;
     if (cilt && !(p.ciltTipi ?? "").toLocaleLowerCase("tr").includes(cilt)) return false;
     if (kategori && p.kategori !== kategori) return false;
@@ -104,7 +104,7 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
     return "/" + (s ? `?${s}` : "");
   };
 
-  const filtreliMi = q || cilt || kategori || magaza;
+  const isFiltered = q || cilt || kategori || magaza;
 
   return (
     <div style={{ display: "grid", gap: 26, gridTemplateColumns: "minmax(0, 1fr)" }}>
@@ -112,20 +112,20 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
       <form method="get" style={{ display: "flex", gap: 8 }}>
         <input name="q" defaultValue={searchParams.q ?? ""} className="gg-search" style={{ flex: 1 }} placeholder="Ürün, marka veya mağaza ara..." autoComplete="off" />
         <button className="gg-btn gg-btn-primary" type="submit">Ara</button>
-        {filtreliMi ? <a href="/" className="gg-btn gg-btn-ghost">Temizle</a> : null}
+        {isFiltered ? <a href="/" className="gg-btn gg-btn-ghost">Temizle</a> : null}
       </form>
 
       {/* Aktif filtre bilgisi */}
-      {aktifMagaza ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, background: `linear-gradient(120deg, ${aktifMagaza.renk}22, transparent)`, borderRadius: "var(--gg-r-lg)", padding: 16 }}>
-          <span style={{ width: 48, height: 48, borderRadius: 12, background: aktifMagaza.renk, color: "#fff", display: "grid", placeItems: "center", fontWeight: 800 }}>{aktifMagaza.ad.slice(0, 2).toUpperCase()}</span>
-          <div style={{ flex: 1 }}><strong style={{ fontSize: 17 }}>{aktifMagaza.ad}</strong><div style={{ fontSize: 12.5, color: "var(--gg-muted)" }}>{urunler.length} ürün · Mağaza vitrini</div></div>
+      {activeStore ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, background: `linear-gradient(120deg, ${activeStore.renk}22, transparent)`, borderRadius: "var(--gg-r-lg)", padding: 16 }}>
+          <span style={{ width: 48, height: 48, borderRadius: 12, background: activeStore.renk, color: "#fff", display: "grid", placeItems: "center", fontWeight: 800 }}>{activeStore.ad.slice(0, 2).toUpperCase()}</span>
+          <div style={{ flex: 1 }}><strong style={{ fontSize: 17 }}>{activeStore.ad}</strong><div style={{ fontSize: 12.5, color: "var(--gg-muted)" }}>{filteredProducts.length} ürün · Mağaza vitrini</div></div>
           <a href="/" className="gg-see-all">Tüm mağazalar ›</a>
         </div>
       ) : null}
 
       {/* Hero — sadece filtresizken */}
-      {!filtreliMi ? (
+      {!isFiltered ? (
         <div style={{ position: "relative", borderRadius: "var(--gg-r-lg)", overflow: "hidden", minHeight: 200, display: "flex", alignItems: "center", background: "linear-gradient(115deg, var(--gg-primary) 0%, var(--gg-coral) 100%)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={img("hero", 700, 300)} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.35 }} />
@@ -171,7 +171,7 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
       {/* KATEGORİLER (detay) — mağazaların ALTINDA. Mağaza seçiliyse yalnızca o mağazanın kategorileri. */}
       <section>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h2 style={{ margin: 0, fontSize: 18 }}>{aktifMagaza ? `${aktifMagaza.ad} · Kategoriler` : "Kategoriler"}</h2>
+          <h2 style={{ margin: 0, fontSize: 18 }}>{activeStore ? `${activeStore.ad} · Kategoriler` : "Kategoriler"}</h2>
           {kategori ? <a href={link({ kategori: undefined })} className="gg-see-all">Filtreyi kaldır ›</a> : null}
         </div>
         {gosterilecekKategoriler.length === 0 ? (
@@ -207,7 +207,7 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
       {/* ÜRÜNLER (indirim rozetli, görselli) */}
       <section>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <h2 style={{ margin: 0, fontSize: 18 }}>{filtreliMi ? `Ürünler (${urunler.length})` : "Sana Özel Öneriler"}</h2>
+          <h2 style={{ margin: 0, fontSize: 18 }}>{isFiltered ? `Ürünler (${filteredProducts.length})` : "Sana Özel Öneriler"}</h2>
         </div>
         {/* Cilt tipi filtresi */}
         <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 14 }}>
@@ -219,9 +219,9 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
             );
           })}
         </div>
-        {urunler.length === 0 ? <p style={{ color: "var(--gg-muted)", fontSize: 13 }}>Bu filtreye uygun ürün yok.</p> : null}
+        {filteredProducts.length === 0 ? <p style={{ color: "var(--gg-muted)", fontSize: 13 }}>Bu filtreye uygun ürün yok.</p> : null}
         <div className="gg-grid cols-5">
-          {urunler.map((p, i) => (
+          {filteredProducts.map((p, i) => (
             <div key={p.id} style={{ position: "relative" }}>
               {p.indirim ? (
                 <span style={{ position: "absolute", top: 8, left: 8, zIndex: 2, background: "var(--gg-coral)", color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: 8, padding: "3px 7px" }}>%{p.indirim}</span>

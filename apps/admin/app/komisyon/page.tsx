@@ -30,7 +30,7 @@ const pct = (value: number) => `%${Number((value * 100).toFixed(2))}`;
 export default async function Commission({
   searchParams,
 }: {
-  searchParams: { country?: string; region?: string; campaign?: string; ok?: string; hata?: string };
+  searchParams: { country?: string; region?: string; campaign?: string; ok?: string; error?: string };
 }) {
   const session = (await auth()) as { accessToken?: string; roles?: string[] } | null;
   if (!session?.accessToken) redirect("/");
@@ -59,7 +59,7 @@ export default async function Commission({
     const rate = Number(form.get("platformRate"));
     const surcharge = Number(form.get("campaignSurcharge") ?? 0);
     if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
-      redirect("/komisyon?hata=" + encodeURIComponent("Komisyon oranı 0-100 arasında olmalı"));
+      redirect("/komisyon?error=" + encodeURIComponent("Komisyon oranı 0-100 arasında olmalı"));
     }
 
     const result = await adminSend(process.env.PURCHASE_API!, "/api/commissions", s.accessToken, "POST", {
@@ -73,7 +73,7 @@ export default async function Commission({
       note: String(form.get("note") ?? "").trim() || null,
     });
     revalidatePath("/komisyon");
-    redirect(result.ok ? "/komisyon?ok=1" : "/komisyon?hata=" + encodeURIComponent(result.error ?? "hata"));
+    redirect(result.ok ? "/komisyon?ok=1" : "/komisyon?error=" + encodeURIComponent(result.error ?? "error"));
   }
 
   async function deactivateRule(form: FormData) {
@@ -104,9 +104,9 @@ export default async function Commission({
           ✓ Kural eklendi — yeni satışlarda geçerli.
         </div>
       ) : null}
-      {searchParams.hata ? (
+      {searchParams.error ? (
         <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
-          Hata: {searchParams.hata}
+          Hata: {searchParams.error}
         </div>
       ) : null}
 

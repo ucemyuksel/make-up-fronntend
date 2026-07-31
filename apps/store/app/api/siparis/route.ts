@@ -23,8 +23,8 @@ export async function POST(request: Request) {
 
   let satirlar: SepetSatiri[];
   try {
-    const govde = (await request.json()) as { items?: SepetSatiri[] };
-    satirlar = (govde.items ?? []).filter((s) => s.productId && s.adet > 0);
+    const body = (await request.json()) as { items?: SepetSatiri[] };
+    satirlar = (body.items ?? []).filter((s) => s.productId && s.adet > 0);
   } catch {
     return NextResponse.json({ error: "Geçersiz istek" }, { status: 400 });
   }

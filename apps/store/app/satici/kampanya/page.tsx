@@ -2,13 +2,13 @@ import * as React from "react";
 import { Badge, SectionHeader } from "@makeup/ui";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
-import { requireSeller } from "../../yetki";
+import { requireSeller } from "../../authGuard";
 import { api, send, type Campaign } from "../../lib";
-import { BolgeSecici } from "../../bilesenler/BolgeSecici";
+import { RegionPicker } from "../../components/RegionPicker";
 
 export const metadata = { title: "Kampanya Tanımla — GlamGuide" };
 
-export default async function KampanyaTanimla({ searchParams }: { searchParams: { store?: string; ok?: string; hata?: string } }) {
+export default async function CampaignForm({ searchParams }: { searchParams: { store?: string; ok?: string; error?: string } }) {
   // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
   const { token } = await requireSeller("/satici");
   const store = searchParams.store;
@@ -27,9 +27,9 @@ export default async function KampanyaTanimla({ searchParams }: { searchParams: 
     let geoTargets: { countryCode: string; regionCode: string | null; cityName: string | null }[] = [];
     try {
       const ham = JSON.parse(String(formData.get("geoTargets") ?? "[]")) as
-        { ulke: string; ilKod: string; ilAd: string }[];
+        { country: string; ilKod: string; ilAd: string }[];
       geoTargets = ham.map((h) => ({
-        countryCode: h.ulke,
+        countryCode: h.country,
         regionCode: h.ilKod || null,
         cityName: h.ilAd || null,
       }));
@@ -45,7 +45,7 @@ export default async function KampanyaTanimla({ searchParams }: { searchParams: 
       endsAt: gun(formData.get("endsAt")),
       geoTargets,
     });
-    redirect(r.ok ? `/satici/kampanya?store=${store}&ok=1` : `/satici/kampanya?store=${store}&hata=${encodeURIComponent(r.error ?? "hata")}`);
+    redirect(r.ok ? `/satici/kampanya?store=${store}&ok=1` : `/satici/kampanya?store=${store}&error=${encodeURIComponent(r.error ?? "error")}`);
   }
 
   return (
@@ -56,7 +56,7 @@ export default async function KampanyaTanimla({ searchParams }: { searchParams: 
         <h1 style={{ margin: "8px 0 0" }}>Yeni Kampanya</h1>
       </div>
       {searchParams.ok ? <div style={{ background: "#E5F6EC", color: "#1E9E5A", padding: 12, borderRadius: 10 }}>✓ Kampanya oluşturuldu.</div> : null}
-      {searchParams.hata ? <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>Hata: {searchParams.hata}</div> : null}
+      {searchParams.error ? <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>Hata: {searchParams.error}</div> : null}
 
       <form action={kampanyaEkle} className="gg-card" style={{ display: "grid", gap: 12 }}>
         <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Kampanya başlığı
@@ -83,7 +83,7 @@ export default async function KampanyaTanimla({ searchParams }: { searchParams: 
         </div>
         <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--gg-border)", paddingTop: 12 }}>
           <strong style={{ fontSize: 14 }}>🌍 Nerede geçerli olsun</strong>
-          <BolgeSecici />
+          <RegionPicker />
         </div>
         <button className="gg-btn gg-btn-primary" type="submit" style={{ justifySelf: "start" }}>Kampanyayı Başlat</button>
       </form>

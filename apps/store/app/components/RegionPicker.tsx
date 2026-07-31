@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { ULKELER, ONE_CIKAN_ULKELER, ulkeAdi } from "./ulkeler";
-import { BOLGELER, bolgeAdi, bolgeleriOlan } from "./bolgeler";
+import { COUNTRIES, FEATURED_COUNTRIES, countryName } from "./countries";
+import { REGIONS, regionName, withRegions } from "./regions";
 
 /**
  * Coğrafi hedefleme seçici — dünyanın tamamı.
@@ -15,29 +15,29 @@ import { BOLGELER, bolgeAdi, bolgeleriOlan } from "./bolgeler";
  * (boş = ülke geneli), cityName = görünen ad.
  */
 
-type Hedef = { ulke: string; ilKod: string; ilAd: string };
+type Hedef = { country: string; ilKod: string; ilAd: string };
 
-export function BolgeSecici() {
+export function RegionPicker() {
   const [hedefler, setHedefler] = React.useState<Hedef[]>([]);
-  const [ulke, setUlke] = React.useState("TR");
-  const [bolge, setBolge] = React.useState("");
+  const [country, setUlke] = React.useState("TR");
+  const [region, setBolge] = React.useState("");
   const [serbestSehir, setSerbestSehir] = React.useState("");
 
-  const bolgeListesi = BOLGELER[ulke];
-  const listeVar = bolgeleriOlan(ulke);
+  const regionList = REGIONS[country];
+  const listeVar = withRegions(country);
 
   // Öne çıkan pazarlar üstte ayrı grupta; kalanlar alfabetik.
-  const isFeatured = ONE_CIKAN_ULKELER
-    .map((k) => ULKELER.find((u) => u.kod === k))
+  const isFeatured = FEATURED_COUNTRIES
+    .map((k) => COUNTRIES.find((u) => u.kod === k))
     .filter((u): u is { kod: string; ad: string } => Boolean(u));
-  const digerleri = ULKELER.filter((u) => !ONE_CIKAN_ULKELER.includes(u.kod));
+  const digerleri = COUNTRIES.filter((u) => !FEATURED_COUNTRIES.includes(u.kod));
 
   function ekle() {
     const yeni: Hedef = listeVar
-      ? { ulke, ilKod: bolge, ilAd: bolge ? bolgeAdi(ulke, bolge) : "" }
-      : { ulke, ilKod: "", ilAd: serbestSehir.trim() };
+      ? { country, ilKod: region, ilAd: region ? regionName(country, region) : "" }
+      : { country, ilKod: "", ilAd: serbestSehir.trim() };
 
-    const anahtar = (h: Hedef) => `${h.ulke}|${h.ilKod}|${h.ilAd.toLowerCase()}`;
+    const anahtar = (h: Hedef) => `${h.country}|${h.ilKod}|${h.ilAd.toLowerCase()}`;
     if (hedefler.some((h) => anahtar(h) === anahtar(yeni))) return;
 
     setHedefler([...hedefler, yeni]);
@@ -50,7 +50,7 @@ export function BolgeSecici() {
   }
 
   const etiket = (h: Hedef) =>
-    h.ilAd ? `${ulkeAdi(h.ulke)} · ${h.ilAd}` : `${ulkeAdi(h.ulke)} geneli`;
+    h.ilAd ? `${countryName(h.country)} · ${h.ilAd}` : `${countryName(h.country)} geneli`;
 
   return (
     <div style={{ display: "grid", gap: 10 }}>
@@ -60,7 +60,7 @@ export function BolgeSecici() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, alignItems: "end" }}>
         <label style={{ display: "grid", gap: 4, fontSize: 13, minWidth: 0 }}>
           Ülke
-          <select className="gg-search" value={ulke}
+          <select className="gg-search" value={country}
                   onChange={(e) => { setUlke(e.target.value); setBolge(""); setSerbestSehir(""); }}>
             <optgroup label="Öne çıkan pazarlar">
               {isFeatured.map((u) => <option key={u.kod} value={u.kod}>{u.ad}</option>)}
@@ -74,16 +74,16 @@ export function BolgeSecici() {
         {listeVar ? (
           <label style={{ display: "grid", gap: 4, fontSize: 13, minWidth: 0 }}>
             Şehir / Bölge
-            <select className="gg-search" value={bolge} onChange={(e) => setBolge(e.target.value)}>
-              <option value="">Tümü ({ulkeAdi(ulke)} geneli)</option>
-              {bolgeListesi.map((b) => <option key={b.kod} value={b.kod}>{b.ad}</option>)}
+            <select className="gg-search" value={region} onChange={(e) => setBolge(e.target.value)}>
+              <option value="">Tümü ({countryName(country)} geneli)</option>
+              {regionList.map((b) => <option key={b.kod} value={b.kod}>{b.ad}</option>)}
             </select>
           </label>
         ) : (
           <label style={{ display: "grid", gap: 4, fontSize: 13, minWidth: 0 }}>
             Şehir (opsiyonel)
             <input className="gg-search" value={serbestSehir} maxLength={80}
-                   placeholder={`Boş = ${ulkeAdi(ulke)} geneli`}
+                   placeholder={`Boş = ${countryName(country)} geneli`}
                    onChange={(e) => setSerbestSehir(e.target.value)} />
           </label>
         )}
@@ -102,7 +102,7 @@ export function BolgeSecici() {
       ) : (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {hedefler.map((h, i) => (
-            <span key={`${h.ulke}-${h.ilKod}-${h.ilAd}`} style={{
+            <span key={`${h.country}-${h.ilKod}-${h.ilAd}`} style={{
               background: "var(--gg-primary-soft)", color: "var(--gg-primary-dark)",
               borderRadius: 999, padding: "4px 10px", fontSize: 12.5,
               display: "inline-flex", alignItems: "center", gap: 6,

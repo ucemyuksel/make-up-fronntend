@@ -1,14 +1,14 @@
 import * as React from "react";
-import { SectionHeader, Badge, DunyaHaritasi, type SehirSatiri, type UlkeSatiri } from "@makeup/ui";
+import { SectionHeader, Badge, WorldMap, type CityRow, type CountryRow } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { auth } from "../../auth";
-import { requireSeller } from "../yetki";
+import { requireSeller } from "../authGuard";
 
 import { adApi, adSend, tl, type Advertiser, type AdCampaign, type LedgerDay } from "../lib";
 
 export const metadata = { title: "Reklam Paneli — GlamGuide" };
 
-const DURUM: Record<string, { etiket: string; renk: string; bg: string }> = {
+const STATUS_STYLE: Record<string, { etiket: string; renk: string; bg: string }> = {
   ACTIVE: { etiket: "Yayında", renk: "#1E9E5A", bg: "#E5F6EC" },
   PENDING: { etiket: "Onay bekliyor", renk: "#C98A1E", bg: "#FCF2DE" },
   PAUSED: { etiket: "Duraklatıldı", renk: "#6B7280", bg: "#F1F1F3" },
@@ -18,26 +18,26 @@ const DURUM: Record<string, { etiket: string; renk: string; bg: string }> = {
 };
 
 /** Satıcı sekmesi — eski/biten reklamlar da görülebilsin. */
-const SEKMELER: { key: string; label: string }[] = [
+const TABS: { key: string; label: string }[] = [
   { key: "", label: "Tümü" },
   { key: "ACTIVE", label: "Yayında" },
-  { key: "PENDING", label: "Onay bekleyen" },
+  { key: "PENDING", label: "Onay pending" },
   { key: "PAUSED", label: "Duraklatılan" },
   { key: "ENDED", label: "Sona eren" },
   { key: "REJECTED", label: "Reddedilen" },
 ];
 
-export default async function ReklamPanel({
+export default async function AdPanel({
   searchParams,
 }: {
-  searchParams: { ok?: string; hata?: string; durum?: string };
+  searchParams: { ok?: string; error?: string; status?: string };
 }) {
   // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
   const { token } = await requireSeller("/reklam");
 
   const advertiser = await adApi<Advertiser>("/api/advertisers/me", token);
 
-  async function durumDegis(formData: FormData) {
+  async function toggleStatus(formData: FormData) {
     "use server";
     const s = await auth();
     const t = (s as unknown as { accessToken?: string } | null)?.accessToken;
@@ -62,9 +62,9 @@ export default async function ReklamPanel({
             bölgeni ve bütçeni seç, yayına gönder.
           </p>
         </div>
-        {searchParams.hata ? (
+        {searchParams.error ? (
           <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
-            Hata: {searchParams.hata}
+            Hata: {searchParams.error}
           </div>
         ) : null}
         <a href="/reklam/kampanya" className="gg-btn gg-btn-primary" style={{ justifySelf: "start" }}>
@@ -80,16 +80,16 @@ export default async function ReklamPanel({
   }
 
   const tumKampanyalar = (await adApi<AdCampaign[]>("/api/campaigns/mine", token)) ?? [];
-  const durum = searchParams.durum ?? "";
+  const status = searchParams.status ?? "";
   // Süzgeç istemci tarafında: reklam veren kendi kampanyalarının tamamını zaten
   // çekiyor, ayrı bir istek atmaya gerek yok.
-  const campaigns = durum ? tumKampanyalar.filter((c) => c.status === durum) : tumKampanyalar;
+  const campaigns = status ? tumKampanyalar.filter((c) => c.status === status) : tumKampanyalar;
   const sayim = (d: string) => (d ? tumKampanyalar.filter((c) => c.status === d).length : tumKampanyalar.length);
   const ledger = (await adApi<LedgerDay[]>("/api/advertisers/me/ledger", token)) ?? [];
   // Reklamlarım nerede gösteriliyor — kendi coğrafi panom.
   const geo = await adApi<{
     totalImpressions: number; totalClicks: number; totalSpend: number; ctr: number;
-    countries: UlkeSatiri[]; cities: SehirSatiri[];
+    countries: CountryRow[]; cities: CityRow[];
   }>("/api/campaigns/geo/mine", token);
   const toplamHarcama = ledger.reduce((s, d) => s + Number(d.spend), 0);
 
@@ -139,7 +139,7 @@ export default async function ReklamPanel({
               {geo.totalClicks.toLocaleString("tr-TR")} tık · CTR {(geo.ctr * 100).toFixed(2)}%
             </span>
           </div>
-          <DunyaHaritasi ulkeler={geo.countries} sehirler={geo.cities} />
+          <WorldMap ulkeler={geo.countries} sehirler={geo.cities} />
           <div style={{ display: "grid", gap: 6 }}>
             {geo.countries.slice(0, 8).map((c) => {
               const pay = geo.totalImpressions > 0 ? c.impressions / geo.totalImpressions : 0;
@@ -166,9 +166,9 @@ export default async function ReklamPanel({
 
         {/* Durum sekmeleri — biten/reddedilen eski reklamlar da görülebilsin. */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "0 0 12px" }}>
-          {SEKMELER.map((t) => (
-            <a key={t.key} href={t.key ? `/reklam?durum=${t.key}` : "/reklam"}
-               className={`gg-btn ${durum === t.key ? "gg-btn-primary" : "gg-btn-ghost"}`}
+          {TABS.map((t) => (
+            <a key={t.key} href={t.key ? `/reklam?status=${t.key}` : "/reklam"}
+               className={`gg-btn ${status === t.key ? "gg-btn-primary" : "gg-btn-ghost"}`}
                style={{ fontSize: 12.5, padding: "5px 12px" }}>
               {t.label} ({sayim(t.key)})
             </a>
@@ -177,7 +177,7 @@ export default async function ReklamPanel({
 
         <div style={{ display: "grid", gap: 12 }}>
           {campaigns.map((c) => {
-            const d = DURUM[c.status] ?? DURUM.DRAFT;
+            const d = STATUS_STYLE[c.status] ?? STATUS_STYLE.DRAFT;
             return (
               <div key={c.id} className="gg-card" style={{ display: "grid", gap: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -197,9 +197,9 @@ export default async function ReklamPanel({
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <a href={`/reklam/${c.id}`} className="gg-btn gg-btn-ghost" style={{ padding: "5px 12px", fontSize: 13 }}>📊 Rapor</a>
                   {c.status === "ACTIVE" ? (
-                    <form action={durumDegis}><input type="hidden" name="id" value={c.id} /><input type="hidden" name="aksiyon" value="pause" /><button className="gg-btn gg-btn-ghost" style={{ padding: "5px 12px", fontSize: 13 }} type="submit">⏸ Duraklat</button></form>
+                    <form action={toggleStatus}><input type="hidden" name="id" value={c.id} /><input type="hidden" name="aksiyon" value="pause" /><button className="gg-btn gg-btn-ghost" style={{ padding: "5px 12px", fontSize: 13 }} type="submit">⏸ Duraklat</button></form>
                   ) : c.status === "PAUSED" ? (
-                    <form action={durumDegis}><input type="hidden" name="id" value={c.id} /><input type="hidden" name="aksiyon" value="resume" /><button className="gg-btn gg-btn-ghost" style={{ padding: "5px 12px", fontSize: 13 }} type="submit">▶ Sürdür</button></form>
+                    <form action={toggleStatus}><input type="hidden" name="id" value={c.id} /><input type="hidden" name="aksiyon" value="resume" /><button className="gg-btn gg-btn-ghost" style={{ padding: "5px 12px", fontSize: 13 }} type="submit">▶ Sürdür</button></form>
                   ) : null}
                 </div>
               </div>

@@ -47,18 +47,18 @@ export function ShareButton({ baslik, metin, url }: { baslik: string; metin?: st
   );
 }
 
-type Kayit = { id: string; tip: "post" | "reel"; baslik: string };
+type SavedItem = { id: string; tip: "post" | "reel"; baslik: string };
 
-function kayitlar(): Kayit[] {
+function savedItems(): SavedItem[] {
   try { return JSON.parse(localStorage.getItem("gg-kaydedilenler") ?? "[]"); } catch { return []; }
 }
 
-export function SaveButton({ id, tip, baslik }: Kayit) {
+export function SaveButton({ id, tip, baslik }: SavedItem) {
   const [kayitli, setKayitli] = React.useState(false);
-  React.useEffect(() => setKayitli(kayitlar().some((k) => k.id === id)), [id]);
+  React.useEffect(() => setKayitli(savedItems().some((k) => k.id === id)), [id]);
 
   const degistir = () => {
-    const mevcut = kayitlar();
+    const mevcut = savedItems();
     const yeni = kayitli ? mevcut.filter((k) => k.id !== id) : [...mevcut, { id, tip, baslik }];
     localStorage.setItem("gg-kaydedilenler", JSON.stringify(yeni));
     setKayitli(!kayitli);
@@ -77,15 +77,15 @@ export function SaveButton({ id, tip, baslik }: Kayit) {
 }
 
 /** Profildeki "Kaydedilenler" sekmesi — localStorage'daki kayıtları listeler. */
-export function KaydedilenlerListesi() {
-  const [liste, setListe] = React.useState<Kayit[]>([]);
-  React.useEffect(() => setListe(kayitlar()), []);
-  if (liste.length === 0) {
+export function SavedList() {
+  const [list, setListe] = React.useState<SavedItem[]>([]);
+  React.useEffect(() => setListe(savedItems()), []);
+  if (list.length === 0) {
     return <p style={{ color: "var(--gg-muted)" }}>Henüz kayıtlı içerik yok — gönderi/reel kartlarındaki 🔖 ile kaydet.</p>;
   }
   return (
     <div style={{ display: "grid", gap: 10 }}>
-      {liste.map((k) => (
+      {list.map((k) => (
         <div key={k.id} className="gg-card" style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <span style={{ fontSize: 18 }}>{k.tip === "reel" ? "🎬" : "📷"}</span>
           <span style={{ flex: 1, fontSize: 13.5 }}>{k.baslik}</span>
@@ -103,9 +103,9 @@ export function DislikeButton({ id }: { id: string }) {
     try { setBegenmedim(JSON.parse(localStorage.getItem("gg-dislike") ?? "[]").includes(id)); } catch { /* yok */ }
   }, [id]);
   const degistir = () => {
-    let liste: string[] = [];
-    try { liste = JSON.parse(localStorage.getItem("gg-dislike") ?? "[]"); } catch { /* yok */ }
-    const yeni = begenmedim ? liste.filter((x) => x !== id) : [...liste, id];
+    let list: string[] = [];
+    try { list = JSON.parse(localStorage.getItem("gg-dislike") ?? "[]"); } catch { /* yok */ }
+    const yeni = begenmedim ? list.filter((x) => x !== id) : [...list, id];
     localStorage.setItem("gg-dislike", JSON.stringify(yeni));
     setBegenmedim(!begenmedim);
   };
@@ -157,8 +157,8 @@ export function StoryBar({ hikayeler }: { hikayeler: Hikaye[] }) {
   const [reklamlar, setReklamlar] = React.useState<ServedAd[]>([]);
 
   React.useEffect(() => {
-    const ulke = tarayiciUlke();
-    fetch(`/api/ads/serve?placement=STORY&limit=3${ulke ? `&country=${ulke}` : ""}`)
+    const country = tarayiciUlke();
+    fetch(`/api/ads/serve?placement=STORY&limit=3${country ? `&country=${country}` : ""}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setReklamlar(Array.isArray(d) ? d : []))
       .catch(() => setReklamlar([]));
@@ -217,16 +217,16 @@ function StoryViewer({ hikayeler, reklamlar, baslangic, kapat }: { hikayeler: Hi
   // Slaytlar: her 3 hikayede bir reklam araya girer (mevcut reklam sayısınca).
   const slaytlar = React.useMemo<Slayt[]>(() => {
     const out: Slayt[] = [];
-    let adIdx = 0;
-    const yeniId = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${adIdx}`);
+    let adIndex = 0;
+    const yeniId = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${adIndex}`);
     hikayeler.forEach((h, k) => {
       out.push({ tip: "story", h });
-      if ((k + 1) % 3 === 0 && adIdx < reklamlar.length) {
-        out.push({ tip: "ad", ad: reklamlar[adIdx++], eventId: yeniId() });
+      if ((k + 1) % 3 === 0 && adIndex < reklamlar.length) {
+        out.push({ tip: "ad", ad: reklamlar[adIndex++], eventId: yeniId() });
       }
     });
     // Az hikaye varsa (araya reklam girmediyse) sona bir reklam ekle — sponsorlu slayt hep görünsün.
-    if (adIdx === 0 && reklamlar.length > 0) {
+    if (adIndex === 0 && reklamlar.length > 0) {
       out.push({ tip: "ad", ad: reklamlar[0], eventId: yeniId() });
     }
     return out;

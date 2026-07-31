@@ -2,13 +2,13 @@ import * as React from "react";
 import { Badge, MediaUpload } from "@makeup/ui";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
-import { requireSeller } from "../../yetki";
+import { requireSeller } from "../../authGuard";
 import { api, send, type Category } from "../../lib";
-import { OzellikAlanlari } from "../../bilesenler/OzellikAlanlari";
+import { AttributeFields } from "../../components/AttributeFields";
 
 export const metadata = { title: "Ürün Tanımla — GlamGuide" };
 
-export default async function UrunTanimla({ searchParams }: { searchParams: { store?: string; ok?: string; hata?: string } }) {
+export default async function ProductForm({ searchParams }: { searchParams: { store?: string; ok?: string; error?: string } }) {
   // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
   const { token } = await requireSeller("/satici");
   const store = searchParams.store;
@@ -47,7 +47,7 @@ export default async function UrunTanimla({ searchParams }: { searchParams: { st
       variant: String(formData.get("variant") ?? ""),
       attributes,
     });
-    redirect(r.ok ? `/satici/urun?store=${store}&ok=1` : `/satici/urun?store=${store}&hata=${encodeURIComponent(r.error ?? "hata")}`);
+    redirect(r.ok ? `/satici/urun?store=${store}&ok=1` : `/satici/urun?store=${store}&error=${encodeURIComponent(r.error ?? "error")}`);
   }
 
   return (
@@ -58,7 +58,7 @@ export default async function UrunTanimla({ searchParams }: { searchParams: { st
         <h1 style={{ margin: "8px 0 0" }}>Yeni Ürün + Fiyat</h1>
       </div>
       {searchParams.ok ? <div style={{ background: "#E5F6EC", color: "#1E9E5A", padding: 12, borderRadius: 10 }}>✓ Ürün eklendi.</div> : null}
-      {searchParams.hata ? <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>Hata: {searchParams.hata}</div> : null}
+      {searchParams.error ? <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>Hata: {searchParams.error}</div> : null}
 
       <form action={urunEkle} className="gg-card" style={{ display: "grid", gap: 12 }}>
         <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Ürün adı
@@ -71,7 +71,7 @@ export default async function UrunTanimla({ searchParams }: { searchParams: { st
         </div>
 
         {/* Kategori + alt kategori + kategoriye özel özellikler (dinamik) */}
-        <OzellikAlanlari kategoriler={categories} />
+        <AttributeFields kategoriler={categories} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Fiyat (₺)
             <input name="price" type="number" step="0.01" min="0" required className="gg-search" placeholder="1249.00" />

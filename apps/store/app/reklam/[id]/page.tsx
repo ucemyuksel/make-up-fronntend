@@ -6,7 +6,7 @@ import { adApi, tl, type AdCampaign, type GeoStat } from "../../lib";
 
 export const metadata = { title: "Kampanya Raporu — GlamGuide" };
 
-export default async function KampanyaRapor({ params }: { params: { id: string } }) {
+export default async function CampaignReport({ params }: { params: { id: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   if (!token) redirect("/api/auth/signin?callbackUrl=%2Freklam");
@@ -15,7 +15,7 @@ export default async function KampanyaRapor({ params }: { params: { id: string }
   if (!c) return <p>Kampanya bulunamadı. <a href="/reklam" className="gg-see-all">← Reklam Paneli</a></p>;
   const report = (await adApi<GeoStat[]>(`/api/campaigns/${params.id}/report`, token)) ?? [];
 
-  const bolge = (g: GeoStat) => [g.countryCode, g.regionCode, g.cityName].filter(Boolean).join(" › ");
+  const region = (g: GeoStat) => [g.countryCode, g.regionCode, g.cityName].filter(Boolean).join(" › ");
   const th: React.CSSProperties = { textAlign: "left", padding: "8px 10px", fontSize: 12, color: "var(--gg-muted)", borderBottom: "1px solid var(--gg-border)" };
   const td: React.CSSProperties = { padding: "8px 10px", fontSize: 13, borderBottom: "1px solid var(--gg-border)" };
 
@@ -56,7 +56,7 @@ export default async function KampanyaRapor({ params }: { params: { id: string }
               <tbody>
                 {report.map((g, i) => (
                   <tr key={i}>
-                    <td style={td}>{bolge(g) || "—"}</td>
+                    <td style={td}>{region(g) || "—"}</td>
                     <td style={{ ...td, textAlign: "right" }}>{g.impressions}</td>
                     <td style={{ ...td, textAlign: "right" }}>{g.clicks}</td>
                     <td style={{ ...td, textAlign: "right" }}>{g.impressions ? ((g.clicks / g.impressions) * 100).toFixed(1) : "0.0"}%</td>

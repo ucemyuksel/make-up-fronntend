@@ -1,7 +1,7 @@
 import * as React from "react";
 import { auth } from "../../../auth";
 import { api, img, timeAgo, type Post } from "../../lib";
-import { Yorumlar } from "./Yorumlar";
+import { Comments } from "./Comments";
 
 export const metadata = { title: "Gönderi — GlamGuide" };
 
@@ -58,7 +58,7 @@ export default async function GonderiDetay({
         </div>
       </article>
 
-      <Yorumlar postId={p.id} yorumlarKapali={p.commentsClosed === true} hata={searchParams.yhata} />
+      <Comments postId={p.id} yorumlarKapali={p.commentsClosed === true} error={searchParams.yhata} />
     </div>
   );
 }

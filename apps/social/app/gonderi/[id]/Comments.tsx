@@ -19,14 +19,14 @@ type Comment = {
   createdAt: string;
 };
 
-export async function Yorumlar({
+export async function Comments({
   postId,
   yorumlarKapali,
-  hata,
+  error,
 }: {
   postId: string;
   yorumlarKapali: boolean;
-  hata?: string;
+  error?: string;
 }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
@@ -86,11 +86,11 @@ export async function Yorumlar({
 
   return (
     <section style={{ display: "grid", gap: 14, marginTop: 20 }}>
-      <h2 style={{ margin: 0, fontSize: 17 }}>Yorumlar ({hepsi.length})</h2>
+      <h2 style={{ margin: 0, fontSize: 17 }}>Comments ({hepsi.length})</h2>
 
-      {hata ? (
+      {error ? (
         <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
-          Yorum eklenemedi ({hata}).
+          Yorum eklenemedi ({error}).
         </div>
       ) : null}
 

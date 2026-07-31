@@ -37,7 +37,7 @@ const TIPLER = [
 export default async function Kategoriler({
   searchParams,
 }: {
-  searchParams: { sec?: string; ok?: string; hata?: string };
+  searchParams: { sec?: string; ok?: string; error?: string };
 }) {
   const s = (await auth()) as { accessToken?: string; roles?: string[] } | null;
   if (!s?.accessToken) redirect("/");
@@ -60,10 +60,10 @@ export default async function Kategoriler({
       slug: String(form.get("slug") ?? "").trim() || ad.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
     });
     revalidatePath("/kategoriler");
-    redirect(r.ok ? "/kategoriler?ok=1" : `/kategoriler?hata=${encodeURIComponent(r.error ?? "hata")}`);
+    redirect(r.ok ? "/kategoriler?ok=1" : `/kategoriler?error=${encodeURIComponent(r.error ?? "error")}`);
   }
 
-  async function altKategoriEkle(form: FormData) {
+  async function addSubCategory(form: FormData) {
     "use server";
     const ses = (await auth()) as { accessToken?: string } | null;
     if (!ses?.accessToken) return;
@@ -74,7 +74,7 @@ export default async function Kategoriler({
       slug: String(form.get("slug") ?? "").trim() || ad.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
     });
     revalidatePath("/kategoriler");
-    redirect(r.ok ? `/kategoriler?sec=${kat}&ok=1` : `/kategoriler?sec=${kat}&hata=${encodeURIComponent(r.error ?? "hata")}`);
+    redirect(r.ok ? `/kategoriler?sec=${kat}&ok=1` : `/kategoriler?sec=${kat}&error=${encodeURIComponent(r.error ?? "error")}`);
   }
 
   async function ozellikEkle(form: FormData) {
@@ -96,9 +96,9 @@ export default async function Kategoriler({
           })
       : null;
 
-    const altSec = String(form.get("subCategoryId") ?? "");
+    const subCategoryId = String(form.get("subCategoryId") ?? "");
     const r = await adminSend(storeApi(), `/api/categories/${kat}/attributes`, ses.accessToken, "POST", {
-      subCategoryId: altSec || null,
+      subCategoryId: subCategoryId || null,
       key: String(form.get("key") ?? "").trim(),
       label: String(form.get("label") ?? "").trim(),
       type: tip,
@@ -109,7 +109,7 @@ export default async function Kategoriler({
       options,
     });
     revalidatePath("/kategoriler");
-    redirect(r.ok ? `/kategoriler?sec=${kat}&ok=1` : `/kategoriler?sec=${kat}&hata=${encodeURIComponent(r.error ?? "hata")}`);
+    redirect(r.ok ? `/kategoriler?sec=${kat}&ok=1` : `/kategoriler?sec=${kat}&error=${encodeURIComponent(r.error ?? "error")}`);
   }
 
   async function ozellikSil(form: FormData) {
@@ -120,7 +120,7 @@ export default async function Kategoriler({
     const r = await adminSend(storeApi(), `/api/categories/attributes/${form.get("id")}`,
       ses.accessToken, "DELETE");
     revalidatePath("/kategoriler");
-    redirect(r.ok ? `/kategoriler?sec=${kat}&ok=1` : `/kategoriler?sec=${kat}&hata=${encodeURIComponent(r.error ?? "hata")}`);
+    redirect(r.ok ? `/kategoriler?sec=${kat}&ok=1` : `/kategoriler?sec=${kat}&error=${encodeURIComponent(r.error ?? "error")}`);
   }
 
   const lbl = { display: "grid", gap: 4, fontSize: 12.5 } as const;
@@ -139,9 +139,9 @@ export default async function Kategoriler({
       {searchParams.ok ? (
         <div style={{ background: "#E5F6EC", color: "#1E9E5A", padding: 12, borderRadius: 10 }}>✓ Kaydedildi.</div>
       ) : null}
-      {searchParams.hata ? (
+      {searchParams.error ? (
         <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
-          Hata: {searchParams.hata}
+          Hata: {searchParams.error}
         </div>
       ) : null}
 
@@ -184,7 +184,7 @@ export default async function Kategoriler({
                 ))}
               </div>
             )}
-            <form action={altKategoriEkle} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <form action={addSubCategory} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <input type="hidden" name="categoryId" value={seciliKat.id} />
               <input name="name" required className="gg-search" placeholder="Alt kategori adı"
                      style={{ flex: 1, minWidth: 200 }} />

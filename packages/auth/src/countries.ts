@@ -39,7 +39,7 @@ export function countryFromIssuer(issuer?: string): string | undefined {
 }
 
 /**
- * Env ile daraltılabilir liste. Ortam başına farklı pazar açmak için:
+ * Env ile daraltılabilir list. Ortam başına farklı pazar açmak için:
  * `AUTH_COUNTRIES=tr,de`
  */
 export function enabledCountries(): Country[] {

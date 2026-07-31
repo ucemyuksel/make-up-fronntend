@@ -2,10 +2,10 @@ import * as React from "react";
 import { Badge, MediaUpload } from "@makeup/ui";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
-import { requireSeller } from "../../yetki";
+import { requireSeller } from "../../authGuard";
 import { adSend } from "../../lib";
-import { BolgeSecici } from "../../bilesenler/BolgeSecici";
-import { ButceSecici } from "../ButceSecici";
+import { RegionPicker } from "../../components/RegionPicker";
+import { BudgetPicker } from "../BudgetPicker";
 
 export const metadata = { title: "Reklam Ver — GlamGuide" };
 
@@ -13,7 +13,7 @@ export const metadata = { title: "Reklam Ver — GlamGuide" };
  * Tek adımda reklam verme. Ön koşul yok: reklam veren kaydı ilk reklamda
  * backend'de otomatik açılır, ayrıca "kampanya tanımlama" adımı gerekmez.
  */
-export default async function ReklamVer({ searchParams }: { searchParams: { hata?: string } }) {
+export default async function AdCreate({ searchParams }: { searchParams: { error?: string } }) {
   // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
   const { token } = await requireSeller("/reklam/kampanya");
 
@@ -23,13 +23,13 @@ export default async function ReklamVer({ searchParams }: { searchParams: { hata
     const t = (s as unknown as { accessToken?: string } | null)?.accessToken;
     if (!t) return;
 
-    // BolgeSecici hedefleri tek gizli alanda JSON olarak gönderir.
+    // RegionPicker hedefleri tek gizli alanda JSON olarak gönderir.
     let geoTargets: { countryCode: string; regionCode: string | null; cityName: string | null }[] = [];
     try {
       const ham = JSON.parse(String(formData.get("geoTargets") ?? "[]")) as
-        { ulke: string; ilKod: string; ilAd: string }[];
+        { country: string; ilKod: string; ilAd: string }[];
       geoTargets = ham.map((h) => ({
-        countryCode: h.ulke,
+        countryCode: h.country,
         regionCode: h.ilKod || null,
         cityName: h.ilAd || null,
       }));
@@ -51,7 +51,7 @@ export default async function ReklamVer({ searchParams }: { searchParams: { hata
       ctaUrl: String(formData.get("ctaUrl") ?? "").trim(),
       geoTargets,
     });
-    redirect(r.ok ? "/reklam?ok=1" : `/reklam/kampanya?hata=${encodeURIComponent(r.error ?? "hata")}`);
+    redirect(r.ok ? "/reklam?ok=1" : `/reklam/kampanya?error=${encodeURIComponent(r.error ?? "error")}`);
   }
 
   const lbl: React.CSSProperties = { display: "grid", gap: 4, fontSize: 13 };
@@ -69,9 +69,9 @@ export default async function ReklamVer({ searchParams }: { searchParams: { hata
           Bölgeni ve bütçeni seç, görselini yükle — tek adımda yayına gönder.
         </p>
       </div>
-      {searchParams.hata ? (
+      {searchParams.error ? (
         <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
-          Hata: {searchParams.hata}
+          Hata: {searchParams.error}
         </div>
       ) : null}
 
@@ -102,12 +102,12 @@ export default async function ReklamVer({ searchParams }: { searchParams: { hata
 
         <div style={bolum}>
           <strong style={{ fontSize: 14 }}>🌍 Nerede yayınlansın</strong>
-          <BolgeSecici />
+          <RegionPicker />
         </div>
 
         <div style={bolum}>
           <strong style={{ fontSize: 14 }}>💰 Bütçe</strong>
-          <ButceSecici />
+          <BudgetPicker />
         </div>
 
         <div style={bolum}>

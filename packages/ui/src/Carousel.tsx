@@ -10,7 +10,7 @@ export function Carousel({ children, itemWidth = 210, gap = 14 }: { children: Re
   const [solVar, setSolVar] = React.useState(false);
   const [sagVar, setSagVar] = React.useState(false);
 
-  const durumGuncelle = React.useCallback(() => {
+  const updateStatus = React.useCallback(() => {
     const el = ref.current;
     if (!el) return;
     setSolVar(el.scrollLeft > 4);
@@ -18,16 +18,16 @@ export function Carousel({ children, itemWidth = 210, gap = 14 }: { children: Re
   }, []);
 
   React.useEffect(() => {
-    durumGuncelle();
+    updateStatus();
     const el = ref.current;
     if (!el) return;
-    el.addEventListener("scroll", durumGuncelle, { passive: true });
-    window.addEventListener("resize", durumGuncelle);
+    el.addEventListener("scroll", updateStatus, { passive: true });
+    window.addEventListener("resize", updateStatus);
     return () => {
-      el.removeEventListener("scroll", durumGuncelle);
-      window.removeEventListener("resize", durumGuncelle);
+      el.removeEventListener("scroll", updateStatus);
+      window.removeEventListener("resize", updateStatus);
     };
-  }, [durumGuncelle]);
+  }, [updateStatus]);
 
   const kaydir = (yon: 1 | -1) => {
     const el = ref.current;

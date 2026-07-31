@@ -59,7 +59,7 @@ type Reel = {
 export default async function Content({
   searchParams,
 }: {
-  searchParams: { ok?: string; hata?: string; filtre?: string; tur?: string };
+  searchParams: { ok?: string; error?: string; filtre?: string; tur?: string };
 }) {
   const session = (await auth()) as { accessToken?: string; roles?: string[] } | null;
   if (!session?.accessToken) redirect("/");
@@ -102,10 +102,10 @@ export default async function Content({
             reason: String(form.get("reason") ?? "").trim(),
           },
     );
-    const donus = String(form.get("donus") ?? "/icerikler");
+    const returnTo = String(form.get("returnTo") ?? "/icerikler");
     revalidatePath("/icerikler");
-    const ek = donus.includes("?") ? "&" : "?";
-    redirect(result.ok ? `${donus}${ek}ok=1` : `${donus}${ek}hata=` + encodeURIComponent(result.error ?? "hata"));
+    const ek = returnTo.includes("?") ? "&" : "?";
+    redirect(result.ok ? `${returnTo}${ek}ok=1` : `${returnTo}${ek}error=` + encodeURIComponent(result.error ?? "error"));
   }
 
   const label: CSSProperties = { display: "grid", gap: 4, fontSize: 12.5 };
@@ -127,9 +127,9 @@ export default async function Content({
           ✓ Karar uygulandı.
         </div>
       ) : null}
-      {searchParams.hata ? (
+      {searchParams.error ? (
         <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
-          Hata: {searchParams.hata}
+          Hata: {searchParams.error}
         </div>
       ) : null}
 
@@ -212,7 +212,7 @@ export default async function Content({
                   <form action={moderate} style={{ display: "grid", gap: 8 }}>
                     <input type="hidden" name="id" value={reel.id} />
                     <input type="hidden" name="tur" value="video" />
-                    <input type="hidden" name="donus" value={back} />
+                    <input type="hidden" name="returnTo" value={back} />
                     <label style={label}>
                       Dağıtım seviyesi
                       <select name="visibility" className="gg-search" defaultValue={reel.visibility}
@@ -271,7 +271,7 @@ export default async function Content({
                   <form action={moderate} style={{ display: "grid", gap: 8 }}>
                     <input type="hidden" name="id" value={post.id} />
                     <input type="hidden" name="tur" value="gonderi" />
-                    <input type="hidden" name="donus" value={back} />
+                    <input type="hidden" name="returnTo" value={back} />
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" }}>
                       <label style={label}>
                         Dağıtım seviyesi

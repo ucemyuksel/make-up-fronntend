@@ -15,7 +15,7 @@ export const metadata = { title: "Giriş yap · GlamGuide" };
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: { callbackUrl?: string; hata?: string };
+  searchParams: { callbackUrl?: string; error?: string };
 }) {
   const session = await auth();
   if (session) redirect(searchParams.callbackUrl ?? "/");
@@ -32,7 +32,7 @@ export default async function SignInPage({
             Hesabının açıldığı ülkeyi seç.
           </p>
 
-          {searchParams.hata ? (
+          {searchParams.error ? (
             <p
               role="alert"
               style={{

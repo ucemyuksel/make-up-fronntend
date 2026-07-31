@@ -22,7 +22,7 @@ import Overlay from "ol/Overlay";
  * Tile'lar OSM'den gelir — istemci tarafında yüklenir, sunucuya yük bindirmez.
  */
 
-export type HaritaNoktasi = {
+export type MapPoint = {
   /** Benzersiz anahtar (ülke|şehir). */
   anahtar: string;
   ad: string;
@@ -44,7 +44,7 @@ export function GeoMap({
   zoom = 1.6,
   aramaGoster = true,
 }: {
-  noktalar: HaritaNoktasi[];
+  noktalar: MapPoint[];
   height?: number;
   /** [boylam, enlem] */
   merkez?: [number, number];
@@ -83,7 +83,7 @@ export function GeoMap({
     const katman = new VectorLayer({
       source,
       style: (feature) => {
-        const n = feature.get("nokta") as HaritaNoktasi;
+        const n = feature.get("nokta") as MapPoint;
         const r = yaricap(n.agirlik);
         return new Style({
           image: new CircleStyle({
@@ -135,7 +135,7 @@ export function GeoMap({
     harita.on("click", (evt) => {
       const f = harita.forEachFeatureAtPixel(evt.pixel, (x) => x);
       if (f) {
-        const n = f.get("nokta") as HaritaNoktasi;
+        const n = f.get("nokta") as MapPoint;
         harita.getView().animate({ center: fromLonLat([n.lon, n.lat]), zoom: 9, duration: 550 });
       }
     });
@@ -143,7 +143,7 @@ export function GeoMap({
     harita.on("pointermove", (evt) => {
       const f = harita.forEachFeatureAtPixel(evt.pixel, (x) => x);
       if (f) {
-        const n = f.get("nokta") as HaritaNoktasi;
+        const n = f.get("nokta") as MapPoint;
         setIpucu(n.detay ?? `${n.ad} — ${n.agirlik}`);
         ipucuOverlay.setPosition(evt.coordinate);
         harita.getTargetElement().style.cursor = "pointer";

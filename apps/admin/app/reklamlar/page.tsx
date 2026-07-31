@@ -2,7 +2,7 @@ import { auth } from "../../auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { adminApi, adminPost } from "../lib";
-import { DunyaHaritasi, type SehirSatiri, type UlkeSatiri } from "@makeup/ui";
+import { WorldMap, type CityRow, type CountryRow } from "@makeup/ui";
 
 export const metadata = { title: "Reklam Yönetimi — GlamGuide" };
 
@@ -29,7 +29,7 @@ type Campaign = {
   creative?: { mediaUrl: string; headline: string; ctaText: string };
 };
 
-const DURUM: Record<Campaign["status"], { bg: string; fg: string; text: string }> = {
+const STATUS_STYLE: Record<Campaign["status"], { bg: string; fg: string; text: string }> = {
   PENDING: { bg: "#FCF2DE", fg: "#C98A1E", text: "ONAY BEKLİYOR" },
   ACTIVE: { bg: "#E5F6EC", fg: "#1E9E5A", text: "YAYINDA" },
   PAUSED: { bg: "#F1F1F3", fg: "#6B7280", text: "DURAKLATILDI" },
@@ -38,9 +38,9 @@ const DURUM: Record<Campaign["status"], { bg: string; fg: string; text: string }
   DRAFT: { bg: "#F1F1F3", fg: "#6B7280", text: "TASLAK" },
 };
 
-const SEKMELER = [
+const TABS = [
   { key: "", label: "Tümü" },
-  { key: "PENDING", label: "Onay bekleyen" },
+  { key: "PENDING", label: "Onay pending" },
   { key: "ACTIVE", label: "Yayında" },
   { key: "PAUSED", label: "Duraklatılan" },
   { key: "REJECTED", label: "Reddedilen" },
@@ -49,7 +49,7 @@ const SEKMELER = [
 const tl = (n: number) =>
   "₺" + Number(n ?? 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const yuzde = (n: number) => (Number(n ?? 0) * 100).toFixed(2) + "%";
-const tarih = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("tr-TR") : "—");
+const formatDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("tr-TR") : "—");
 const hedef = (g: GeoTarget[]) =>
   g.length === 0
     ? "Tüm bölgeler"
@@ -58,7 +58,7 @@ const hedef = (g: GeoTarget[]) =>
 export default async function Ads({
   searchParams,
 }: {
-  searchParams: { durum?: string; ok?: string; hata?: string; q?: string };
+  searchParams: { status?: string; ok?: string; error?: string; q?: string };
 }) {
   const s = (await auth()) as { accessToken?: string; roles?: string[] } | null;
   if (!s?.accessToken) redirect("/");
@@ -67,16 +67,16 @@ export default async function Ads({
   // Coğrafi pano verisi (ülke + şehir kırılımı tek çağrıda).
   const geo = await adminApi<{
     totalImpressions: number; totalClicks: number; totalSpend: number; ctr: number;
-    countries: UlkeSatiri[]; cities: SehirSatiri[];
+    countries: CountryRow[]; cities: CityRow[];
   }>(
     process.env.AD_API!,
     // Durum süzgeci haritaya da uygulanır: "Yayında" seçilince harita yalnız
     // yayındaki kampanyaların şehirlerini gösterir ve kendiliğinden odaklanır.
-    `/api/campaigns/moderation/geo${searchParams.durum ? `?status=${searchParams.durum}` : ""}`,
+    `/api/campaigns/moderation/geo${searchParams.status ? `?status=${searchParams.status}` : ""}`,
     s.accessToken,
   );
 
-  const durum = searchParams.durum ?? "";
+  const status = searchParams.status ?? "";
   const q = (searchParams.q ?? "").trim();
   // Arama varsa durum sekmesi yerine arama sonucu gösterilir (kullanıcı adı,
   // e-posta, telefon ya da kampanya adı).
@@ -85,15 +85,15 @@ export default async function Ads({
       process.env.AD_API!,
       q
         ? `/api/campaigns/moderation/search?q=${encodeURIComponent(q)}`
-        : `/api/campaigns/moderation/all${durum ? `?status=${durum}` : ""}`,
+        : `/api/campaigns/moderation/all${status ? `?status=${status}` : ""}`,
       s.accessToken,
     )) ?? [];
 
   // Üst özet, süzgeçten bağımsız olsun diye tüm kampanyalardan hesaplanır.
-  const tumu = durum
+  const tumu = status
     ? (await adminApi<Campaign[]>(process.env.AD_API!, "/api/campaigns/moderation/all", s.accessToken)) ?? []
     : items;
-  const bekleyen = tumu.filter((c) => c.status === "PENDING").length;
+  const pending = tumu.filter((c) => c.status === "PENDING").length;
   const yayinda = tumu.filter((c) => c.status === "ACTIVE").length;
   const gunlukHarcama = tumu.reduce((t, c) => t + Number(c.spentToday ?? 0), 0);
   const toplamGosterim = tumu.reduce((t, c) => t + Number(c.impressions ?? 0), 0);
@@ -112,12 +112,12 @@ export default async function Ads({
         ? `/api/campaigns/moderation/${id}/${action}`
         : `/api/campaigns/${id}/${action}`;
     const ok = await adminPost(process.env.AD_API!, path, session.accessToken);
-    const donus = String(form.get("donus") ?? "/reklamlar");
+    const returnTo = String(form.get("returnTo") ?? "/reklamlar");
     revalidatePath("/reklamlar");
-    redirect(donus + (donus.includes("?") ? "&" : "?") + (ok ? "ok=1" : "hata=1"));
+    redirect(returnTo + (returnTo.includes("?") ? "&" : "?") + (ok ? "ok=1" : "error=1"));
   }
 
-  const back = `/reklamlar${durum ? `?durum=${durum}` : ""}`;
+  const back = `/reklamlar${status ? `?status=${status}` : ""}`;
 
   return (
     <main style={{ maxWidth: 980, margin: "0 auto", padding: 32, display: "grid", gap: 22 }}>
@@ -133,7 +133,7 @@ export default async function Ads({
       {searchParams.ok ? (
         <div style={{ background: "#E5F6EC", color: "#1E9E5A", padding: 12, borderRadius: 10 }}>✓ İşlem uygulandı.</div>
       ) : null}
-      {searchParams.hata ? (
+      {searchParams.error ? (
         <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
           İşlem uygulanamadı.
         </div>
@@ -155,14 +155,14 @@ export default async function Ads({
       {/* Kartlar süzgeç görevi görür: tıklanınca hem liste hem harita daralır. */}
       <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
         {[
-          { l: "Onay bekleyen", v: String(bekleyen), d: "PENDING" },
+          { l: "Onay pending", v: String(pending), d: "PENDING" },
           { l: "Yayında", v: String(yayinda), d: "ACTIVE" },
           { l: "Bugünkü harcama", v: tl(gunlukHarcama), d: "ACTIVE" },
           { l: "Toplam gösterim", v: toplamGosterim.toLocaleString("tr-TR"), d: "" },
         ].map((k) => {
-          const secili = durum === k.d;
+          const secili = status === k.d;
           return (
-            <a key={k.l} href={k.d ? `/reklamlar?durum=${k.d}` : "/reklamlar"}
+            <a key={k.l} href={k.d ? `/reklamlar?status=${k.d}` : "/reklamlar"}
                className="gg-card"
                style={{
                  display: "grid", gap: 4, textDecoration: "none", color: "inherit",
@@ -190,7 +190,7 @@ export default async function Ads({
             </span>
           </div>
 
-          <DunyaHaritasi ulkeler={geo.countries} sehirler={geo.cities} />
+          <WorldMap ulkeler={geo.countries} sehirler={geo.cities} />
 
           {/* Ülke kırılımı — haritanın yanındaki sıralı liste */}
           <div style={{ display: "grid", gap: 6 }}>
@@ -214,11 +214,11 @@ export default async function Ads({
       ) : null}
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {SEKMELER.map((t) => (
+        {TABS.map((t) => (
           <a
             key={t.key}
-            href={t.key ? `/reklamlar?durum=${t.key}` : "/reklamlar"}
-            className={`gg-btn ${durum === t.key ? "gg-btn-primary" : "gg-btn-ghost"}`}
+            href={t.key ? `/reklamlar?status=${t.key}` : "/reklamlar"}
+            className={`gg-btn ${status === t.key ? "gg-btn-primary" : "gg-btn-ghost"}`}
           >
             {t.label}
           </a>
@@ -229,14 +229,14 @@ export default async function Ads({
         <h2 style={{ fontSize: 17 }}>Kampanyalar ({items.length})</h2>
         {items.length === 0 ? (
           <p style={{ color: "var(--gg-muted)" }}>
-            {durum === "PENDING"
+            {status === "PENDING"
               ? "Onay bekleyen kampanya yok — tüm başvurular sonuçlandırılmış."
               : "Bu süzgeçle eşleşen kampanya yok."}
           </p>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {items.map((c) => {
-              const d = DURUM[c.status];
+              const d = STATUS_STYLE[c.status];
               const butceBitti = Number(c.remainingToday ?? 0) <= 0;
               return (
                 <article key={c.id} className="gg-card" style={{ display: "grid", gap: 10 }}>
@@ -275,7 +275,7 @@ export default async function Ads({
                     <span>Tık: <strong>{Number(c.clicks ?? 0).toLocaleString("tr-TR")}</strong></span>
                     <span>CTR: <strong>{yuzde(c.ctr)}</strong></span>
                     <span>Teklif: <strong>{c.pricingModel === "CPC" ? tl(c.cpcBid) : tl(c.cpmBid)}</strong></span>
-                    <span>Tarih: <strong>{tarih(c.startsAt)} → {tarih(c.endsAt)}</strong></span>
+                    <span>Tarih: <strong>{formatDate(c.startsAt)} → {formatDate(c.endsAt)}</strong></span>
                   </div>
 
                   <div style={{ fontSize: 12, color: "var(--gg-muted)" }}>Hedef bölgeler: {hedef(c.geoTargets)}</div>
@@ -286,13 +286,13 @@ export default async function Ads({
                         <form action={moderate}>
                           <input type="hidden" name="id" value={c.id} />
                           <input type="hidden" name="action" value="approve" />
-                          <input type="hidden" name="donus" value={back} />
+                          <input type="hidden" name="returnTo" value={back} />
                           <button className="gg-btn gg-btn-primary">Onayla</button>
                         </form>
                         <form action={moderate}>
                           <input type="hidden" name="id" value={c.id} />
                           <input type="hidden" name="action" value="reject" />
-                          <input type="hidden" name="donus" value={back} />
+                          <input type="hidden" name="returnTo" value={back} />
                           <button className="gg-btn gg-btn-ghost">Reddet</button>
                         </form>
                       </>
@@ -300,14 +300,14 @@ export default async function Ads({
                       <form action={moderate}>
                         <input type="hidden" name="id" value={c.id} />
                         <input type="hidden" name="action" value="pause" />
-                        <input type="hidden" name="donus" value={back} />
+                        <input type="hidden" name="returnTo" value={back} />
                         <button className="gg-btn gg-btn-ghost">Duraklat</button>
                       </form>
                     ) : c.status === "PAUSED" ? (
                       <form action={moderate}>
                         <input type="hidden" name="id" value={c.id} />
                         <input type="hidden" name="action" value="resume" />
-                        <input type="hidden" name="donus" value={back} />
+                        <input type="hidden" name="returnTo" value={back} />
                         <button className="gg-btn gg-btn-primary">Yayına al</button>
                       </form>
                     ) : null}

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { api, img, type Post, type Reel } from "../lib";
-import { KaydedilenlerListesi, DislikeButton, ShareButton } from "../etkilesim";
+import { SavedList, DislikeButton, ShareButton } from "../etkilesim";
 
 const HILITE = [["🎨", "Makyaj"], ["🧴", "Cilt Bakımı"], ["🤍", "Favoriler"], ["❓", "Q&A"], ["👤", "Ben"]];
 const TABS = [
@@ -124,7 +124,7 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
         </div>
       )}
 
-      {aktifTab === "kaydedilenler" && <KaydedilenlerListesi />}
+      {aktifTab === "kaydedilenler" && <SavedList />}
     </div>
   );
 }

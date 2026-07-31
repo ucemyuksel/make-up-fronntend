@@ -58,8 +58,8 @@ export function FaceAnalyzer() {
   const rafRef = React.useRef<number>(0);
   const modeRef = React.useRef<"IMAGE" | "VIDEO">("IMAGE");
 
-  const [durum, setDurum] = React.useState<"yükleniyor" | "hazır" | "hata">("yükleniyor");
-  const [hataMesaji, setHataMesaji] = React.useState("");
+  const [status, setStatus] = React.useState<"loading" | "ready" | "error">("loading");
+  const [errorMessage, setHataMesaji] = React.useState("");
   const [kamera, setKamera] = React.useState(false);
   const [noktalar, setNoktalar] = React.useState(true);
   const [guven, setGuven] = React.useState(0.5);
@@ -92,10 +92,10 @@ export function FaceAnalyzer() {
         });
         if (iptal) return;
         landmarkerRef.current = lm;
-        setDurum("hazır");
+        setStatus("ready");
       } catch (e) {
         if (!iptal) {
-          setDurum("hata");
+          setStatus("error");
           setHataMesaji(e instanceof Error ? e.message : String(e));
         }
       }
@@ -192,7 +192,7 @@ export function FaceAnalyzer() {
     setFps(0);
   }, []);
 
-  const kameraBaslat = React.useCallback(async () => {
+  const startCamera = React.useCallback(async () => {
     const lm = landmarkerRef.current;
     const v = videoRef.current;
     if (!lm || !v) return;
@@ -261,24 +261,24 @@ export function FaceAnalyzer() {
     <div className="gg-dash">
       <div style={{ display: "grid", gap: 24, minWidth: 0 }}>
         <section>
-          <Badge>{durum === "hazır" ? "MODEL HAZIR · MediaPipe Face Landmarker" : durum === "yükleniyor" ? "MODEL YÜKLENİYOR…" : "MODEL HATASI"}</Badge>
+          <Badge>{status === "ready" ? "MODEL HAZIR · MediaPipe Face Landmarker" : status === "loading" ? "MODEL YÜKLENİYOR…" : "MODEL HATASI"}</Badge>
           <h1 style={{ fontSize: "clamp(24px, 3.5vw, 34px)", margin: "12px 0 6px" }}>Yüz Analizi (AI)</h1>
           <p style={{ color: "var(--gg-muted)", margin: 0 }}>
             Telefon uygulamasında koşacak modelin kontrol paneli: 478 nokta + blendshape, tarayıcıda (WASM) çalışır.
           </p>
-          {durum === "hata" && <p style={{ color: "#c0392b" }}>Model yüklenemedi: {hataMesaji}</p>}
+          {status === "error" && <p style={{ color: "#c0392b" }}>Model yüklenemedi: {errorMessage}</p>}
         </section>
 
         <Card>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             {!kamera ? (
-              <button className="gg-btn gg-btn-primary" disabled={durum !== "hazır"} onClick={kameraBaslat}>📷 Kamerayı Başlat</button>
+              <button className="gg-btn gg-btn-primary" disabled={status !== "ready"} onClick={startCamera}>📷 Kamerayı Başlat</button>
             ) : (
               <button className="gg-btn gg-btn-ghost" onClick={kameraDur}>⏹ Kamerayı Durdur</button>
             )}
             <label className="gg-btn gg-btn-ghost" style={{ cursor: "pointer" }}>
               🖼️ Fotoğraf Yükle
-              <input type="file" accept="image/*" style={{ display: "none" }} disabled={durum !== "hazır"}
+              <input type="file" accept="image/*" style={{ display: "none" }} disabled={status !== "ready"}
                      onChange={(e) => e.target.files?.[0] && fotoAnalizEt(e.target.files[0])} />
             </label>
             <label style={{ display: "inline-flex", gap: 6, alignItems: "center", fontSize: 13 }}>

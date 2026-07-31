@@ -3,12 +3,12 @@ import { SectionHeader, Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../auth";
-import { requireSeller } from "../yetki";
+import { requireSeller } from "../authGuard";
 import { api, send, type Store } from "../lib";
 
 export const metadata = { title: "Satıcı Paneli — GlamGuide" };
 
-export default async function SaticiPanel({ searchParams }: { searchParams: { ok?: string; hata?: string } }) {
+export default async function SellerPanel({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
   // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
   const { token } = await requireSeller("/satici");
   const stores = (await api<Store[]>("/api/stores", token)) ?? [];
@@ -28,7 +28,7 @@ export default async function SaticiPanel({ searchParams }: { searchParams: { ok
       tagline: String(formData.get("tagline") ?? ""),
     });
     revalidatePath("/satici");
-    if (!r.ok) redirect(`/satici?hata=${encodeURIComponent(r.error ?? "hata")}`);
+    if (!r.ok) redirect(`/satici?error=${encodeURIComponent(r.error ?? "error")}`);
   }
 
   return (
@@ -38,7 +38,7 @@ export default async function SaticiPanel({ searchParams }: { searchParams: { ok
         <h1 style={{ margin: "8px 0 0" }}>Mağazalarım</h1>
       </div>
 
-      {searchParams.hata ? <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>Hata: {searchParams.hata}</div> : null}
+      {searchParams.error ? <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>Hata: {searchParams.error}</div> : null}
 
       {/* Mağaza aç */}
       <form action={magazaAc} className="gg-card" style={{ display: "grid", gap: 10 }}>

@@ -2,7 +2,7 @@ import * as React from "react";
 import { Badge } from "@makeup/ui";
 import { auth } from "../../../auth";
 import { api, reviewApi, tl, type Product, type ReviewSummary } from "../../lib";
-import { Degerlendirmeler } from "../../bilesenler/Degerlendirmeler";
+import { Ratings } from "../../components/Ratings";
 import { AddToCart } from "./AddToCart";
 
 const SWATCHES = ["#E7C4A0", "#D9A679", "#C98A5E", "#B06B45", "#8A4F33", "#5E3320"];
@@ -21,7 +21,7 @@ export default async function ProductDetail({
   if (!p) return <p>Ürün bulunamadı. <a href="/" className="gg-see-all">← Mağaza</a></p>;
 
   // Puan özeti başlıkta da gösterilir (eskiden sabit "4.8 (125)" yazıyordu).
-  const ozet = await reviewApi<ReviewSummary>(`/api/reviews/summary/PRODUCT/${p.id}`);
+  const summary = await reviewApi<ReviewSummary>(`/api/reviews/summary/PRODUCT/${p.id}`);
 
   return (
     <div style={{ maxWidth: 900 }}>
@@ -34,10 +34,10 @@ export default async function ProductDetail({
             <div style={{ color: "var(--gg-muted)" }}>{p.brand}</div>
           </div>
           <div style={{ fontSize: 13, color: "var(--gg-muted)" }}>
-            {ozet && ozet.count > 0 ? (
+            {summary && summary.count > 0 ? (
               <>
-                <span style={{ color: "var(--gg-star)" }}>★ {Number(ozet.average).toFixed(1)}</span>{" "}
-                ({ozet.count} değerlendirme)
+                <span style={{ color: "var(--gg-star)" }}>★ {Number(summary.average).toFixed(1)}</span>{" "}
+                ({summary.count} değerlendirme)
               </>
             ) : (
               <span>Henüz değerlendirilmedi</span>
@@ -64,7 +64,7 @@ export default async function ProductDetail({
         </div>
       </div>
 
-      <Degerlendirmeler tur="PRODUCT" subjectId={p.id} donusYolu={`/product/${p.id}`} hata={searchParams.yhata} />
+      <Ratings tur="PRODUCT" subjectId={p.id} donusYolu={`/product/${p.id}`} error={searchParams.yhata} />
     </div>
   );
 }

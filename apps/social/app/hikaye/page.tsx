@@ -16,10 +16,10 @@ type Story = {
 };
 
 /** Hikaye paylaşma + kendi aktif hikayelerim. Hikaye 24 saat sonra düşer. */
-export default async function HikayePaylas({
+export default async function StoryComposer({
   searchParams,
 }: {
-  searchParams: { ok?: string; hata?: string };
+  searchParams: { ok?: string; error?: string };
 }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
@@ -62,7 +62,7 @@ export default async function HikayePaylas({
     revalidatePath("/");
     // redirect() try/catch dışında — NEXT_REDIRECT yutulmasın.
     if (!res || !res.ok) {
-      redirect(`/hikaye?hata=${encodeURIComponent(res ? `HTTP ${res.status}` : "Sunucuya ulaşılamadı")}`);
+      redirect(`/hikaye?error=${encodeURIComponent(res ? `HTTP ${res.status}` : "Sunucuya ulaşılamadı")}`);
     }
     redirect("/hikaye?ok=1");
   }
@@ -83,9 +83,9 @@ export default async function HikayePaylas({
           ✓ Hikayen paylaşıldı.
         </div>
       ) : null}
-      {searchParams.hata ? (
+      {searchParams.error ? (
         <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
-          Paylaşılamadı: {searchParams.hata}
+          Paylaşılamadı: {searchParams.error}
         </div>
       ) : null}
 

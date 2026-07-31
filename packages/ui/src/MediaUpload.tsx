@@ -9,13 +9,13 @@ import * as React from "react";
 export function MediaUpload({ targetId, label = "Görsel yükle", accept = "image/*" }: {
   targetId: string; label?: string; accept?: string;
 }) {
-  const [durum, setDurum] = React.useState<"" | "yukleniyor" | "ok" | "hata">("");
+  const [status, setStatus] = React.useState<"" | "yukleniyor" | "ok" | "error">("");
   const [onizleme, setOnizleme] = React.useState("");
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    setDurum("yukleniyor");
+    setStatus("yukleniyor");
     try {
       const ext = (f.name.split(".").pop() || "").slice(0, 5);
       const pres = await fetch(`/api/media/presign?ext=${encodeURIComponent(ext)}`, { method: "POST" });
@@ -30,9 +30,9 @@ export function MediaUpload({ targetId, label = "Görsel yükle", accept = "imag
       const el = document.getElementById(targetId) as HTMLInputElement | null;
       if (el) el.value = publicUrl;
       setOnizleme(publicUrl);
-      setDurum("ok");
+      setStatus("ok");
     } catch {
-      setDurum("hata");
+      setStatus("error");
     }
   }
 
@@ -42,15 +42,15 @@ export function MediaUpload({ targetId, label = "Görsel yükle", accept = "imag
         {label}
         <input type="file" accept={accept} onChange={onFile} className="gg-search" />
       </label>
-      {durum === "yukleniyor" ? <span style={{ fontSize: 12, color: "var(--gg-muted)" }}>Yükleniyor…</span> : null}
-      {durum === "ok" ? (
+      {status === "yukleniyor" ? <span style={{ fontSize: 12, color: "var(--gg-muted)" }}>Yükleniyor…</span> : null}
+      {status === "ok" ? (
         <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12, color: "var(--gg-primary)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={onizleme} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 8 }} />
           Yüklendi ✓
         </div>
       ) : null}
-      {durum === "hata" ? <span style={{ fontSize: 12, color: "#B42318" }}>Yükleme başarısız — URL'yi elle girebilirsiniz.</span> : null}
+      {status === "error" ? <span style={{ fontSize: 12, color: "#B42318" }}>Yükleme başarısız — URL'yi elle girebilirsiniz.</span> : null}
     </div>
   );
 }

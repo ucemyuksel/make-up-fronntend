@@ -3,7 +3,7 @@
  *
  * Her ülkenin tüm alt bölümünü taşımak paketi gereksiz şişirir; listesi olan
  * ülkelerde açılır menü, olmayanlarda serbest şehir girişi kullanılır
- * ({@link BolgeSecici}). Kod backend'de {@code region_code VARCHAR(16)}.
+ * ({@link RegionPicker}). Kod backend'de {@code region_code VARCHAR(16)}.
  */
 export type Bolge = { kod: string; ad: string };
 
@@ -143,12 +143,12 @@ const AU: Bolge[] = [
   { kod: "ACT", ad: "Avustralya Başkent Bölgesi" }, { kod: "NT", ad: "Kuzey Toprakları" },
 ];
 
-export const BOLGELER: Record<string, Bolge[]> = {
+export const REGIONS: Record<string, Bolge[]> = {
   TR, US, DE, GB, NL, FR, AE, AZ, IT, ES, CA, AU,
 };
 
 /** Ülkenin bölge listesi var mı? Yoksa serbest şehir girişi kullanılır. */
-export const bolgeleriOlan = (ulkeKodu: string) => BOLGELER[ulkeKodu] !== undefined;
+export const withRegions = (ulkeKodu: string) => REGIONS[ulkeKodu] !== undefined;
 
-export const bolgeAdi = (ulkeKodu: string, bolgeKodu: string) =>
-  BOLGELER[ulkeKodu]?.find((b) => b.kod === bolgeKodu)?.ad ?? bolgeKodu;
+export const regionName = (ulkeKodu: string, bolgeKodu: string) =>
+  REGIONS[ulkeKodu]?.find((b) => b.kod === bolgeKodu)?.ad ?? bolgeKodu;

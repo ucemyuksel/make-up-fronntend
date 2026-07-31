@@ -3,12 +3,12 @@ import { SectionHeader, Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
-import { requireSeller } from "../../yetki";
+import { requireSeller } from "../../authGuard";
 import { api, type Store } from "../../lib";
 
 export const metadata = { title: "Cache Yönetimi — GlamGuide" };
 
-export default async function CacheYonetim({ searchParams }: { searchParams: { ok?: string; hata?: string } }) {
+export default async function CacheYonetim({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
   // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
   const { token } = await requireSeller("/satici/cache");
   const stores = (await api<Store[]>("/api/stores", token)) ?? [];
@@ -31,7 +31,7 @@ export default async function CacheYonetim({ searchParams }: { searchParams: { o
       purged = Number(j.purged ?? 0);
     } catch { /* gövde yok */ }
     revalidatePath("/satici/cache");
-    redirect(ok ? `/satici/cache?ok=${purged}` : `/satici/cache?hata=1`);
+    redirect(ok ? `/satici/cache?ok=${purged}` : `/satici/cache?error=1`);
   }
 
   return (
@@ -56,7 +56,7 @@ export default async function CacheYonetim({ searchParams }: { searchParams: { o
           ✓ Önbellek temizlendi ({searchParams.ok} anahtar). Güncel içerik artık anında görünür.
         </div>
       ) : null}
-      {searchParams.hata ? (
+      {searchParams.error ? (
         <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
           Temizleme başarısız. Yetkiniz olan bir mağaza mı seçtiniz?
         </div>

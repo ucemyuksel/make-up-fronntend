@@ -3,7 +3,7 @@ import { Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
-import { requireSeller } from "../../yetki";
+import { requireSeller } from "../../authGuard";
 import { api, reviewApi, reviewSend, yildiz, type Product, type Store, type Review } from "../../lib";
 
 export const metadata = { title: "Ürün Yorumları — GlamGuide" };
@@ -12,10 +12,10 @@ export const metadata = { title: "Ürün Yorumları — GlamGuide" };
  * Satıcının kendi ürünlerine gelen değerlendirmeler. Cevaplanmamışlar üstte
  * listelenir; satıcı yorumu silemez, yalnızca cevap verebilir.
  */
-export default async function SaticiYorumlar({
+export default async function SellerReviews({
   searchParams,
 }: {
-  searchParams: { store?: string; cevapsiz?: string; ok?: string; hata?: string };
+  searchParams: { store?: string; cevapsiz?: string; ok?: string; error?: string };
 }) {
   const { token } = await requireSeller("/satici/yorum");
 
@@ -30,9 +30,9 @@ export default async function SaticiYorumlar({
     );
   }
 
-  const urunler = (await api<Product[]>(`/api/products?storeId=${secili}`, token)) ?? [];
-  const urunAdi = new Map(urunler.map((u) => [u.id, u.name]));
-  const ids = urunler.map((u) => u.id).join(",");
+  const products = (await api<Product[]>(`/api/products?storeId=${secili}`, token)) ?? [];
+  const productNames = new Map(products.map((u) => [u.id, u.name]));
+  const ids = products.map((u) => u.id).join(",");
   const yalnizCevapsiz = searchParams.cevapsiz === "1";
 
   const yorumlar = ids
@@ -41,20 +41,20 @@ export default async function SaticiYorumlar({
         token,
       )) ?? []
     : [];
-  const cevapsizSayisi = yorumlar.filter((r) => !r.sellerReply).length;
+  const unansweredCount = yorumlar.filter((r) => !r.sellerReply).length;
 
   async function cevapla(formData: FormData) {
     "use server";
     const s = await auth();
     const t = (s as unknown as { accessToken?: string } | null)?.accessToken;
     if (!t) return;
-    const donus = String(formData.get("donus") ?? "/satici/yorum");
+    const returnTo = String(formData.get("returnTo") ?? "/satici/yorum");
     const r = await reviewSend(`/api/reviews/${formData.get("id")}/reply`, t, {
       reply: String(formData.get("reply") ?? "").trim(),
     });
     revalidatePath("/satici/yorum");
-    const ek = donus.includes("?") ? "&" : "?";
-    redirect(r.ok ? `${donus}${ek}ok=1` : `${donus}${ek}hata=${encodeURIComponent(r.error ?? "hata")}`);
+    const ek = returnTo.includes("?") ? "&" : "?";
+    redirect(r.ok ? `${returnTo}${ek}ok=1` : `${returnTo}${ek}error=${encodeURIComponent(r.error ?? "error")}`);
   }
 
   const back = `/satici/yorum?store=${secili}${yalnizCevapsiz ? "&cevapsiz=1" : ""}`;
@@ -73,9 +73,9 @@ export default async function SaticiYorumlar({
       {searchParams.ok ? (
         <div style={{ background: "#E5F6EC", color: "#1E9E5A", padding: 12, borderRadius: 10 }}>✓ Cevabın yayınlandı.</div>
       ) : null}
-      {searchParams.hata ? (
+      {searchParams.error ? (
         <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
-          Hata: {searchParams.hata}
+          Hata: {searchParams.error}
         </div>
       ) : null}
 
@@ -97,20 +97,20 @@ export default async function SaticiYorumlar({
         </a>
         <a href={`/satici/yorum?store=${secili}&cevapsiz=1`}
            className={`gg-btn ${yalnizCevapsiz ? "gg-btn-primary" : "gg-btn-ghost"}`}>
-          Cevap bekleyenler{!yalnizCevapsiz && cevapsizSayisi > 0 ? ` (${cevapsizSayisi})` : ""}
+          Cevap bekleyenler{!yalnizCevapsiz && unansweredCount > 0 ? ` (${unansweredCount})` : ""}
         </a>
       </div>
 
       {yorumlar.length === 0 ? (
         <p style={{ color: "var(--gg-muted)" }}>
-          {yalnizCevapsiz ? "Cevap bekleyen yorum yok." : "Henüz ürünlerine yorum gelmemiş."}
+          {yalnizCevapsiz ? "Cevap pending yorum yok." : "Henüz ürünlerine yorum gelmemiş."}
         </p>
       ) : (
         <div style={{ display: "grid", gap: 12 }}>
           {yorumlar.map((r) => (
             <article key={r.id} className="gg-card" style={{ display: "grid", gap: 9 }}>
               <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                <strong style={{ fontSize: 14 }}>{urunAdi.get(r.subjectId) ?? "Ürün"}</strong>
+                <strong style={{ fontSize: 14 }}>{productNames.get(r.subjectId) ?? "Ürün"}</strong>
                 <span style={{ color: "var(--gg-star)" }}>{yildiz(r.rating)}</span>
                 {r.verifiedPurchase ? (
                   <span style={{
@@ -145,7 +145,7 @@ export default async function SaticiYorumlar({
 
               <form action={cevapla} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input type="hidden" name="id" value={r.id} />
-                <input type="hidden" name="donus" value={back} />
+                <input type="hidden" name="returnTo" value={back} />
                 <input name="reply" required maxLength={2000} className="gg-search"
                        style={{ flex: 1, minWidth: 240 }}
                        placeholder={r.sellerReply ? "Cevabını güncelle" : "Müşteriye cevap yaz"} />

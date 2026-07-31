@@ -6,11 +6,11 @@ import { tl } from "../lib";
 import { purchases, STATUS, shortId, dateTr, type Purchase } from "./lib";
 
 // Sekmeler gerçek sipariş durumlarına eşlenir (purchase-service: PENDING/COMPLETED/FAILED).
-const TABS: { ad: string; durum: string | null }[] = [
-  { ad: "Tümü", durum: null },
-  { ad: "Kargoda", durum: "PENDING" },
-  { ad: "Teslim Edildi", durum: "COMPLETED" },
-  { ad: "İptal Edildi", durum: "FAILED" },
+const TABS: { ad: string; status: string | null }[] = [
+  { ad: "Tümü", status: null },
+  { ad: "Kargoda", status: "PENDING" },
+  { ad: "Teslim Edildi", status: "COMPLETED" },
+  { ad: "İptal Edildi", status: "FAILED" },
 ];
 
 export default async function Orders({ searchParams }: { searchParams: { t?: string; q?: string } }) {
@@ -21,12 +21,12 @@ export default async function Orders({ searchParams }: { searchParams: { t?: str
   }
   const hepsi = (await purchases<Purchase[]>("/api/purchases", token)) ?? [];
 
-  const aktifDurum = searchParams.t ?? null;
+  const activeStatus = searchParams.t ?? null;
   const q = (searchParams.q ?? "").trim().toLocaleLowerCase("tr");
 
-  // Filtre: sekme (durum) + arama (sipariş no / tarih / tutar / durum etiketi).
+  // Filtre: sekme (status) + arama (sipariş no / formatDate / tutar / status etiketi).
   const orders = hepsi.filter((o) => {
-    if (aktifDurum && o.status !== aktifDurum) return false;
+    if (activeStatus && o.status !== activeStatus) return false;
     if (q) {
       const etiket = (STATUS[o.status]?.label ?? "").toLocaleLowerCase("tr");
       const hedef = `${shortId(o.id)} ${o.id} ${dateTr(o.createdAt)} ${o.amountTry} ${etiket}`.toLocaleLowerCase("tr");
@@ -35,9 +35,9 @@ export default async function Orders({ searchParams }: { searchParams: { t?: str
     return true;
   });
 
-  const linkOf = (durum: string | null) => {
+  const linkOf = (status: string | null) => {
     const p = new URLSearchParams();
-    if (durum) p.set("t", durum);
+    if (status) p.set("t", status);
     if (searchParams.q) p.set("q", searchParams.q);
     const s = p.toString();
     return "/orders" + (s ? `?${s}` : "");
@@ -49,7 +49,7 @@ export default async function Orders({ searchParams }: { searchParams: { t?: str
 
       {/* Arama (GET formu — sunucuda filtrelenir) */}
       <form method="get" style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        {aktifDurum && <input type="hidden" name="t" value={aktifDurum} />}
+        {activeStatus && <input type="hidden" name="t" value={activeStatus} />}
         <input name="q" defaultValue={searchParams.q ?? ""} className="gg-search" style={{ flex: 1 }}
                placeholder="Sipariş no, tarih, tutar veya durum ara..." />
         <button className="gg-btn gg-btn-primary" type="submit">Ara</button>
@@ -57,11 +57,11 @@ export default async function Orders({ searchParams }: { searchParams: { t?: str
 
       <div style={{ display: "flex", gap: 18, borderBottom: "1px solid var(--gg-border)", marginBottom: 16, overflowX: "auto" }}>
         {TABS.map((t) => {
-          const aktif = aktifDurum === t.durum;
+          const aktif = activeStatus === t.status;
           return (
-            <a key={t.ad} href={linkOf(t.durum)}
+            <a key={t.ad} href={linkOf(t.status)}
                style={{ padding: "8px 2px", whiteSpace: "nowrap", borderBottom: aktif ? "2px solid var(--gg-primary)" : "2px solid transparent", color: aktif ? "var(--gg-primary)" : "var(--gg-muted)", fontWeight: 600, fontSize: 13.5 }}>
-              {t.ad} ({t.durum ? hepsi.filter((o) => o.status === t.durum).length : hepsi.length})
+              {t.ad} ({t.status ? hepsi.filter((o) => o.status === t.status).length : hepsi.length})
             </a>
           );
         })}
@@ -89,7 +89,7 @@ export default async function Orders({ searchParams }: { searchParams: { t?: str
         })}
         {orders.length === 0 && (
           <p style={{ color: "var(--gg-muted)" }}>
-            {q || aktifDurum ? "Filtreye uyan sipariş yok." : "Sipariş yok."}
+            {q || activeStatus ? "Filtreye uyan sipariş yok." : "Sipariş yok."}
           </p>
         )}
       </div>

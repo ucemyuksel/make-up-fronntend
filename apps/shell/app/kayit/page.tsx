@@ -16,7 +16,7 @@ type ApiError = { message?: string; violations?: { message?: string }[] };
 export default async function SignUpPage({
   searchParams,
 }: {
-  searchParams: { hata?: string; tur?: string };
+  searchParams: { error?: string; tur?: string };
 }) {
   const countries = enabledCountries();
   const isStore = searchParams.tur === "magaza";
@@ -54,7 +54,7 @@ export default async function SignUpPage({
     // redirect() try/catch DIŞINDA olmalı: NEXT_REDIRECT bir istisna olarak
     // atılır ve catch onu yutarsa yönlendirme sessizce kaybolur.
     if (message) {
-      redirect(`/kayit?tur=${searchParams.tur ?? ""}&hata=${encodeURIComponent(message)}`);
+      redirect(`/kayit?tur=${searchParams.tur ?? ""}&error=${encodeURIComponent(message)}`);
     }
     redirect("/giris?kayit=tamam");
   }
@@ -74,7 +74,7 @@ export default async function SignUpPage({
             </p>
           </div>
 
-          {searchParams.hata ? (
+          {searchParams.error ? (
             <p
               role="alert"
               style={{
@@ -82,7 +82,7 @@ export default async function SignUpPage({
                 background: "rgba(200,40,40,.1)", color: "#b02", fontSize: 14,
               }}
             >
-              {searchParams.hata}
+              {searchParams.error}
             </p>
           ) : null}
 

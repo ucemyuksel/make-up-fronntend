@@ -15,7 +15,7 @@ type ApiStory = {
   backgroundHex: string | null;
 };
 
-const RENKLER = ["#F6C6D8", "#EFB3C8", "#F3D9DE", "#E8B48F", "#E79A9A", "#C56A7A", "#F0C6A0", "#DCA8B9"];
+const COLORS = ["#F6C6D8", "#EFB3C8", "#F3D9DE", "#E8B48F", "#E79A9A", "#C56A7A", "#F0C6A0", "#DCA8B9"];
 
 export default async function Feed() {
   const session = await auth();
@@ -45,7 +45,7 @@ export default async function Feed() {
     ...(storiesRaw ?? []).slice(0, 12).map((s, i) => ({
       ad: `Kullanıcı ${s.authorUserId.slice(0, 4).toUpperCase()}`,
       metin: s.text,
-      renk: s.backgroundHex ?? RENKLER[i % RENKLER.length],
+      renk: s.backgroundHex ?? COLORS[i % COLORS.length],
       medyaUrl: s.mediaUrl,
       medyaTuru: s.mediaType,
     })),

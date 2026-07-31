@@ -22,12 +22,12 @@ const STORE_API = () => process.env.STORE_API ?? "http://localhost:8084";
 /**
  * Profil düzenleme. Telefon <b>ülke kodu + ulusal numara</b> olarak alınır;
  * kod listesi store-service'teki coğrafi referans verisinden gelir (sabit
- * kodlu liste yok).
+ * kodlu list yok).
  */
 export default async function ProfilDuzenle({
   searchParams,
 }: {
-  searchParams: { ok?: string; hata?: string };
+  searchParams: { ok?: string; error?: string };
 }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
@@ -75,7 +75,7 @@ export default async function ProfilDuzenle({
     revalidatePath("/profile");
     // redirect() try/catch dışında — NEXT_REDIRECT yutulmasın.
     if (!res || !res.ok) {
-      redirect(`/profile/duzenle?hata=${encodeURIComponent(res ? `HTTP ${res.status}` : "Sunucuya ulaşılamadı")}`);
+      redirect(`/profile/duzenle?error=${encodeURIComponent(res ? `HTTP ${res.status}` : "Sunucuya ulaşılamadı")}`);
     }
     redirect("/profile/duzenle?ok=1");
   }
@@ -95,9 +95,9 @@ export default async function ProfilDuzenle({
           ✓ Profilin güncellendi.
         </div>
       ) : null}
-      {searchParams.hata ? (
+      {searchParams.error ? (
         <div style={{ background: "#FBE6E6", color: "#B42318", padding: 12, borderRadius: 10 }}>
-          Kaydedilemedi: {searchParams.hata}
+          Kaydedilemedi: {searchParams.error}
         </div>
       ) : null}
 
