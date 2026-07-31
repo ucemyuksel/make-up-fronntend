@@ -3,14 +3,14 @@ import { SectionHeader, Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
-import { saticiKapisi } from "../../yetki";
+import { requireSeller } from "../../yetki";
 import { api, type Store } from "../../lib";
 
 export const metadata = { title: "Cache Yönetimi — GlamGuide" };
 
 export default async function CacheYonetim({ searchParams }: { searchParams: { ok?: string; hata?: string } }) {
   // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
-  const { token } = await saticiKapisi("/satici/cache");
+  const { token } = await requireSeller("/satici/cache");
   const stores = (await api<Store[]>("/api/stores", token)) ?? [];
 
   async function cacheTemizle(formData: FormData) {

@@ -2,7 +2,7 @@ import * as React from "react";
 import { Badge, MediaUpload } from "@makeup/ui";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
-import { saticiKapisi } from "../../yetki";
+import { requireSeller } from "../../yetki";
 import { adSend } from "../../lib";
 import { BolgeSecici } from "../../bilesenler/BolgeSecici";
 import { ButceSecici } from "../ButceSecici";
@@ -15,7 +15,7 @@ export const metadata = { title: "Reklam Ver — GlamGuide" };
  */
 export default async function ReklamVer({ searchParams }: { searchParams: { hata?: string } }) {
   // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
-  const { token } = await saticiKapisi("/reklam/kampanya");
+  const { token } = await requireSeller("/reklam/kampanya");
 
   async function olustur(formData: FormData) {
     "use server";

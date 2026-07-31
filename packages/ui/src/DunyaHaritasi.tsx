@@ -32,11 +32,11 @@ const tl = (n: number) =>
 export function DunyaHaritasi({
   ulkeler,
   sehirler,
-  yukseklik,
+  height,
 }: {
   ulkeler: UlkeSatiri[];
   sehirler: SehirSatiri[];
-  yukseklik?: number;
+  height?: number;
 }) {
   const noktalar = sehirler
     .map((s): HaritaNoktasi | null => {
@@ -59,7 +59,7 @@ export function DunyaHaritasi({
 
   return (
     <div style={{ display: "grid", gap: 10 }}>
-      <GeoMap noktalar={noktalar} yukseklik={yukseklik ?? 420} />
+      <GeoMap noktalar={noktalar} height={height ?? 420} />
       <div style={{ display: "flex", gap: 18, alignItems: "center", fontSize: 12, color: "var(--gg-muted)", flexWrap: "wrap" }}>
         <span>Kabarcık boyu = gösterim sayısı · fare ile üzerine gel</span>
         <span>{noktalar.length} şehir · {ulkeler.length} ülke</span>

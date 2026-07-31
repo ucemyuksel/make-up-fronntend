@@ -3,7 +3,7 @@ import { Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
-import { saticiKapisi } from "../../yetki";
+import { requireSeller } from "../../yetki";
 import { api, reviewApi, reviewSend, yildiz, type Product, type Store, type Review } from "../../lib";
 
 export const metadata = { title: "Ürün Yorumları — GlamGuide" };
@@ -17,7 +17,7 @@ export default async function SaticiYorumlar({
 }: {
   searchParams: { store?: string; cevapsiz?: string; ok?: string; hata?: string };
 }) {
-  const { token } = await saticiKapisi("/satici/yorum");
+  const { token } = await requireSeller("/satici/yorum");
 
   const stores = (await api<Store[]>("/api/stores", token)) ?? [];
   const secili = searchParams.store ?? stores[0]?.id;

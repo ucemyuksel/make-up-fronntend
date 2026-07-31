@@ -39,13 +39,13 @@ export type HaritaNoktasi = {
 
 export function GeoMap({
   noktalar,
-  yukseklik = 420,
+  height = 420,
   merkez = [20, 25],
   zoom = 1.6,
   aramaGoster = true,
 }: {
   noktalar: HaritaNoktasi[];
-  yukseklik?: number;
+  height?: number;
   /** [boylam, enlem] */
   merkez?: [number, number];
   zoom?: number;
@@ -211,7 +211,7 @@ export function GeoMap({
       <div
         ref={kutuRef}
         style={{
-          height: yukseklik,
+          height: height,
           width: "100%",
           borderRadius: 14,
           overflow: "hidden",

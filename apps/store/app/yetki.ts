@@ -7,7 +7,7 @@ import { auth } from "../auth";
  *
  * Dönüş: geçerli erişim jetonu ve roller.
  */
-export async function saticiKapisi(callbackUrl: string) {
+export async function requireSeller(callbackUrl: string) {
   const session = (await auth()) as { accessToken?: string; roles?: string[] } | null;
   const token = session?.accessToken;
 

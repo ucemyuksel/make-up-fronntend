@@ -3,7 +3,7 @@ import { Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
-import { saticiKapisi } from "../../yetki";
+import { requireSeller } from "../../yetki";
 
 export const metadata = { title: "Mesaj & Bildirimler — GlamGuide" };
 
@@ -58,7 +58,7 @@ export default async function SaticiBildirim({
 }: {
   searchParams: { ok?: string };
 }) {
-  const { token } = await saticiKapisi("/satici/bildirim");
+  const { token } = await requireSeller("/satici/bildirim");
 
   const [bildirimler, sohbetler] = await Promise.all([
     getir<Notification[]>(NOTIF_API(), "/api/notifications", token),

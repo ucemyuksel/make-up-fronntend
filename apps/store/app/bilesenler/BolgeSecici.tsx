@@ -27,7 +27,7 @@ export function BolgeSecici() {
   const listeVar = bolgeleriOlan(ulke);
 
   // Öne çıkan pazarlar üstte ayrı grupta; kalanlar alfabetik.
-  const oneCikan = ONE_CIKAN_ULKELER
+  const isFeatured = ONE_CIKAN_ULKELER
     .map((k) => ULKELER.find((u) => u.kod === k))
     .filter((u): u is { kod: string; ad: string } => Boolean(u));
   const digerleri = ULKELER.filter((u) => !ONE_CIKAN_ULKELER.includes(u.kod));
@@ -63,7 +63,7 @@ export function BolgeSecici() {
           <select className="gg-search" value={ulke}
                   onChange={(e) => { setUlke(e.target.value); setBolge(""); setSerbestSehir(""); }}>
             <optgroup label="Öne çıkan pazarlar">
-              {oneCikan.map((u) => <option key={u.kod} value={u.kod}>{u.ad}</option>)}
+              {isFeatured.map((u) => <option key={u.kod} value={u.kod}>{u.ad}</option>)}
             </optgroup>
             <optgroup label="Tüm ülkeler">
               {digerleri.map((u) => <option key={u.kod} value={u.kod}>{u.ad}</option>)}

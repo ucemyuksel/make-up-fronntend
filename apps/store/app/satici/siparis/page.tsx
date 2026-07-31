@@ -3,7 +3,7 @@ import { Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
-import { saticiKapisi } from "../../yetki";
+import { requireSeller } from "../../yetki";
 import { api, tl, type Product } from "../../lib";
 
 export const metadata = { title: "Siparişler & Kargo — GlamGuide" };
@@ -63,11 +63,12 @@ export default async function SaticiSiparisler({
 }: {
   searchParams: { durum?: string; ok?: string; hata?: string };
 }) {
-  const { token } = await saticiKapisi("/satici/siparis");
+  const { token } = await requireSeller("/satici/siparis");
 
   const durum = searchParams.durum ?? "";
   const [siparisler, ozet, urunler] = await Promise.all([
-    siparisApi<SellerOrder[]>(`/api/seller/orders${durum ? `?durum=${durum}` : ""}`, token),
+    // API parametresi `status` (tarayıcı URL'indeki `durum` kullanıcıya görünen ad)
+    siparisApi<SellerOrder[]>(`/api/seller/orders${durum ? `?status=${durum}` : ""}`, token),
     siparisApi<SellerSummary>("/api/seller/orders/summary", token),
     api<Product[]>("/api/products", token),
   ]);

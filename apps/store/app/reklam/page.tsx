@@ -2,7 +2,7 @@ import * as React from "react";
 import { SectionHeader, Badge, DunyaHaritasi, type SehirSatiri, type UlkeSatiri } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { auth } from "../../auth";
-import { saticiKapisi } from "../yetki";
+import { requireSeller } from "../yetki";
 
 import { adApi, adSend, tl, type Advertiser, type AdCampaign, type LedgerDay } from "../lib";
 
@@ -33,7 +33,7 @@ export default async function ReklamPanel({
   searchParams: { ok?: string; hata?: string; durum?: string };
 }) {
   // Satıcı kapısı: giriş + STORE_OWNER rolü (menüyü gizlemek yetmez).
-  const { token } = await saticiKapisi("/reklam");
+  const { token } = await requireSeller("/reklam");
 
   const advertiser = await adApi<Advertiser>("/api/advertisers/me", token);
 

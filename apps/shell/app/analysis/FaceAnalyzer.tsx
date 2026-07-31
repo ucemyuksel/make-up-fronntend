@@ -116,11 +116,11 @@ export function FaceAnalyzer() {
   /** Landmark'lardan türetilmiş metrikler — telefonda birebir aynı formüller kullanılacak. */
   const hesapla = React.useCallback(
     (lms: NormalizedLandmark[], blend: { categoryName: string; score: number }[], kaynak: HTMLVideoElement | HTMLImageElement): Analiz => {
-      const genislik = uzaklik(lms[234], lms[454]); // kulak-kulak
-      const yukseklik = uzaklik(lms[10], lms[152]); // alın-çene
+      const width = uzaklik(lms[234], lms[454]); // kulak-kulak
+      const height = uzaklik(lms[10], lms[152]); // alın-çene
       const cene = uzaklik(lms[58], lms[288]); // çene köşeleri
-      const oran = yukseklik / genislik;
-      const ceneOrani = cene / genislik;
+      const oran = height / width;
+      const ceneOrani = cene / width;
 
       let yuzSekli = "Oval";
       if (oran > 1.05) yuzSekli = "Uzun";

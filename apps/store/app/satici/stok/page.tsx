@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Badge } from "@makeup/ui";
-import { saticiKapisi } from "../../yetki";
+import { requireSeller } from "../../yetki";
 import { api, tl, type Product, type Store } from "../../lib";
 
 export const metadata = { title: "Stok Durumu — GlamGuide" };
@@ -25,7 +25,7 @@ export default async function StokDurumu({
 }: {
   searchParams: { store?: string; filtre?: string };
 }) {
-  const { token } = await saticiKapisi("/satici/stok");
+  const { token } = await requireSeller("/satici/stok");
 
   const stores = (await api<Store[]>("/api/stores", token)) ?? [];
   const secili = searchParams.store ?? stores[0]?.id;
