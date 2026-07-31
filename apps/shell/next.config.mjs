@@ -2,8 +2,10 @@
 // origin bazlı (NEXT_PUBLIC_*_URL); rewrite proxy'sine gerek yok.
 /** @type {import('next').NextConfig} */
 export default {
-  transpilePackages: ["@makeup/ui"],
+  transpilePackages: ["@makeup/ui", "@makeup/auth"],
   env: {
+    // Üyelik formu buraya POST eder (/api/registration anonimdir).
+    USER_API: process.env.USER_API || "http://localhost:8082",
     STORE_API: process.env.STORE_API || "http://localhost:8084",
     POST_API: process.env.POST_API || "http://localhost:8085",
     MESSAGING_API: process.env.MESSAGING_API || "http://localhost:8086",

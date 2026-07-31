@@ -8,6 +8,7 @@
     "start": "next start -p 3002"
   },
   "dependencies": {
+    "@makeup/auth": "*",
     "@makeup/ui": "*",
     "next": "14.2.5",
     "next-auth": "^5.0.0-beta.20",

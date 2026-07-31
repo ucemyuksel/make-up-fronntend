@@ -5,7 +5,7 @@
 // merkezileşir; zone asset izolasyonu assetPrefix ile yapılır.
 /** @type {import('next').NextConfig} */
 export default {
-  transpilePackages: ["@makeup/ui"],
+  transpilePackages: ["@makeup/ui", "@makeup/auth"],
   env: {
     RECIPE_API: process.env.RECIPE_API || "http://localhost:8083",
   },
