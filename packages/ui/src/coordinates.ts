@@ -29,7 +29,7 @@ export const CITY_COORDS: Record<string, [number, number]> = {
 
 export const COUNTRY_COORDS: Record<string, [number, number]> = {
   TR: [39.0, 35.0], DE: [51.2, 10.4], NL: [52.1, 5.3], GB: [54.0, -2.0], FR: [46.6, 2.2],
-  US: [39.8, -98.6], AE: [24.0, 54.0], AZ: [40.3, 47.7], JP: [36.2, 138.3], BR: [-14.2, -51.9],
+  US: [39.8, -98.6], AE: [24.0, 54.0], LOW: [40.3, 47.7], JP: [36.2, 138.3], BR: [-14.2, -51.9],
   CA: [56.1, -106.3], AU: [-25.3, 133.8], ES: [40.0, -3.7], IT: [42.8, 12.6], RU: [61.5, 105.3],
   IN: [20.6, 79.0], CN: [35.9, 104.2], EG: [26.8, 30.8], ZA: [-30.6, 22.9], MX: [23.6, -102.6],
   AR: [-38.4, -63.6], SE: [60.1, 18.6], PL: [51.9, 19.1], UA: [48.4, 31.2], SA: [23.9, 45.1],
@@ -42,10 +42,10 @@ export const COUNTRY_COORDS: Record<string, [number, number]> = {
 };
 
 /** Şehir → koordinat; yoksa ülke merkezi; o da yoksa null. */
-export function findCoordinates(ulkeKodu: string, city?: string | null): [number, number] | null {
+export function findCoordinates(countryCode: string, city?: string | null): [number, number] | null {
   if (city) {
-    const s = CITY_COORDS[`${ulkeKodu}|${city}`];
+    const s = CITY_COORDS[`${countryCode}|${city}`];
     if (s) return s;
   }
-  return COUNTRY_COORDS[ulkeKodu] ?? null;
+  return COUNTRY_COORDS[countryCode] ?? null;
 }

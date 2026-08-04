@@ -20,38 +20,38 @@ const MOD_ANAHTARI = "gg_panel_modu";
  */
 export function ShellNav({
   nav,
-  saticiNav,
+  sellerNav,
   fallbackActive,
 }: {
   nav: NavItem[];
   /** Verilirse mod anahtarı gösterilir (yalnız STORE_OWNER hesaplar). */
-  saticiNav?: NavItem[];
+  sellerNav?: NavItem[];
   fallbackActive: string;
 }) {
   const pathname = usePathname();
   const [origin, setOrigin] = React.useState("");
-  const [saticiModu, setSaticiModu] = React.useState(false);
+  const [sellerMode, setSellerMode] = React.useState(false);
 
   React.useEffect(() => {
     setOrigin(window.location.origin);
-    if (saticiNav) {
-      setSaticiModu(localStorage.getItem(MOD_ANAHTARI) === "satici");
+    if (sellerNav) {
+      setSellerMode(localStorage.getItem(MOD_ANAHTARI) === "seller");
     }
-  }, [saticiNav]);
+  }, [sellerNav]);
 
-  const modDegistir = (satici: boolean) => {
-    setSaticiModu(satici);
-    localStorage.setItem(MOD_ANAHTARI, satici ? "satici" : "alisveris");
+  const toggleMode = (seller: boolean) => {
+    setSellerMode(seller);
+    localStorage.setItem(MOD_ANAHTARI, seller ? "seller" : "alisveris");
   };
 
-  const aktifNav = saticiNav && saticiModu ? saticiNav : nav;
+  const activeNav = sellerNav && sellerMode ? sellerNav : nav;
 
   const activeKey = React.useMemo(() => {
     if (!origin) return fallbackActive;
     const full = origin + (pathname || "/");
     let best = fallbackActive;
     let bestLen = -1;
-    for (const n of aktifNav) {
+    for (const n of activeNav) {
       const href = n.href.replace(/\/+$/, "") || origin; // sondaki / normalize
       const matches = full === href || full === href + "/" || full.startsWith(href + "/");
       if (matches && href.length > bestLen) {
@@ -60,27 +60,27 @@ export function ShellNav({
       }
     }
     return best;
-  }, [origin, pathname, aktifNav, fallbackActive]);
+  }, [origin, pathname, activeNav, fallbackActive]);
 
   return (
     <>
-      {saticiNav ? (
+      {sellerNav ? (
         <div className="gg-mode-switch" role="group" aria-label="Panel modu">
-          <button type="button" onClick={() => modDegistir(false)}
-                  className={"gg-mode-btn" + (saticiModu ? "" : " active")}
-                  aria-pressed={!saticiModu}>
+          <button type="button" onClick={() => toggleMode(false)}
+                  className={"gg-mode-btn" + (sellerMode ? "" : " active")}
+                  aria-pressed={!sellerMode}>
             🛍️ Alışveriş
           </button>
-          <button type="button" onClick={() => modDegistir(true)}
-                  className={"gg-mode-btn" + (saticiModu ? " active" : "")}
-                  aria-pressed={saticiModu}>
+          <button type="button" onClick={() => toggleMode(true)}
+                  className={"gg-mode-btn" + (sellerMode ? " active" : "")}
+                  aria-pressed={sellerMode}>
             🏪 Satıcı
           </button>
         </div>
       ) : null}
 
       <nav className="gg-nav">
-        {aktifNav.map((n) => (
+        {activeNav.map((n) => (
           <a key={n.key} href={n.href} className={"gg-nav-item" + (n.key === activeKey ? " active" : "")}>
             <span className="ico">{n.icon}</span>
             <span className="lbl">{n.label}</span>

@@ -8,7 +8,7 @@ export type Purchase = {
   createdAt: string;
 };
 
-export const KDV_ORANI = 0.20; // Kozmetik KDV %20 (fiyatlar KDV dahil)
+export const VAT_RATE = 0.20; // Kozmetik KDV %20 (fiyatlar KDV dahil)
 
 export const STATUS: Record<string, { label: string; color: string; bg: string }> = {
   COMPLETED: { label: "Teslim Edildi", color: "#1E9E5A", bg: "#E5F6EC" },

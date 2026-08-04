@@ -12,7 +12,7 @@ export default async function ProductDetail({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { yhata?: string };
+  searchParams: { cerror?: string };
 }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
@@ -64,7 +64,7 @@ export default async function ProductDetail({
         </div>
       </div>
 
-      <Ratings tur="PRODUCT" subjectId={p.id} donusYolu={`/product/${p.id}`} error={searchParams.yhata} />
+      <Ratings kind="PRODUCT" subjectId={p.id} returnPath={`/product/${p.id}`} error={searchParams.cerror} />
     </div>
   );
 }

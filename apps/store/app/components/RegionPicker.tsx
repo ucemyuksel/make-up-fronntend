@@ -15,37 +15,37 @@ import { REGIONS, regionName, withRegions } from "./regions";
  * (boş = ülke geneli), cityName = görünen ad.
  */
 
-type Hedef = { country: string; ilKod: string; ilAd: string };
+type Hedef = { country: string; provinceCode: string; ilAd: string };
 
 export function RegionPicker() {
   const [hedefler, setHedefler] = React.useState<Hedef[]>([]);
-  const [country, setUlke] = React.useState("TR");
-  const [region, setBolge] = React.useState("");
-  const [serbestSehir, setSerbestSehir] = React.useState("");
+  const [country, setCountry] = React.useState("TR");
+  const [region, setRegion] = React.useState("");
+  const [freeCity, setFreeCity] = React.useState("");
 
   const regionList = REGIONS[country];
-  const listeVar = withRegions(country);
+  const hasList = withRegions(country);
 
   // Öne çıkan pazarlar üstte ayrı grupta; kalanlar alfabetik.
   const isFeatured = FEATURED_COUNTRIES
-    .map((k) => COUNTRIES.find((u) => u.kod === k))
-    .filter((u): u is { kod: string; ad: string } => Boolean(u));
-  const digerleri = COUNTRIES.filter((u) => !FEATURED_COUNTRIES.includes(u.kod));
+    .map((k) => COUNTRIES.find((u) => u.code === k))
+    .filter((u): u is { code: string; ad: string } => Boolean(u));
+  const digerleri = COUNTRIES.filter((u) => !FEATURED_COUNTRIES.includes(u.code));
 
-  function ekle() {
-    const yeni: Hedef = listeVar
-      ? { country, ilKod: region, ilAd: region ? regionName(country, region) : "" }
-      : { country, ilKod: "", ilAd: serbestSehir.trim() };
+  function add() {
+    const next: Hedef = hasList
+      ? { country, provinceCode: region, ilAd: region ? regionName(country, region) : "" }
+      : { country, provinceCode: "", ilAd: freeCity.trim() };
 
-    const anahtar = (h: Hedef) => `${h.country}|${h.ilKod}|${h.ilAd.toLowerCase()}`;
-    if (hedefler.some((h) => anahtar(h) === anahtar(yeni))) return;
+    const anahtar = (h: Hedef) => `${h.country}|${h.provinceCode}|${h.ilAd.toLowerCase()}`;
+    if (hedefler.some((h) => anahtar(h) === anahtar(next))) return;
 
-    setHedefler([...hedefler, yeni]);
-    setBolge("");
-    setSerbestSehir("");
+    setHedefler([...hedefler, next]);
+    setRegion("");
+    setFreeCity("");
   }
 
-  function sil(i: number) {
+  function remove(i: number) {
     setHedefler(hedefler.filter((_, x) => x !== i));
   }
 
@@ -61,34 +61,34 @@ export function RegionPicker() {
         <label style={{ display: "grid", gap: 4, fontSize: 13, minWidth: 0 }}>
           Ülke
           <select className="gg-search" value={country}
-                  onChange={(e) => { setUlke(e.target.value); setBolge(""); setSerbestSehir(""); }}>
+                  onChange={(e) => { setCountry(e.target.value); setRegion(""); setFreeCity(""); }}>
             <optgroup label="Öne çıkan pazarlar">
-              {isFeatured.map((u) => <option key={u.kod} value={u.kod}>{u.ad}</option>)}
+              {isFeatured.map((u) => <option key={u.code} value={u.code}>{u.ad}</option>)}
             </optgroup>
             <optgroup label="Tüm ülkeler">
-              {digerleri.map((u) => <option key={u.kod} value={u.kod}>{u.ad}</option>)}
+              {digerleri.map((u) => <option key={u.code} value={u.code}>{u.ad}</option>)}
             </optgroup>
           </select>
         </label>
 
-        {listeVar ? (
+        {hasList ? (
           <label style={{ display: "grid", gap: 4, fontSize: 13, minWidth: 0 }}>
             Şehir / Bölge
-            <select className="gg-search" value={region} onChange={(e) => setBolge(e.target.value)}>
+            <select className="gg-search" value={region} onChange={(e) => setRegion(e.target.value)}>
               <option value="">Tümü ({countryName(country)} geneli)</option>
-              {regionList.map((b) => <option key={b.kod} value={b.kod}>{b.ad}</option>)}
+              {regionList.map((b) => <option key={b.code} value={b.code}>{b.ad}</option>)}
             </select>
           </label>
         ) : (
           <label style={{ display: "grid", gap: 4, fontSize: 13, minWidth: 0 }}>
             Şehir (opsiyonel)
-            <input className="gg-search" value={serbestSehir} maxLength={80}
+            <input className="gg-search" value={freeCity} maxLength={80}
                    placeholder={`Boş = ${countryName(country)} geneli`}
-                   onChange={(e) => setSerbestSehir(e.target.value)} />
+                   onChange={(e) => setFreeCity(e.target.value)} />
           </label>
         )}
 
-        <button type="button" className="gg-btn gg-btn-ghost" onClick={ekle}>+ Ekle</button>
+        <button type="button" className="gg-btn gg-btn-ghost" onClick={add}>+ Ekle</button>
       </div>
 
       {hedefler.length === 0 ? (
@@ -102,13 +102,13 @@ export function RegionPicker() {
       ) : (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {hedefler.map((h, i) => (
-            <span key={`${h.country}-${h.ilKod}-${h.ilAd}`} style={{
+            <span key={`${h.country}-${h.provinceCode}-${h.ilAd}`} style={{
               background: "var(--gg-primary-soft)", color: "var(--gg-primary-dark)",
               borderRadius: 999, padding: "4px 10px", fontSize: 12.5,
               display: "inline-flex", alignItems: "center", gap: 6,
             }}>
               📍 {etiket(h)}
-              <button type="button" onClick={() => sil(i)} aria-label={`${etiket(h)} hedefini kaldır`}
+              <button type="button" onClick={() => remove(i)} aria-label={`${etiket(h)} hedefini kaldır`}
                       style={{ border: 0, background: "transparent", cursor: "pointer", fontSize: 14, lineHeight: 1 }}>
                 ×
               </button>

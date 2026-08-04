@@ -26,37 +26,37 @@ export type MapPoint = {
   /** Benzersiz anahtar (ülke|şehir). */
   anahtar: string;
   ad: string;
-  ulkeKodu: string;
+  countryCode: string;
   lat: number;
   lon: number;
   /** Kabarcık boyutunu belirleyen ana ölçü. */
-  agirlik: number;
+  weight: number;
   /** İkincil ölçü — doluysa iç nokta çizilir (ör. tık). */
   ikincil?: number;
   /** Fare üzerine gelince gösterilecek satırlar. */
-  detay?: string;
+  detail?: string;
 };
 
 export function GeoMap({
-  noktalar,
+  points,
   height = 420,
-  merkez = [20, 25],
+  center = [20, 25],
   zoom = 1.6,
-  aramaGoster = true,
+  showSearch = true,
 }: {
-  noktalar: MapPoint[];
+  points: MapPoint[];
   height?: number;
   /** [boylam, enlem] */
-  merkez?: [number, number];
+  center?: [number, number];
   zoom?: number;
   /** Şehir/ülke arama kutusu gösterilsin mi? */
-  aramaGoster?: boolean;
+  showSearch?: boolean;
 }) {
-  const kutuRef = React.useRef<HTMLDivElement | null>(null);
-  const ipucuRef = React.useRef<HTMLDivElement | null>(null);
+  const boxRef = React.useRef<HTMLDivElement | null>(null);
+  const hintRef = React.useRef<HTMLDivElement | null>(null);
   const haritaRef = React.useRef<Map | null>(null);
-  const [ipucu, setIpucu] = React.useState<string | null>(null);
-  const [arama, setArama] = React.useState("");
+  const [hint, setHint] = React.useState<string | null>(null);
+  const [search, setArama] = React.useState("");
 
   /** Bir noktaya yumuşak geçişle yakınlaş (arama sonucu / kabarcık tıklaması). */
   const odaklan = React.useCallback((lat: number, lon: number, hedefZoom = 8) => {
@@ -66,16 +66,16 @@ export function GeoMap({
   }, []);
 
   React.useEffect(() => {
-    if (!kutuRef.current) return;
+    if (!boxRef.current) return;
 
-    const enBuyuk = Math.max(1, ...noktalar.map((n) => n.agirlik));
+    const enBuyuk = Math.max(1, ...points.map((n) => n.weight));
     // Yarıçap alanla orantılı (sqrt) — büyük değerler haritayı ezmesin.
     const yaricap = (a: number) => 6 + Math.sqrt(a / enBuyuk) * 22;
 
     const source = new VectorSource({
-      features: noktalar.map((n) => {
+      features: points.map((n) => {
         const f = new Feature({ geometry: new Point(fromLonLat([n.lon, n.lat])) });
-        f.setProperties({ nokta: n });
+        f.setProperties({ point: n });
         return f;
       }),
     });
@@ -84,7 +84,7 @@ export function GeoMap({
       source,
       style: (feature) => {
         const n = feature.get("nokta") as MapPoint;
-        const r = yaricap(n.agirlik);
+        const r = yaricap(n.weight);
         return new Style({
           image: new CircleStyle({
             radius: r,
@@ -105,17 +105,17 @@ export function GeoMap({
       },
     });
 
-    const ipucuOverlay = new Overlay({
-      element: ipucuRef.current ?? undefined,
+    const hintOverlay = new Overlay({
+      element: hintRef.current ?? undefined,
       offset: [0, -14],
       positioning: "bottom-center",
     });
 
     const harita = new Map({
-      target: kutuRef.current,
+      target: boxRef.current,
       layers: [new TileLayer({ source: new OSM() }), katman],
-      overlays: [ipucuOverlay],
-      view: new View({ center: fromLonLat(merkez), zoom, minZoom: 1, maxZoom: 14 }),
+      overlays: [hintOverlay],
+      view: new View({ center: fromLonLat(center), zoom, minZoom: 1, maxZoom: 14 }),
       controls: [],
     });
     haritaRef.current = harita;
@@ -123,10 +123,10 @@ export function GeoMap({
     // Süzgeç değişince (ör. "Yayında" kartına tıklanınca) harita kalan
     // noktalara kendiliğinden odaklanır.
     const kapsam = source.getExtent();
-    if (noktalar.length > 0 && kapsam && isFinite(kapsam[0])) {
+    if (points.length > 0 && kapsam && isFinite(kapsam[0])) {
       harita.getView().fit(kapsam, {
         padding: [50, 50, 50, 50],
-        maxZoom: noktalar.length === 1 ? 8 : 6,
+        maxZoom: points.length === 1 ? 8 : 6,
         duration: 500,
       });
     }
@@ -144,11 +144,11 @@ export function GeoMap({
       const f = harita.forEachFeatureAtPixel(evt.pixel, (x) => x);
       if (f) {
         const n = f.get("nokta") as MapPoint;
-        setIpucu(n.detay ?? `${n.ad} — ${n.agirlik}`);
-        ipucuOverlay.setPosition(evt.coordinate);
+        setHint(n.detail ?? `${n.ad} — ${n.weight}`);
+        hintOverlay.setPosition(evt.coordinate);
         harita.getTargetElement().style.cursor = "pointer";
       } else {
-        setIpucu(null);
+        setHint(null);
         harita.getTargetElement().style.cursor = "";
       }
     });
@@ -157,24 +157,24 @@ export function GeoMap({
       harita.setTarget(undefined);
       haritaRef.current = null;
     };
-  }, [noktalar, merkez, zoom]);
+  }, [points, center, zoom]);
 
   // Arama: şehir veya ülke kodu. Türkçe karakterler eşleşsin diye aksanlar sökülür.
   const normalize = (s: string) =>
     s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLocaleLowerCase("tr");
-  const sonuclar = arama.trim().length < 2
+  const results = search.trim().length < 2
     ? []
-    : noktalar
-        .filter((n) => normalize(n.ad).includes(normalize(arama)) ||
-                       normalize(n.ulkeKodu).includes(normalize(arama)))
+    : points
+        .filter((n) => normalize(n.ad).includes(normalize(search)) ||
+                       normalize(n.countryCode).includes(normalize(search)))
         .slice(0, 8);
 
   return (
     <div style={{ position: "relative" }}>
-      {aramaGoster ? (
+      {showSearch ? (
         <div style={{ position: "absolute", top: 10, left: 10, zIndex: 5, width: 240 }}>
           <input
-            value={arama}
+            value={search}
             onChange={(e) => setArama(e.target.value)}
             placeholder="Şehir veya ülke ara…"
             aria-label="Haritada şehir veya ülke ara"
@@ -184,12 +184,12 @@ export function GeoMap({
               boxShadow: "0 2px 8px rgba(0,0,0,.12)",
             }}
           />
-          {sonuclar.length > 0 ? (
+          {results.length > 0 ? (
             <ul style={{
               listStyle: "none", margin: "4px 0 0", padding: 4, background: "#fff",
               borderRadius: 8, boxShadow: "0 4px 14px rgba(0,0,0,.16)", maxHeight: 220, overflowY: "auto",
             }}>
-              {sonuclar.map((n) => (
+              {results.map((n) => (
                 <li key={n.anahtar}>
                   <button
                     type="button"
@@ -200,7 +200,7 @@ export function GeoMap({
                     }}
                   >
                     <strong>{n.ad}</strong>{" "}
-                    <span style={{ color: "#777" }}>{n.ulkeKodu} · {n.agirlik} gösterim</span>
+                    <span style={{ color: "#777" }}>{n.countryCode} · {n.weight} gösterim</span>
                   </button>
                 </li>
               ))}
@@ -209,7 +209,7 @@ export function GeoMap({
         </div>
       ) : null}
       <div
-        ref={kutuRef}
+        ref={boxRef}
         style={{
           height: height,
           width: "100%",
@@ -222,9 +222,9 @@ export function GeoMap({
         aria-label="Reklam gösterimlerinin harita üzerindeki dağılımı"
       />
       <div
-        ref={ipucuRef}
+        ref={hintRef}
         style={{
-          display: ipucu ? "block" : "none",
+          display: hint ? "block" : "none",
           background: "rgba(30,20,25,.92)",
           color: "#fff",
           padding: "6px 9px",
@@ -234,7 +234,7 @@ export function GeoMap({
           pointerEvents: "none",
         }}
       >
-        {ipucu}
+        {hint}
       </div>
     </div>
   );

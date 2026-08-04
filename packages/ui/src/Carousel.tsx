@@ -7,14 +7,14 @@ import * as React from "react";
  */
 export function Carousel({ children, itemWidth = 210, gap = 14 }: { children: React.ReactNode; itemWidth?: number; gap?: number }) {
   const ref = React.useRef<HTMLDivElement>(null);
-  const [solVar, setSolVar] = React.useState(false);
-  const [sagVar, setSagVar] = React.useState(false);
+  const [hasLeft, setHasLeft] = React.useState(false);
+  const [hasRight, setHasRight] = React.useState(false);
 
   const updateStatus = React.useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    setSolVar(el.scrollLeft > 4);
-    setSagVar(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    setHasLeft(el.scrollLeft > 4);
+    setHasRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
   }, []);
 
   React.useEffect(() => {
@@ -29,10 +29,10 @@ export function Carousel({ children, itemWidth = 210, gap = 14 }: { children: Re
     };
   }, [updateStatus]);
 
-  const kaydir = (yon: 1 | -1) => {
+  const kaydir = (direction: 1 | -1) => {
     const el = ref.current;
     if (!el) return;
-    el.scrollBy({ left: yon * Math.round(el.clientWidth * 0.8), behavior: "smooth" });
+    el.scrollBy({ left: direction * Math.round(el.clientWidth * 0.8), behavior: "smooth" });
   };
 
   const okStil: React.CSSProperties = {
@@ -45,7 +45,7 @@ export function Carousel({ children, itemWidth = 210, gap = 14 }: { children: Re
 
   return (
     <div style={{ position: "relative" }}>
-      {solVar ? (
+      {hasLeft ? (
         <button type="button" aria-label="Sola kaydır" onClick={() => kaydir(-1)} style={{ ...okStil, left: -6 }}>‹</button>
       ) : null}
       <div
@@ -61,7 +61,7 @@ export function Carousel({ children, itemWidth = 210, gap = 14 }: { children: Re
           <div style={{ flex: `0 0 ${itemWidth}px`, scrollSnapAlign: "start" }}>{c}</div>
         ))}
       </div>
-      {sagVar ? (
+      {hasRight ? (
         <button type="button" aria-label="Sağa kaydır" onClick={() => kaydir(1)} style={{ ...okStil, right: -6 }}>›</button>
       ) : null}
     </div>

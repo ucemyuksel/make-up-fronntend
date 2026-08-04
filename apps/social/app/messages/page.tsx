@@ -24,7 +24,7 @@ type Message = {
   read: boolean;
 };
 
-// Gerçek ad user read-model'den (conversation.otherName); yoksa sunumsal ada düş.
+// Gerçek ad, user read-model’den (conversation.otherName); yoksa sunumsal ada düş.
 const nameOf = (id: string) => "Kullanıcı " + id.slice(0, 4).toUpperCase();
 const convName = (c: Conversation) => c.otherName ?? nameOf(c.otherUserId);
 

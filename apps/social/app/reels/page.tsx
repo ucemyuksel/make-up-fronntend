@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { api, type Reel } from "../lib";
-import { ShareButton, SaveButton } from "../etkilesim";
+import { ShareButton, SaveButton } from "../interactions";
 
 export default async function ReelsPage() {
   const session = await auth();
@@ -65,8 +65,8 @@ export default async function ReelsPage() {
                   <span>{r.viewCount}</span>
                 </span>
                 <span className="gg-reel-actions-end">
-                  <ShareButton baslik={r.caption} />
-                  <SaveButton id={r.id} tip="reel" baslik={r.caption} />
+                  <ShareButton title={r.caption} />
+                  <SaveButton id={r.id} tip="reel" title={r.caption} />
                 </span>
               </div>
             </div>

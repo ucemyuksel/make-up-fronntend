@@ -19,13 +19,13 @@ export default async function Orders({ searchParams }: { searchParams: { t?: str
   if (!token) {
     redirect("/api/auth/signin?callbackUrl=%2Forders"); // oturum yoksa login sayfasına yönlendir
   }
-  const hepsi = (await purchases<Purchase[]>("/api/purchases", token)) ?? [];
+  const all = (await purchases<Purchase[]>("/api/purchases", token)) ?? [];
 
   const activeStatus = searchParams.t ?? null;
   const q = (searchParams.q ?? "").trim().toLocaleLowerCase("tr");
 
   // Filtre: sekme (status) + arama (sipariş no / formatDate / tutar / status etiketi).
-  const orders = hepsi.filter((o) => {
+  const orders = all.filter((o) => {
     if (activeStatus && o.status !== activeStatus) return false;
     if (q) {
       const etiket = (STATUS[o.status]?.label ?? "").toLocaleLowerCase("tr");
@@ -57,11 +57,11 @@ export default async function Orders({ searchParams }: { searchParams: { t?: str
 
       <div style={{ display: "flex", gap: 18, borderBottom: "1px solid var(--gg-border)", marginBottom: 16, overflowX: "auto" }}>
         {TABS.map((t) => {
-          const aktif = activeStatus === t.status;
+          const active = activeStatus === t.status;
           return (
             <a key={t.ad} href={linkOf(t.status)}
-               style={{ padding: "8px 2px", whiteSpace: "nowrap", borderBottom: aktif ? "2px solid var(--gg-primary)" : "2px solid transparent", color: aktif ? "var(--gg-primary)" : "var(--gg-muted)", fontWeight: 600, fontSize: 13.5 }}>
-              {t.ad} ({t.status ? hepsi.filter((o) => o.status === t.status).length : hepsi.length})
+               style={{ padding: "8px 2px", whiteSpace: "nowrap", borderBottom: active ? "2px solid var(--gg-primary)" : "2px solid transparent", color: active ? "var(--gg-primary)" : "var(--gg-muted)", fontWeight: 600, fontSize: 13.5 }}>
+              {t.ad} ({t.status ? all.filter((o) => o.status === t.status).length : all.length})
             </a>
           );
         })}

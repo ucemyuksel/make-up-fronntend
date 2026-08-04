@@ -53,7 +53,7 @@ export function timeAgo(iso: string): string {
   return Math.floor(s / 86400) + " gün önce";
 }
 
-// Gerçek ad user read-model'den (post.authorName) gelir; henüz olay ulaşmadıysa
+// Gerçek ad, user read-model’den (post.authorName) gelir; henüz olay ulaşmadıysa
 // sunumsal ada düşülür.
 const NAMES = ["Makyaj.Sanatı", "BeautyGizem", "GlowQueen", "Melisa Güler"];
 export const authorName = (i: number) => NAMES[i % NAMES.length];

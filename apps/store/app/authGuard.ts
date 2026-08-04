@@ -16,7 +16,7 @@ export async function requireSeller(callbackUrl: string) {
   }
   const roles = session?.roles ?? [];
   if (!roles.includes("STORE_OWNER") && !roles.includes("ADMIN")) {
-    redirect("/yetkisiz");
+    redirect("/forbidden");
   }
   return { token, roles };
 }

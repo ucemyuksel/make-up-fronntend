@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { api, img, type Post, type Reel } from "../lib";
-import { SavedList, DislikeButton, ShareButton } from "../etkilesim";
+import { SavedList, DislikeButton, ShareButton } from "../interactions";
 
 const HILITE = [["🎨", "Makyaj"], ["🧴", "Cilt Bakımı"], ["🤍", "Favoriler"], ["❓", "Q&A"], ["👤", "Ben"]];
 const TABS = [
@@ -20,11 +20,11 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
   if (!token) {
     redirect("/api/auth/signin?callbackUrl=%2Fprofile");
   }
-  const aktifTab = searchParams.tab ?? "gonderiler";
+  const activeTab = searchParams.tab ?? "gonderiler";
 
   const [posts, reels] = await Promise.all([
     api<Post[]>(process.env.POST_API, "/api/posts", token),
-    aktifTab === "reels" ? api<Reel[]>(process.env.REELS_API, "/api/reels", token) : Promise.resolve(null),
+    activeTab === "reels" ? api<Reel[]>(process.env.REELS_API, "/api/reels", token) : Promise.resolve(null),
   ]);
 
   async function likePost(id: string) {
@@ -61,7 +61,7 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
           </div>
         </div>
         {/* Eskiden işlevsiz bir <button>'dı — artık düzenleme sayfasına gider. */}
-        <a href="/profile/duzenle" className="gg-btn gg-btn-ghost">Profili Düzenle</a>
+        <a href="/profile/edit" className="gg-btn gg-btn-ghost">Profili Düzenle</a>
       </div>
 
       {/* Öne çıkanlar */}
@@ -77,10 +77,10 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
       {/* Sekmeler — tıklanabilir (?tab=) */}
       <div style={{ display: "flex", gap: 20, borderBottom: "1px solid var(--gg-border)" }}>
         {TABS.map((t) => {
-          const aktif = t.anahtar === aktifTab;
+          const active = t.anahtar === activeTab;
           return (
             <a key={t.anahtar} href={`/profile?tab=${t.anahtar}`}
-               style={{ padding: "10px 2px", borderBottom: aktif ? "2px solid var(--gg-primary)" : "2px solid transparent", color: aktif ? "var(--gg-primary)" : "var(--gg-muted)", fontWeight: 600, fontSize: 14 }}>
+               style={{ padding: "10px 2px", borderBottom: active ? "2px solid var(--gg-primary)" : "2px solid transparent", color: active ? "var(--gg-primary)" : "var(--gg-muted)", fontWeight: 600, fontSize: 14 }}>
               {t.ad}
             </a>
           );
@@ -88,7 +88,7 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
       </div>
 
       {/* Sekme içerikleri */}
-      {aktifTab === "gonderiler" && (
+      {activeTab === "gonderiler" && (
         <div className="gg-grid cols-3">
           {(posts ?? []).map((p) => (
             <div key={p.id} className="gg-card" style={{ padding: 12, display: "grid", gap: 8 }}>
@@ -102,7 +102,7 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
                   </button>
                 </form>
                 <DislikeButton id={p.id} />
-                <span style={{ marginLeft: "auto" }}><ShareButton baslik={p.text.slice(0, 60)} /></span>
+                <span style={{ marginLeft: "auto" }}><ShareButton title={p.text.slice(0, 60)} /></span>
               </div>
             </div>
           ))}
@@ -110,7 +110,7 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
         </div>
       )}
 
-      {aktifTab === "reels" && (
+      {activeTab === "reels" && (
         <div className="gg-grid cols-3">
           {(reels ?? []).map((r) => (
             <a key={r.id} href="/reels" className="gg-card" style={{ padding: 12, display: "grid", gap: 8 }}>
@@ -124,7 +124,7 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
         </div>
       )}
 
-      {aktifTab === "kaydedilenler" && <SavedList />}
+      {activeTab === "kaydedilenler" && <SavedList />}
     </div>
   );
 }

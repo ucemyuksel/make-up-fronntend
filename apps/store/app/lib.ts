@@ -133,7 +133,7 @@ export async function reviewSend(
 }
 
 /** Yıldız gösterimi: dolu/boş yıldız dizisi. */
-export const yildiz = (puan: number) => "★".repeat(Math.round(puan)) + "☆".repeat(5 - Math.round(puan));
+export const star = (score: number) => "★".repeat(Math.round(score)) + "☆".repeat(5 - Math.round(score));
 
 // ---------------------------------------------------------------------------
 // Reklam (ad-service) istemcisi + tipleri

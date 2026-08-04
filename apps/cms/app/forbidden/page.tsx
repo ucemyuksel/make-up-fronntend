@@ -1,0 +1,1 @@
+export default function Unauthorized() { return <main style={{ maxWidth: 560, margin: "12vh auto", padding: 24 }}><h1>Yetkisiz erişim</h1><p>Bu alan yalnızca ADMIN rolüne atanmış hesaplar içindir.</p></main>; }

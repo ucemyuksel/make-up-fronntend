@@ -3,7 +3,7 @@ import { SectionHeader, ReelCard, Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { auth } from "../auth";
 import { api, timeAgo, authorName, yazarAdi, img, type Post, type Reel } from "./lib";
-import { StoryBar, ShareButton, SaveButton, DislikeButton, type Hikaye } from "./etkilesim";
+import { StoryBar, ShareButton, SaveButton, DislikeButton, type Story } from "./interactions";
 
 /** post-service /api/stories yanıtı. */
 type ApiStory = {
@@ -40,12 +40,12 @@ export default async function Feed() {
 
   // Hikâyeler artık gerçek: post-service'teki stories tablosundan gelir ve
   // 24 saat sonra kendiliğinden düşer. İlk halka her zaman "hikaye paylaş".
-  const hikayeler: Hikaye[] = [
-    { ad: "Hikayen", metin: "Hikaye paylaş ✨", renk: "#F3D9DE", href: "/hikaye" },
+  const stories: Story[] = [
+    { ad: "Hikayen", text: "Hikaye paylaş ✨", color: "#F3D9DE", href: "/story" },
     ...(storiesRaw ?? []).slice(0, 12).map((s, i) => ({
       ad: `Kullanıcı ${s.authorUserId.slice(0, 4).toUpperCase()}`,
-      metin: s.text,
-      renk: s.backgroundHex ?? COLORS[i % COLORS.length],
+      text: s.text,
+      color: s.backgroundHex ?? COLORS[i % COLORS.length],
       medyaUrl: s.mediaUrl,
       medyaTuru: s.mediaType,
     })),
@@ -68,7 +68,7 @@ export default async function Feed() {
   return (
     <div style={{ maxWidth: 720, display: "grid", gap: 22 }}>
       {/* Hikâye şeridi — tıklanınca tam ekran görüntüleyici (ilerleme çubuklu) */}
-      <StoryBar hikayeler={hikayeler} />
+      <StoryBar stories={stories} />
 
       <SectionHeader title="Haber Akışı" />
       <div style={{ display: "grid", gap: 16 }}>
@@ -94,12 +94,12 @@ export default async function Feed() {
                 </form>
                 <DislikeButton id={p.id} />
                 {/* Yorumlar detay sayfasında (iş parçacıklı cevaplarla). */}
-                <a href={`/gonderi/${p.id}`} style={{ color: "var(--gg-muted)", textDecoration: "none" }}>
+                <a href={`/post/${p.id}`} style={{ color: "var(--gg-muted)", textDecoration: "none" }}>
                   💬 {p.commentCount}
                 </a>
                 <span style={{ marginLeft: "auto", display: "inline-flex", gap: 14, alignItems: "center" }}>
-                  <ShareButton baslik={p.text.slice(0, 60)} />
-                  <SaveButton id={p.id} tip="post" baslik={p.text.slice(0, 60)} />
+                  <ShareButton title={p.text.slice(0, 60)} />
+                  <SaveButton id={p.id} tip="post" title={p.text.slice(0, 60)} />
                 </span>
               </div>
             </div>

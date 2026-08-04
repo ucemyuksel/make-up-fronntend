@@ -16,31 +16,31 @@ const MODEL_URL =
 const RECIPES_URL = process.env.NEXT_PUBLIC_RECIPES_URL || "http://localhost:3001";
 // ŞİMDİLİK: yüz analizine göre tarif eşleştirme henüz yok; buton doğrudan
 // ücretsiz "Doğal Günlük Makyaj" tarifinin adım-adım sayfasına gider (V4 seed id).
-const ONERILEN_TARIF_ID = "019f5000-0000-7000-8000-000000000001";
+const SUGGESTED_RECIPE_ID = "019f5000-0000-7000-8000-000000000001";
 
-type Analiz = {
-  yuzSekli: string;
-  oran: number;
-  cene: number;
-  gozAcikligi: number;
+type Analysis = {
+  faceShape: string;
+  ratio: number;
+  chin: number;
+  eyeOpenness: number;
   gulumseme: number;
   simetri: number;
-  tenTonu: string;
-  altTon: "sıcak" | "soğuk" | "nötr";
+  skinTone: string;
+  undertone: "sıcak" | "soğuk" | "nötr";
   rgb: [number, number, number];
-  ceneRgb: [number, number, number]; // çene hattı tonu — fondöten testi burada yapılır
+  chinRgb: [number, number, number]; // çene hattı tonu — fondöten testi burada yapılır
 };
 
 // Yüz şekline göre makyaj önerileri — tarif (recipe) kategorileriyle hizalı.
 const ONERILER: Record<string, string[]> = {
   Oval: ["Hafif kontur yeterli — doğal görünümü koru", "Elmacık kemiğine tarçın tonlu allık", "İnce, doğal kaş çizgisi"],
-  Yuvarlak: ["Yanak çukuruna diyagonal kontur", "Allığı elmacık kemiğinin üstüne, yukarı doğru uygula", "Kaşlarda hafif kavis yüzü uzatır"],
-  Kare: ["Çene hattını yumuşatan kontur", "Krem allıkla yuvarlak geçişler", "Kavisli kaş modeli sertliği kırar"],
+  Round: ["Yanak çukuruna diyagonal kontur", "Allığı elmacık kemiğinin üstüne, yukarı doğru uygula", "Kaşlarda hafif kavis yüzü uzatır"],
+  Square: ["Çene hattını yumuşatan kontur", "Krem allıkla yuvarlak geçişler", "Kavisli kaş modeli sertliği kırar"],
   Kalp: ["Alın kenarlarına hafif kontur", "Allığı yanağın ortasına yatay uygula", "Dudak odaklı makyaj dengeler"],
   Uzun: ["Alın üstü ve çene ucuna yatay kontur", "Allığı yatayda geniş uygula", "Düz kaş modeli yüzü kısaltır"],
 };
 
-const ALT_TON_ONERI: Record<Analiz["altTon"], string> = {
+const UNDERTONE_SUGGESTION: Record<Analysis["undertone"], string> = {
   sıcak: "Sarı/altın alt tonlu fondöten; şeftali-mercan ruj ve bronz far uyumlu.",
   soğuk: "Pembe alt tonlu fondöten; vişne-fuşya ruj ve gümüş/gri far uyumlu.",
   nötr: "Nötr fondöten esnektir; hem sıcak hem soğuk paletler kullanılabilir.",
@@ -59,26 +59,26 @@ export function FaceAnalyzer() {
   const modeRef = React.useRef<"IMAGE" | "VIDEO">("IMAGE");
 
   const [status, setStatus] = React.useState<"loading" | "ready" | "error">("loading");
-  const [errorMessage, setHataMesaji] = React.useState("");
-  const [kamera, setKamera] = React.useState(false);
-  const [noktalar, setNoktalar] = React.useState(true);
-  const [guven, setGuven] = React.useState(0.5);
+  const [errorMessage, setErrorMessage] = React.useState("");
+  const [camera, setCamera] = React.useState(false);
+  const [points, setPoints] = React.useState(true);
+  const [confidence, setConfidence] = React.useState(0.5);
   const [fps, setFps] = React.useState(0);
-  const [analiz, setAnalizHam] = React.useState<Analiz | null>(null);
+  const [analysis, setAnalysisRaw] = React.useState<Analysis | null>(null);
   // Analiz sonucu rehberli kameranın da kullanması için localStorage'a yazılır
   // (yüz şekline göre kontür/allık yerleşimi).
-  const setAnaliz = React.useCallback((a: Analiz | null) => {
-    setAnalizHam(a);
+  const setAnalysis = React.useCallback((a: Analysis | null) => {
+    setAnalysisRaw(a);
     if (a) {
-      localStorage.setItem("gg-yuz-sekli", a.yuzSekli);
-      localStorage.setItem("gg-alt-ton", a.altTon);
+      localStorage.setItem("gg-yuz-sekli", a.faceShape);
+      localStorage.setItem("gg-alt-ton", a.undertone);
     }
   }, []);
-  const [fotoUrl, setFotoUrl] = React.useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = React.useState<string | null>(null);
 
   // Modeli yükle (WASM + .task dosyası CDN'den).
   React.useEffect(() => {
-    let iptal = false;
+    let cancelled = false;
     (async () => {
       try {
         const { FilesetResolver, FaceLandmarker } = await import("@mediapipe/tasks-vision");
@@ -88,20 +88,20 @@ export function FaceAnalyzer() {
           outputFaceBlendshapes: true,
           runningMode: "IMAGE",
           numFaces: 1,
-          minFaceDetectionConfidence: guven,
+          minFaceDetectionConfidence: confidence,
         });
-        if (iptal) return;
+        if (cancelled) return;
         landmarkerRef.current = lm;
         setStatus("ready");
       } catch (e) {
-        if (!iptal) {
+        if (!cancelled) {
           setStatus("error");
-          setHataMesaji(e instanceof Error ? e.message : String(e));
+          setErrorMessage(e instanceof Error ? e.message : String(e));
         }
       }
     })();
     return () => {
-      iptal = true;
+      cancelled = true;
       cancelAnimationFrame(rafRef.current);
       landmarkerRef.current?.close();
     };
@@ -110,66 +110,66 @@ export function FaceAnalyzer() {
   }, []);
 
   React.useEffect(() => {
-    landmarkerRef.current?.setOptions({ minFaceDetectionConfidence: guven });
-  }, [guven]);
+    landmarkerRef.current?.setOptions({ minFaceDetectionConfidence: confidence });
+  }, [confidence]);
 
   /** Landmark'lardan türetilmiş metrikler — telefonda birebir aynı formüller kullanılacak. */
-  const hesapla = React.useCallback(
-    (lms: NormalizedLandmark[], blend: { categoryName: string; score: number }[], kaynak: HTMLVideoElement | HTMLImageElement): Analiz => {
+  const compute = React.useCallback(
+    (lms: NormalizedLandmark[], blend: { categoryName: string; score: number }[], source: HTMLVideoElement | HTMLImageElement): Analysis => {
       const width = uzaklik(lms[234], lms[454]); // kulak-kulak
       const height = uzaklik(lms[10], lms[152]); // alın-çene
-      const cene = uzaklik(lms[58], lms[288]); // çene köşeleri
-      const oran = height / width;
-      const ceneOrani = cene / width;
+      const chin = uzaklik(lms[58], lms[288]); // çene köşeleri
+      const ratio = height / width;
+      const chinRatio = chin / width;
 
-      let yuzSekli = "Oval";
-      if (oran > 1.05) yuzSekli = "Uzun";
-      else if (oran < 0.82) yuzSekli = "Yuvarlak";
-      else if (ceneOrani > 0.78) yuzSekli = "Kare";
-      else if (ceneOrani < 0.62) yuzSekli = "Kalp";
+      let faceShape = "Oval";
+      if (ratio > 1.05) faceShape = "Uzun";
+      else if (ratio < 0.82) faceShape = "Yuvarlak";
+      else if (chinRatio > 0.78) faceShape = "Kare";
+      else if (chinRatio < 0.62) faceShape = "Kalp";
 
       const skor = (ad: string) => blend.find((b) => b.categoryName === ad)?.score ?? 0;
-      const gozAcikligi = 1 - (skor("eyeBlinkLeft") + skor("eyeBlinkRight")) / 2;
+      const eyeOpenness = 1 - (skor("eyeBlinkLeft") + skor("eyeBlinkRight")) / 2;
       const gulumseme = (skor("mouthSmileLeft") + skor("mouthSmileRight")) / 2;
 
       // Simetri: burun köküne (168) göre sol/sağ elmacık uzaklık farkı.
-      const sol = uzaklik(lms[168], lms[234]);
-      const sag = uzaklik(lms[168], lms[454]);
-      const simetri = Math.max(0, 1 - Math.abs(sol - sag) / Math.max(sol, sag));
+      const left = uzaklik(lms[168], lms[234]);
+      const right = uzaklik(lms[168], lms[454]);
+      const simetri = Math.max(0, 1 - Math.abs(left - right) / Math.max(left, right));
 
       // Ten tonu: yanak landmark'ının (425) piksel rengi.
       const c = document.createElement("canvas");
-      const w = kaynak instanceof HTMLVideoElement ? kaynak.videoWidth : kaynak.naturalWidth;
-      const h = kaynak instanceof HTMLVideoElement ? kaynak.videoHeight : kaynak.naturalHeight;
+      const w = source instanceof HTMLVideoElement ? source.videoWidth : source.naturalWidth;
+      const h = source instanceof HTMLVideoElement ? source.videoHeight : source.naturalHeight;
       c.width = w; c.height = h;
       const ctx = c.getContext("2d")!;
-      ctx.drawImage(kaynak, 0, 0, w, h);
+      ctx.drawImage(source, 0, 0, w, h);
       const px = ctx.getImageData(Math.round(lms[425].x * w), Math.round(lms[425].y * h), 1, 1).data;
       const [r, g, b] = [px[0], px[1], px[2]];
       // Çene hattı tonu: makyözler fondöten testini elde değil ÇENE HATTINDA yapar
       // (yüz+boyun uyumu birlikte görülür).
       const cpx = ctx.getImageData(Math.round(lms[172].x * w), Math.round(lms[172].y * h), 1, 1).data;
-      const ceneRgb: [number, number, number] = [cpx[0], cpx[1], cpx[2]];
-      const parlaklik = (r + g + b) / 3;
-      const tenTonu = parlaklik > 170 ? "Açık" : parlaklik > 110 ? "Orta" : "Koyu";
-      const fark = r - b;
-      const altTon: Analiz["altTon"] = fark > 25 ? "sıcak" : fark < 8 ? "soğuk" : "nötr";
+      const chinRgb: [number, number, number] = [cpx[0], cpx[1], cpx[2]];
+      const brightness = (r + g + b) / 3;
+      const skinTone = brightness > 170 ? "Açık" : brightness > 110 ? "Orta" : "Koyu";
+      const difference = r - b;
+      const undertone: Analysis["undertone"] = difference > 25 ? "sıcak" : difference < 8 ? "soğuk" : "nötr";
 
-      return { yuzSekli, oran, cene: ceneOrani, gozAcikligi, gulumseme, simetri, tenTonu, altTon, rgb: [r, g, b], ceneRgb };
+      return { faceShape, ratio, chin: chinRatio, eyeOpenness, gulumseme, simetri, skinTone, undertone, rgb: [r, g, b], chinRgb };
     },
     []
   );
 
   const ciz = React.useCallback(
-    (lms: NormalizedLandmark[] | undefined, kaynak: HTMLVideoElement | HTMLImageElement) => {
+    (lms: NormalizedLandmark[] | undefined, source: HTMLVideoElement | HTMLImageElement) => {
       const cv = canvasRef.current;
       if (!cv) return;
-      const w = kaynak instanceof HTMLVideoElement ? kaynak.videoWidth : kaynak.naturalWidth;
-      const h = kaynak instanceof HTMLVideoElement ? kaynak.videoHeight : kaynak.naturalHeight;
+      const w = source instanceof HTMLVideoElement ? source.videoWidth : source.naturalWidth;
+      const h = source instanceof HTMLVideoElement ? source.videoHeight : source.naturalHeight;
       cv.width = w; cv.height = h;
       const ctx = cv.getContext("2d")!;
-      ctx.drawImage(kaynak, 0, 0, w, h);
-      if (lms && noktalar) {
+      ctx.drawImage(source, 0, 0, w, h);
+      if (lms && points) {
         ctx.fillStyle = "#EC2E7A";
         for (const p of lms) {
           ctx.beginPath();
@@ -178,17 +178,17 @@ export function FaceAnalyzer() {
         }
       }
     },
-    [noktalar]
+    [points]
   );
 
-  const kameraDur = React.useCallback(() => {
+  const stopCamera = React.useCallback(() => {
     cancelAnimationFrame(rafRef.current);
     const v = videoRef.current;
     if (v?.srcObject) {
       (v.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
       v.srcObject = null;
     }
-    setKamera(false);
+    setCamera(false);
     setFps(0);
   }, []);
 
@@ -196,7 +196,7 @@ export function FaceAnalyzer() {
     const lm = landmarkerRef.current;
     const v = videoRef.current;
     if (!lm || !v) return;
-    setFotoUrl(null);
+    setPhotoUrl(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
       v.srcObject = stream;
@@ -205,38 +205,38 @@ export function FaceAnalyzer() {
         await lm.setOptions({ runningMode: "VIDEO" });
         modeRef.current = "VIDEO";
       }
-      setKamera(true);
-      let sonZaman = performance.now();
-      let sonAnaliz = 0;
+      setCamera(true);
+      let lastTime = performance.now();
+      let lastAnalysisAt = 0;
       const dongu = () => {
         if (!v.srcObject) return;
-        const simdi = performance.now();
-        const sonuc = lm.detectForVideo(v, simdi);
-        setFps(Math.round(1000 / Math.max(1, simdi - sonZaman)));
-        sonZaman = simdi;
-        const lms = sonuc.faceLandmarks[0];
+        const now = performance.now();
+        const result = lm.detectForVideo(v, now);
+        setFps(Math.round(1000 / Math.max(1, now - lastTime)));
+        lastTime = now;
+        const lms = result.faceLandmarks[0];
         ciz(lms, v);
         // Metrikleri her karede değil ~2 saniyede bir güncelle (okunabilirlik).
-        if (lms && simdi - sonAnaliz > 2000) {
-          sonAnaliz = simdi;
-          setAnaliz(hesapla(lms, sonuc.faceBlendshapes?.[0]?.categories ?? [], v));
+        if (lms && now - lastAnalysisAt > 2000) {
+          lastAnalysisAt = now;
+          setAnalysis(compute(lms, result.faceBlendshapes?.[0]?.categories ?? [], v));
         }
         rafRef.current = requestAnimationFrame(dongu);
       };
       rafRef.current = requestAnimationFrame(dongu);
     } catch (e) {
-      setHataMesaji("Kamera açılamadı: " + (e instanceof Error ? e.message : String(e)));
+      setErrorMessage("Kamera açılamadı: " + (e instanceof Error ? e.message : String(e)));
     }
-  }, [ciz, hesapla]);
+  }, [ciz, compute]);
 
-  const fotoAnalizEt = React.useCallback(
+  const analyzePhoto = React.useCallback(
     async (file: File) => {
       const lm = landmarkerRef.current;
       const img = imgRef.current;
       if (!lm || !img) return;
-      kameraDur();
+      stopCamera();
       const url = URL.createObjectURL(file);
-      setFotoUrl(url);
+      setPhotoUrl(url);
       await new Promise<void>((cozul) => {
         img.onload = () => cozul();
         img.src = url;
@@ -245,17 +245,17 @@ export function FaceAnalyzer() {
         await lm.setOptions({ runningMode: "IMAGE" });
         modeRef.current = "IMAGE";
       }
-      const sonuc = lm.detect(img);
-      const lms = sonuc.faceLandmarks[0];
+      const result = lm.detect(img);
+      const lms = result.faceLandmarks[0];
       ciz(lms, img);
-      setAnaliz(lms ? hesapla(lms, sonuc.faceBlendshapes?.[0]?.categories ?? [], img) : null);
-      if (!lms) setHataMesaji("Fotoğrafta yüz bulunamadı — daha net bir kare deneyin.");
-      else setHataMesaji("");
+      setAnalysis(lms ? compute(lms, result.faceBlendshapes?.[0]?.categories ?? [], img) : null);
+      if (!lms) setErrorMessage("Fotoğrafta yüz bulunamadı — daha net bir kare deneyin.");
+      else setErrorMessage("");
     },
-    [ciz, hesapla, kameraDur]
+    [ciz, compute, stopCamera]
   );
 
-  const yuzde = (x: number) => Math.round(x * 100) + "%";
+  const percent = (x: number) => Math.round(x * 100) + "%";
 
   return (
     <div className="gg-dash">
@@ -271,32 +271,32 @@ export function FaceAnalyzer() {
 
         <Card>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            {!kamera ? (
+            {!camera ? (
               <button className="gg-btn gg-btn-primary" disabled={status !== "ready"} onClick={startCamera}>📷 Kamerayı Başlat</button>
             ) : (
-              <button className="gg-btn gg-btn-ghost" onClick={kameraDur}>⏹ Kamerayı Durdur</button>
+              <button className="gg-btn gg-btn-ghost" onClick={stopCamera}>⏹ Kamerayı Durdur</button>
             )}
             <label className="gg-btn gg-btn-ghost" style={{ cursor: "pointer" }}>
               🖼️ Fotoğraf Yükle
               <input type="file" accept="image/*" style={{ display: "none" }} disabled={status !== "ready"}
-                     onChange={(e) => e.target.files?.[0] && fotoAnalizEt(e.target.files[0])} />
+                     onChange={(e) => e.target.files?.[0] && analyzePhoto(e.target.files[0])} />
             </label>
             <label style={{ display: "inline-flex", gap: 6, alignItems: "center", fontSize: 13 }}>
-              <input type="checkbox" checked={noktalar} onChange={(e) => setNoktalar(e.target.checked)} /> Noktaları göster
+              <input type="checkbox" checked={points} onChange={(e) => setPoints(e.target.checked)} /> Noktaları göster
             </label>
             <label style={{ display: "inline-flex", gap: 6, alignItems: "center", fontSize: 13 }}>
-              Güven eşiği {guven.toFixed(2)}
-              <input type="range" min={0.1} max={0.9} step={0.05} value={guven} onChange={(e) => setGuven(Number(e.target.value))} />
+              Güven eşiği {confidence.toFixed(2)}
+              <input type="range" min={0.1} max={0.9} step={0.05} value={confidence} onChange={(e) => setConfidence(Number(e.target.value))} />
             </label>
-            {kamera && <span className="gg-pill">{fps} fps</span>}
+            {camera && <span className="gg-pill">{fps} fps</span>}
           </div>
 
           <div style={{ marginTop: 14, position: "relative", background: "var(--gg-surface)", borderRadius: "var(--gg-r-lg)", overflow: "hidden", minHeight: 240 }}>
             <video ref={videoRef} playsInline muted style={{ display: "none" }} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img ref={imgRef} alt="" style={{ display: "none" }} src={fotoUrl ?? undefined} />
+            <img ref={imgRef} alt="" style={{ display: "none" }} src={photoUrl ?? undefined} />
             <canvas ref={canvasRef} style={{ width: "100%", display: "block" }} />
-            {!kamera && !fotoUrl && (
+            {!camera && !photoUrl && (
               <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "var(--gg-muted)", fontSize: 14, textAlign: "center", padding: 20 }}>
                 Kamerayı başlat ya da bir fotoğraf yükle — analiz tamamen cihazda yapılır, görüntü sunucuya gönderilmez.
               </div>
@@ -308,19 +308,19 @@ export function FaceAnalyzer() {
       <aside className="gg-rail">
         <Card>
           <SectionHeader title="Analiz Sonucu" small />
-          {analiz ? (
+          {analysis ? (
             <div style={{ display: "grid", gap: 8, fontSize: 13.5 }}>
-              <Satir ad="Yüz şekli" deger={analiz.yuzSekli} />
-              <Satir ad="Boy/En oranı" deger={analiz.oran.toFixed(2)} />
-              <Satir ad="Çene/En oranı" deger={analiz.cene.toFixed(2)} />
-              <Satir ad="Simetri" deger={yuzde(analiz.simetri)} />
-              <Satir ad="Göz açıklığı" deger={yuzde(analiz.gozAcikligi)} />
-              <Satir ad="Gülümseme" deger={yuzde(analiz.gulumseme)} />
-              <Satir ad="Ten tonu" deger={`${analiz.tenTonu} · ${analiz.altTon} alt ton`} />
+              <Row ad="Yüz şekli" value={analysis.faceShape} />
+              <Row ad="Boy/En oranı" value={analysis.ratio.toFixed(2)} />
+              <Row ad="Çene/En oranı" value={analysis.chin.toFixed(2)} />
+              <Row ad="Simetri" value={percent(analysis.simetri)} />
+              <Row ad="Göz açıklığı" value={percent(analysis.eyeOpenness)} />
+              <Row ad="Gülümseme" value={percent(analysis.gulumseme)} />
+              <Row ad="Ten tonu" value={`${analysis.skinTone} · ${analysis.undertone} alt ton`} />
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span style={{ width: 22, height: 22, borderRadius: 6, background: `rgb(${analiz.rgb.join(",")})`, border: "1px solid var(--gg-border)" }} />
+                <span style={{ width: 22, height: 22, borderRadius: 6, background: `rgb(${analysis.rgb.join(",")})`, border: "1px solid var(--gg-border)" }} />
                 <span style={{ color: "var(--gg-muted)", fontSize: 12 }}>yanak</span>
-                <span style={{ width: 22, height: 22, borderRadius: 6, background: `rgb(${analiz.ceneRgb.join(",")})`, border: "1px solid var(--gg-border)" }} />
+                <span style={{ width: 22, height: 22, borderRadius: 6, background: `rgb(${analysis.chinRgb.join(",")})`, border: "1px solid var(--gg-border)" }} />
                 <span style={{ color: "var(--gg-muted)", fontSize: 12 }}>çene hattı</span>
               </div>
               <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--gg-muted)", lineHeight: 1.5 }}>
@@ -333,14 +333,14 @@ export function FaceAnalyzer() {
           )}
         </Card>
 
-        {analiz && (
+        {analysis && (
           <Card>
-            <SectionHeader title={`${analiz.yuzSekli} yüz için öneriler`} small />
+            <SectionHeader title={`${analysis.faceShape} yüz için öneriler`} small />
             <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13.5, display: "grid", gap: 6 }}>
-              {(ONERILER[analiz.yuzSekli] ?? ONERILER.Oval).map((o) => <li key={o}>{o}</li>)}
-              <li>{ALT_TON_ONERI[analiz.altTon]}</li>
+              {(ONERILER[analysis.faceShape] ?? ONERILER.Oval).map((o) => <li key={o}>{o}</li>)}
+              <li>{UNDERTONE_SUGGESTION[analysis.undertone]}</li>
             </ul>
-            <a href={`${RECIPES_URL}/${ONERILEN_TARIF_ID}`} className="gg-btn gg-btn-primary" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
+            <a href={`${RECIPES_URL}/${SUGGESTED_RECIPE_ID}`} className="gg-btn gg-btn-primary" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
               💄 Uygun Adım Adım Tarife Git
             </a>
           </Card>
@@ -359,11 +359,11 @@ export function FaceAnalyzer() {
   );
 }
 
-function Satir({ ad, deger }: { ad: string; deger: string }) {
+function Row({ ad, value }: { ad: string; value: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--gg-border)", paddingBottom: 6 }}>
       <span style={{ color: "var(--gg-muted)" }}>{ad}</span>
-      <strong>{deger}</strong>
+      <strong>{value}</strong>
     </div>
   );
 }

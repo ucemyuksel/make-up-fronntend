@@ -49,7 +49,7 @@ export default async function Notifications() {
   return (
     <div style={{ maxWidth: 560 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <SectionHeader title={live ? `Bildirimler (canlı · ${unread} okunmamış)` : "Bildirimler"} small />
+        <SectionHeader title={live ? `Notifications (canlı · ${unread} okunmamış)` : "Bildirimler"} small />
         {live && unread > 0 ? (
           <form action={markAllRead}>
             <button className="gg-pill" type="submit">Tümünü Okundu İşaretle</button>

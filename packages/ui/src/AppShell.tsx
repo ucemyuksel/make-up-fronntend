@@ -10,15 +10,18 @@ const ORIGINS = {
   store: process.env.NEXT_PUBLIC_STORE_URL || "http://localhost:3002",
   social: process.env.NEXT_PUBLIC_SOCIAL_URL || "http://localhost:3003",
   admin: process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3004",
+  cms: process.env.NEXT_PUBLIC_CMS_URL || "http://localhost:3005",
 };
 
-/** Yalnız ADMIN rolüne gösterilir — sıradan kullanıcıya yönetim linki çıkmaz. */
-const ADMIN_NAV = {
-  key: "admin",
-  label: "Yönetim Merkezi",
-  icon: "🛡️",
-  href: `${ORIGINS.admin}/`,
-};
+/**
+ * Yalnız ADMIN rolüne gösterilir — sıradan kullanıcıya yönetim linki çıkmaz.
+ * Yönetim ve içerik ayrı zone'lar: yaptırım kararları (komisyon, mağaza,
+ * kullanıcı, reklam onayı) admin'de, katalog ve moderasyon cms'te.
+ */
+const ADMIN_NAV = [
+  { key: "admin", label: "Yönetim Merkezi", icon: "🛡️", href: `${ORIGINS.admin}/` },
+  { key: "cms", label: "İçerik Yönetimi", icon: "🗂️", href: `${ORIGINS.cms}/` },
+];
 
 // Tüketici menüsü. Yalnızca gerçekten var olan sayfalara link verilir.
 const NAV = [
@@ -39,14 +42,14 @@ const NAV = [
  * tüketici içerikleri menüsünde yer almaz. Reklam verme yalnızca burada.
  */
 const SELLER_NAV = [
-  { key: "satici", label: "Satıcı Paneli", icon: "🏪", href: `${ORIGINS.store}/satici` },
-  { key: "urun", label: "Ürünlerim", icon: "📦", href: `${ORIGINS.store}/satici/urun` },
-  { key: "siparis", label: "Siparişler & Kargo", icon: "🚚", href: `${ORIGINS.store}/satici/siparis` },
-  { key: "stok", label: "Stok Durumu", icon: "📊", href: `${ORIGINS.store}/satici/stok` },
-  { key: "yorum", label: "Ürün Yorumları", icon: "⭐", href: `${ORIGINS.store}/satici/yorum` },
-  { key: "sbildirim", label: "Mesaj & Bildirim", icon: "🔔", href: `${ORIGINS.store}/satici/bildirim` },
-  { key: "skampanya", label: "Kampanyalar", icon: "🏷️", href: `${ORIGINS.store}/satici/kampanya` },
-  { key: "reklam", label: "Reklam Ver", icon: "📣", href: `${ORIGINS.store}/reklam` },
+  { key: "seller", label: "Satıcı Paneli", icon: "🏪", href: `${ORIGINS.store}/seller` },
+  { key: "product", label: "Ürünlerim", icon: "📦", href: `${ORIGINS.store}/seller/products` },
+  { key: "order", label: "Siparişler & Kargo", icon: "🚚", href: `${ORIGINS.store}/seller/orders` },
+  { key: "stock", label: "Stok Durumu", icon: "📊", href: `${ORIGINS.store}/seller/stock` },
+  { key: "review", label: "Ürün Yorumları", icon: "⭐", href: `${ORIGINS.store}/seller/reviews` },
+  { key: "sellerNotifications", label: "Mesaj & Bildirim", icon: "🔔", href: `${ORIGINS.store}/seller/notifications` },
+  { key: "sellerCampaigns", label: "Kampanyalar", icon: "🏷️", href: `${ORIGINS.store}/seller/campaigns` },
+  { key: "ad", label: "Reklam Ver", icon: "📣", href: `${ORIGINS.store}/ads` },
   { key: "store", label: "Mağazam", icon: "🛍️", href: `${ORIGINS.store}/` },
   { key: "messages", label: "Mesajlar", icon: "💬", href: `${ORIGINS.social}/messages` },
   { key: "notifications", label: "Bildirimler", icon: "🔔", href: `${ORIGINS.social}/notifications` },
@@ -71,10 +74,10 @@ export function AppShell({
   // Mağaza sahibine ayrıca satıcı menüsü verilir; tüketici menüsü KALDIRILMAZ —
   // aynı hesap hem alışveriş yapıyor hem satıyor. Kullanıcı kenar çubuğundaki
   // mod anahtarıyla geçiş yapar.
-  const satici = roles.includes("STORE_OWNER");
-  const yonetici = isAdmin || roles.includes("ADMIN");
-  const nav = yonetici ? [...NAV, ADMIN_NAV] : NAV;
-  const saticiNav = satici ? (yonetici ? [...SELLER_NAV, ADMIN_NAV] : SELLER_NAV) : undefined;
+  const seller = roles.includes("STORE_OWNER");
+  const admin = isAdmin || roles.includes("ADMIN");
+  const nav = admin ? [...NAV, ...ADMIN_NAV] : NAV;
+  const sellerNav = seller ? (admin ? [...SELLER_NAV, ...ADMIN_NAV] : SELLER_NAV) : undefined;
   return (
     <div className="gg-shell">
       <aside className="gg-sidebar">
@@ -83,14 +86,14 @@ export function AppShell({
           <span className="txt">GlamGuide</span>
         </a>
         {/* Aktif sekme konumdan otomatik (client); active prop SSR fallback'i. */}
-        <ShellNav nav={nav} saticiNav={saticiNav} fallbackActive={active} />
+        <ShellNav nav={nav} sellerNav={sellerNav} fallbackActive={active} />
         {/* Premium tüketiciye satılır; satıcıya bunun yerine mağaza özeti gösterilir. */}
-        {satici ? (
+        {seller ? (
           <div className="gg-premium">
             <div style={{ fontSize: 22 }}>🏪</div>
             <strong style={{ color: "var(--gg-primary-dark)" }}>Satıcı Hesabı</strong>
             <p>Siparişlerini yönet, kampanya kur, reklam ver.</p>
-            <a href={`${ORIGINS.store}/satici`} className="gg-btn gg-btn-primary"
+            <a href={`${ORIGINS.store}/seller`} className="gg-btn gg-btn-primary"
                style={{ width: "100%", justifyContent: "center" }}>
               Panele Git
             </a>
@@ -112,7 +115,7 @@ export function AppShell({
           <input className="gg-search" type="search" aria-label="Ürün, marka veya kategori ara"
                  placeholder="Ürün, marka veya kategori ara..." />
           <span className="gg-topbar-spacer" />
-          {/* Mesaj/bildirim erişimi yalnızca sol menüde — topbar sade tutuldu
+          {/* Mesaj ve bildirim erişimi yalnızca sol menüde — topbar sade tutuldu
               (eskiden burada da ikonlar vardı, menü + sağ bar ile tekrar ediyordu). */}
           <a href={ORIGINS.recipes + "/"} className="gg-btn gg-btn-primary">
             💄 <span className="txt">Tarif Satın Al</span>

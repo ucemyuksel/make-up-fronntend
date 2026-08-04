@@ -11,7 +11,7 @@ import * as React from "react";
  */
 
 type Option = { value: string; label: string };
-type Ozellik = {
+type Attribute = {
   id: string;
   key: string;
   label: string;
@@ -22,89 +22,89 @@ type Ozellik = {
   options: Option[];
 };
 
-type Kategori = { id: string; name: string; subCategories?: { id: string; name: string }[] };
+type Category = { id: string; name: string; subCategories?: { id: string; name: string }[] };
 
-export function AttributeFields({ kategoriler }: { kategoriler: Kategori[] }) {
-  const [kategoriId, setKategoriId] = React.useState("");
-  const [altId, setAltId] = React.useState("");
-  const [ozellikler, setOzellikler] = React.useState<Ozellik[]>([]);
-  const [degerler, setDegerler] = React.useState<Record<string, string>>({});
-  const [yukleniyor, setYukleniyor] = React.useState(false);
+export function AttributeFields({ categories }: { categories: Category[] }) {
+  const [categoryId, setCategoryId] = React.useState("");
+  const [subId, setAltId] = React.useState("");
+  const [attributes, setAttributes] = React.useState<Attribute[]>([]);
+  const [values, setValues] = React.useState<Record<string, string>>({});
+  const [loading, setLoading] = React.useState(false);
 
-  const secili = kategoriler.find((k) => k.id === kategoriId);
-  const altlar = secili?.subCategories ?? [];
+  const selected = categories.find((k) => k.id === categoryId);
+  const subCategories = selected?.subCategories ?? [];
 
   React.useEffect(() => {
-    if (!kategoriId) {
-      setOzellikler([]);
-      setDegerler({});
+    if (!categoryId) {
+      setAttributes([]);
+      setValues({});
       return;
     }
-    let iptal = false;
-    setYukleniyor(true);
-    const qs = new URLSearchParams({ categoryId: kategoriId });
-    if (altId) qs.set("subCategoryId", altId);
+    let cancelled = false;
+    setLoading(true);
+    const qs = new URLSearchParams({ categoryId: categoryId });
+    if (subId) qs.set("subCategoryId", subId);
 
-    fetch(`/api/ozellikler?${qs}`)
+    fetch(`/api/attributes?${qs}`)
       .then((r) => (r.ok ? r.json() : []))
-      .then((d: Ozellik[]) => {
-        if (iptal) return;
-        setOzellikler(Array.isArray(d) ? d : []);
+      .then((d: Attribute[]) => {
+        if (cancelled) return;
+        setAttributes(Array.isArray(d) ? d : []);
         // Kategori değişince eski değerler taşınmaz — başka kategorinin
         // özelliği yanlışlıkla kaydedilmesin.
-        setDegerler({});
+        setValues({});
       })
-      .catch(() => !iptal && setOzellikler([]))
-      .finally(() => !iptal && setYukleniyor(false));
+      .catch(() => !cancelled && setAttributes([]))
+      .finally(() => !cancelled && setLoading(false));
 
     return () => {
-      iptal = true;
+      cancelled = true;
     };
-  }, [kategoriId, altId]);
+  }, [categoryId, subId]);
 
-  const yaz = (key: string, v: string) => setDegerler((d) => ({ ...d, [key]: v }));
+  const write = (key: string, v: string) => setValues((d) => ({ ...d, [key]: v }));
   const lbl: React.CSSProperties = { display: "grid", gap: 4, fontSize: 13 };
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <input type="hidden" name="categoryId" value={kategoriId} />
-      <input type="hidden" name="subCategoryId" value={altId} />
-      <input type="hidden" name="attributes" value={JSON.stringify(degerler)} />
+      <input type="hidden" name="categoryId" value={categoryId} />
+      <input type="hidden" name="subCategoryId" value={subId} />
+      <input type="hidden" name="attributes" value={JSON.stringify(values)} />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <label style={lbl}>
           Kategori
-          <select className="gg-search" value={kategoriId}
-                  onChange={(e) => { setKategoriId(e.target.value); setAltId(""); }}>
+          <select className="gg-search" value={categoryId}
+                  onChange={(e) => { setCategoryId(e.target.value); setAltId(""); }}>
             <option value="">Seçiniz…</option>
-            {kategoriler.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
+            {categories.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
           </select>
         </label>
 
         <label style={lbl}>
-          Alt kategori
-          <select className="gg-search" value={altId} onChange={(e) => setAltId(e.target.value)}
-                  disabled={altlar.length === 0}>
-            <option value="">{altlar.length === 0 ? "Alt kategori yok" : "Tümü"}</option>
-            {altlar.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          Alt category
+          <select className="gg-search" value={subId} onChange={(e) => setAltId(e.target.value)}
+                  disabled={subCategories.length === 0}>
+            <option value="">{subCategories.length === 0 ? "Alt kategori yok" : "Tümü"}</option>
+            {subCategories.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </label>
       </div>
 
       {/* Kategoriye özel özellikler */}
-      {yukleniyor ? (
+      {loading ? (
         <div style={{ fontSize: 13, color: "var(--gg-muted)" }}>Özellikler yükleniyor…</div>
-      ) : ozellikler.length > 0 ? (
+      ) : attributes.length > 0 ? (
         <div style={{ display: "grid", gap: 10, borderTop: "1px solid var(--gg-border)", paddingTop: 12 }}>
           <strong style={{ fontSize: 14 }}>
-            📋 {secili?.name} Özellikleri
+            📋 {selected?.name} Özellikleri
             <span style={{ fontWeight: 400, fontSize: 12, color: "var(--gg-muted)" }}>
               {" "}— zorunlu alanlar (*) doldurulmadan ürün kaydedilmez
             </span>
           </strong>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-            {ozellikler.map((o) => (
+            {attributes.map((o) => (
               <label key={o.id} style={lbl}>
                 {o.label}{o.unit ? ` (${o.unit})` : ""}{o.required ? " *" : ""}
                 {o.variantDefining ? (
@@ -112,14 +112,14 @@ export function AttributeFields({ kategoriler }: { kategoriler: Kategori[] }) {
                 ) : null}
 
                 {o.type === "SELECT" ? (
-                  <select className="gg-search" value={degerler[o.key] ?? ""} required={o.required}
-                          onChange={(e) => yaz(o.key, e.target.value)}>
+                  <select className="gg-search" value={values[o.key] ?? ""} required={o.required}
+                          onChange={(e) => write(o.key, e.target.value)}>
                     <option value="">Seçiniz…</option>
                     {o.options.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 ) : o.type === "BOOLEAN" ? (
-                  <select className="gg-search" value={degerler[o.key] ?? ""} required={o.required}
-                          onChange={(e) => yaz(o.key, e.target.value)}>
+                  <select className="gg-search" value={values[o.key] ?? ""} required={o.required}
+                          onChange={(e) => write(o.key, e.target.value)}>
                     <option value="">Seçiniz…</option>
                     <option value="true">Evet</option>
                     <option value="false">Hayır</option>
@@ -127,15 +127,15 @@ export function AttributeFields({ kategoriler }: { kategoriler: Kategori[] }) {
                 ) : (
                   <input className="gg-search" required={o.required}
                          inputMode={o.type === "NUMBER" ? "decimal" : "text"}
-                         value={degerler[o.key] ?? ""}
-                         onChange={(e) => yaz(o.key, e.target.value)}
+                         value={values[o.key] ?? ""}
+                         onChange={(e) => write(o.key, e.target.value)}
                          placeholder={o.type === "NUMBER" ? "ör. 3,5" : ""} />
                 )}
               </label>
             ))}
           </div>
         </div>
-      ) : kategoriId ? (
+      ) : categoryId ? (
         <div style={{ fontSize: 12.5, color: "var(--gg-muted)" }}>
           Bu kategoride tanımlı özellik yok.
         </div>

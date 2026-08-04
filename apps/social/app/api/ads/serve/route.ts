@@ -3,7 +3,7 @@ import { auth } from "../../../../auth";
 
 /**
  * Reklam serving proxy'si: oturum token'ını sunucuda ekleyip ad-service'e
- * iletir (client token'a erişemez). Oturum yoksa boş liste (reklam gösterilmez).
+ * iletir (client token'a erişemez). Oturum yoksa boş liste (ad gösterilmez).
  */
 export async function GET(req: Request) {
   const session = await auth();
