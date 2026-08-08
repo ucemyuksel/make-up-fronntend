@@ -70,7 +70,7 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
 
   let products: (Product & { rating?: number; count?: number; skinType?: string; category?: string; store?: string; discount?: number })[] = MOCK_PRODUCTS as never;
   if (token) {
-    const live = await api<Product[]>("/api/products", token);
+    const live = await api<Product[]>("/api/products?size=20", token);
     if (live && live.length > 0) products = [...live, ...(MOCK_PRODUCTS as never[])].slice(0, 20) as never;
   }
 

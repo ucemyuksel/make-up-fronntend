@@ -70,7 +70,7 @@ export default async function SellerOrders({
     // API parametresi `status` (tarayıcı URL'indeki `status` kullanıcıya görünen ad)
     orderApi<SellerOrder[]>(`/api/seller/orders${status ? `?status=${status}` : ""}`, token),
     orderApi<SellerSummary>("/api/seller/orders/summary", token),
-    api<Product[]>("/api/products", token),
+    api<Product[]>("/api/products?size=100", token),
   ]);
   const list = orders ?? [];
   const productNames = new Map((products ?? []).map((u) => [u.id, u.name]));

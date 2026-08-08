@@ -52,7 +52,7 @@ export default async function Dashboard() {
 
   if (token) {
     const [p, c, r, posts, orders] = await Promise.all([
-      api<typeof products>(process.env.STORE_API, "/api/products", token),
+      api<typeof products>(process.env.STORE_API, "/api/products?size=12", token),
       api<typeof conversations>(process.env.MESSAGING_API, "/api/conversations", token),
       api<{ caption: string; viewCount: number; durationSeconds: number }[]>(process.env.REELS_API, "/api/reels", token),
       api<unknown[]>(process.env.POST_API, "/api/posts", token),

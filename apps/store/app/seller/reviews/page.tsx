@@ -30,7 +30,7 @@ export default async function SellerReviews({
     );
   }
 
-  const products = (await api<Product[]>(`/api/products?storeId=${selected}`, token)) ?? [];
+  const products = (await api<Product[]>(`/api/stores/${selected}/products?size=100`, token)) ?? [];
   const productNames = new Map(products.map((u) => [u.id, u.name]));
   const ids = products.map((u) => u.id).join(",");
   const onlyUnanswered = searchParams.cevapsiz === "1";

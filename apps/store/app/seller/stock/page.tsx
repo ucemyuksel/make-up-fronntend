@@ -38,7 +38,7 @@ export default async function StockStatus({
     );
   }
 
-  const allProducts = (await api<Product[]>(`/api/products?storeId=${selected}`, token)) ?? [];
+  const allProducts = (await api<Product[]>(`/api/stores/${selected}/products?size=100`, token)) ?? [];
   const filter = searchParams.filter ?? "";
   const products =
     filter === "kritik" ? allProducts.filter((u) => u.stock <= CRITICAL)
