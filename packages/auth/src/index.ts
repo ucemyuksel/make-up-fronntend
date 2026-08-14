@@ -158,8 +158,8 @@ function credentialsProvider(requireRoles?: string[]) {
 
       if (!res.ok) {
         // The password is NOT logged. Only the status code and Keycloak's error code.
-        const detay = (await res.json().catch(() => ({}))) as { error?: string };
-        console.warn(`[auth] giris reddedildi (http=${res.status}, kod=${detay.error ?? "-"})`);
+        const detail = (await res.json().catch(() => ({}))) as { error?: string };
+        console.warn(`[auth] giris reddedildi (http=${res.status}, kod=${detail.error ?? "-"})`);
         return null;
       }
 

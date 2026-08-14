@@ -34,9 +34,9 @@ export default async function OrderDetailPage({
   searchParams: { ok?: string; error?: string };
 }) {
   const { token } = await requireSeller(`/seller/orders/${params.id}`);
-  const detay = await orderApi<SellerOrderDetail>(`/api/seller/orders/${params.id}`, token);
+  const detail = await orderApi<SellerOrderDetail>(`/api/seller/orders/${params.id}`, token);
 
-  if (!detay) {
+  if (!detail) {
     return (
       <div style={{ maxWidth: 720 }}>
         <a href="/seller/orders" className="gg-see-all">← Siparişler</a>
@@ -45,7 +45,7 @@ export default async function OrderDetailPage({
     );
   }
 
-  const { order, shippingAddress: adres, returns: iadeler } = detay;
+  const { order, shippingAddress: address, returns: iadeler } = detail;
 
   async function ship(formData: FormData) {
     "use server";
@@ -118,19 +118,19 @@ export default async function OrderDetailPage({
 
       <section className="gg-card">
         <h2 style={{ marginTop: 0, fontSize: 17 }}>Teslimat adresi</h2>
-        {adres ? (
+        {address ? (
           <>
             <address style={{ fontStyle: "normal", lineHeight: 1.7, fontSize: 14 }}>
-              <strong>{adres.fullName}</strong><br />
-              {adres.phone}<br />
-              {adres.line1}{adres.line2 ? <>, {adres.line2}</> : null}<br />
-              {adres.district ? <>{adres.district} / </> : null}{adres.city}
-              {adres.postalCode ? <> {adres.postalCode}</> : null}<br />
-              {adres.countryCode}
+              <strong>{address.fullName}</strong><br />
+              {address.phone}<br />
+              {address.line1}{address.line2 ? <>, {address.line2}</> : null}<br />
+              {address.district ? <>{address.district} / </> : null}{address.city}
+              {address.postalCode ? <> {address.postalCode}</> : null}<br />
+              {address.countryCode}
             </address>
-            {adres.note ? (
+            {address.note ? (
               <p style={{ marginTop: 10, fontSize: 13, background: "#FFF7E6", padding: 10, borderRadius: 8 }}>
-                <strong>Kuryeye not:</strong> {adres.note}
+                <strong>Kuryeye not:</strong> {address.note}
               </p>
             ) : null}
             <p style={{ marginTop: 10, fontSize: 12, color: "#666" }}>
@@ -140,7 +140,7 @@ export default async function OrderDetailPage({
           </>
         ) : (
           <p style={{ color: "#666" }}>
-            Bu siparişte teslimat adresi yok. (Adres alanı eklenmeden önce oluşturulmuş
+            Bu siparişte teslimat adresi yok. (Address alanı eklenmeden önce oluşturulmuş
             eski siparişlerde beklenen durum.)
           </p>
         )}

@@ -16,7 +16,7 @@ import { siparisPlani } from "./siparis-plani.mjs";
 type CartLine = { productId: string; quantity: number };
 
 /** Teslimat adresi. Satici kargoya veremeyecegi icin ZORUNLU. */
-type Adres = {
+type Address = {
   fullName: string; phone: string; line1: string; line2?: string | null;
   district?: string | null; city: string; postalCode?: string | null;
   countryCode?: string | null; note?: string | null;
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   }
 
   let lines: CartLine[];
-  let adres: Adres | undefined;
+  let address: Address | undefined;
   let couponCode: string | null = null;
   let giftCardCode: string | null = null;
   // Istemcinin urettigi TEKRAR anahtari: ayni gonderim tekrar denenirse
@@ -41,12 +41,12 @@ export async function POST(request: Request) {
   let gonderimId: string | undefined;
   try {
     const body = (await request.json()) as {
-      items?: CartLine[]; shippingAddress?: Adres;
+      items?: CartLine[]; shippingAddress?: Address;
       couponCode?: string | null; giftCardCode?: string | null;
       submissionId?: string | null;
     };
     lines = (body.items ?? []).filter((s) => s.productId && s.quantity > 0);
-    adres = body.shippingAddress;
+    address = body.shippingAddress;
     couponCode = body.couponCode?.trim() || null;
     giftCardCode = body.giftCardCode?.trim() || null;
     gonderimId = body.submissionId?.trim() || undefined;
@@ -54,9 +54,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Geçersiz istek" }, { status: 400 });
   }
 
-  // Adres ZORUNLU: satici olmadan kargoya veremez. Backend de reddediyor;
+  // Address ZORUNLU: satici olmadan kargoya veremez. Backend de reddediyor;
   // buradaki kontrol kullaniciya anlasilir hata gostermek icin.
-  if (!adres?.fullName || !adres.phone || !adres.line1 || !adres.city) {
+  if (!address?.fullName || !address.phone || !address.line1 || !address.city) {
     return NextResponse.json({ error: "Teslimat adresi eksik" }, { status: 400 });
   }
   if (lines.length === 0) {
@@ -65,20 +65,20 @@ export async function POST(request: Request) {
 
   const storeApi = process.env.STORE_API;
   const purchaseApi = process.env.PURCHASE_API;
-  const yetki = { Authorization: `Bearer ${token}` };
+  const authHeader = { Authorization: `Bearer ${token}` };
 
   // Mağaza sahiplerini tek seferde çöz (ürün başına tekrar tekrar çekmemek için).
-  const stores = (await fetch(`${storeApi}/api/stores`, { headers: yetki, cache: "no-store" })
+  const stores = (await fetch(`${storeApi}/api/stores`, { headers: authHeader, cache: "no-store" })
     .then((r) => (r.ok ? r.json() : []))
     .catch(() => [])) as Store[];
-  const sahip = new Map(stores.map((m) => [m.id, m.ownerUserId]));
+  const owner = new Map(stores.map((m) => [m.id, m.ownerUserId]));
 
   const olusan: string[] = [];
   // Gerceklesen indirimler. Sepette gosterilen hesapla ayrisabilir:
   // ayni hediye karti arada baska bir siparise harcanmis olabilir.
   // Musteri farki gorebilsin diye geri donuyoruz.
-  let uygulananKupon = 0;
-  let uygulananKart = 0;
+  let appliedCoupon = 0;
+  let appliedCard = 0;
   const errors: string[] = [];
 
   // Once TUM satirlarin urun bilgisi cozulur; plan ancak sepetin tamami
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
   const adlar = new Map<string, string>();
 
   for (const line of lines) {
-    const product = (await fetch(`${storeApi}/api/products/${line.productId}`, { headers: yetki, cache: "no-store" })
+    const product = (await fetch(`${storeApi}/api/products/${line.productId}`, { headers: authHeader, cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)) as Product | null;
 
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       errors.push(`Ürün bulunamadı: ${line.productId}`);
       continue;
     }
-    const sellerId = product.storeId ? sahip.get(product.storeId) : undefined;
+    const sellerId = product.storeId ? owner.get(product.storeId) : undefined;
     if (!sellerId) {
       errors.push(`${product.name}: satıcı çözülemedi`);
       continue;
@@ -117,13 +117,13 @@ export async function POST(request: Request) {
 
   // Kodlar SUNUCUDA dogrulanir; indirimi purchase-service store-service'e
   // hesaplatir. Buradan giden tutar indirim ONCESI satir tutaridir.
-  const plan = siparisPlani({ satirlar, adres, couponCode, giftCardCode, gonderimId });
+  const plan = siparisPlani({ satirlar, address, couponCode, giftCardCode, gonderimId });
 
   for (const istek of plan) {
     // Her satır ayrı sipariş kaydı olur — kargolama ürün bazında yapılır.
     const res = await fetch(`${purchaseApi}/api/purchases/product`, {
       method: "POST",
-      headers: { ...yetki, "Content-Type": "application/json" },
+      headers: { ...authHeader, "Content-Type": "application/json" },
       body: JSON.stringify(istek),
       cache: "no-store",
     }).catch(() => null);
@@ -131,8 +131,8 @@ export async function POST(request: Request) {
     if (res && res.ok) {
       olusan.push(istek.productId);
       const kayit = await res.json().catch(() => ({}));
-      uygulananKupon += Number(kayit.couponDiscount ?? 0);
-      uygulananKart += Number(kayit.giftCardAmount ?? 0);
+      appliedCoupon += Number(kayit.couponDiscount ?? 0);
+      appliedCard += Number(kayit.giftCardAmount ?? 0);
     } else {
       errors.push(`${adlar.get(istek.productId) ?? istek.productId}: sipariş oluşturulamadı`);
     }
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     created: olusan.length,
     errors,
-    couponDiscount: uygulananKupon,
-    giftCardApplied: uygulananKart,
+    couponDiscount: appliedCoupon,
+    giftCardApplied: appliedCard,
   });
 }

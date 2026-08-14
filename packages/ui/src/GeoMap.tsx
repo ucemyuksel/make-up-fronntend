@@ -122,9 +122,9 @@ export function GeoMap({
 
     // When the filter changes (e.g. clicking the "Live" card) the map refocuses
     // on the remaining points by itself.
-    const kapsam = source.getExtent();
-    if (points.length > 0 && kapsam && isFinite(kapsam[0])) {
-      harita.getView().fit(kapsam, {
+    const scope = source.getExtent();
+    if (points.length > 0 && scope && isFinite(scope[0])) {
+      harita.getView().fit(scope, {
         padding: [50, 50, 50, 50],
         maxZoom: points.length === 1 ? 8 : 6,
         duration: 500,

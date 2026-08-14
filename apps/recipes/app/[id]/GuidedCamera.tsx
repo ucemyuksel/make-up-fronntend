@@ -353,7 +353,7 @@ export function GuidedCamera({ region, colorHex, stepTitle }: { region: string; 
   const shapeRef = React.useRef<string | null>(null);
   zoomOpenRef.current = zoomOpen;
 
-  // /analysis sayfası yüz şeklini localStorage'a yazar; rehber yerleşimi ona uyar.
+  // /analysis sayfası yüz şeklini localStorage'a author; rehber yerleşimi ona uyar.
   React.useEffect(() => {
     const s = localStorage.getItem("gg-yuz-sekli");
     setShape(s); shapeRef.current = s;

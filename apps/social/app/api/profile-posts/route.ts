@@ -20,22 +20,22 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: "Giriş gerekli" }, { status: 401 });
   }
 
-  const yazar = jetondanKullanici(token);
-  if (!yazar) {
+  const author = userFromToken(token);
+  if (!author) {
     return NextResponse.json({ message: "Jeton çözülemedi" }, { status: 401 });
   }
 
   const gelen = new URL(request.url).searchParams;
-  const sorgu = new URLSearchParams();
+  const query = new URLSearchParams();
   const cursor = gelen.get("cursor");
-  if (cursor) sorgu.set("cursor", cursor);
+  if (cursor) query.set("cursor", cursor);
   // Tavan sunucuda: istemci "limit=100000" yazıp tek istekte tüm profili
   // çekemesin. Backend de ayrıca sınırlıyor; iki katman da ucuz.
-  sorgu.set("limit", String(Math.min(Number(gelen.get("limit") ?? 24) || 24, 48)));
+  query.set("limit", String(Math.min(Number(gelen.get("limit") ?? 24) || 24, 48)));
 
   try {
     const r = await fetch(
-      `${process.env.POST_API}/api/posts/author/${yazar}?${sorgu}`,
+      `${process.env.POST_API}/api/posts/author/${author}?${query}`,
       { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
     const veri = await r.json().catch(() => ({}));
     return NextResponse.json(veri, { status: r.status });
@@ -52,7 +52,7 @@ export async function GET(request: Request) {
  * post-service yapıyor. Bu satır yalnızca "hangi profili isteyeceğiz"
  * sorusunu cevaplıyor.
  */
-function jetondanKullanici(token: string): string | null {
+function userFromToken(token: string): string | null {
   try {
     const govde = token.split(".")[1];
     if (!govde) return null;

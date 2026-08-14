@@ -17,7 +17,7 @@ export default async function ProductDetail({
 }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  // Ürün detayı herkese açık (GET anonim — Cache Faz 2). Oturum varsa token gönderilir.
+  // Ürün detailı herkese açık (GET anonim — Cache Faz 2). Oturum varsa token gönderilir.
   const p = await api<Product>(`/api/products/${params.id}`, token ?? "");
   if (!p) return <p>Ürün bulunamadı. <a href="/" className="gg-see-all">← Mağaza</a></p>;
 

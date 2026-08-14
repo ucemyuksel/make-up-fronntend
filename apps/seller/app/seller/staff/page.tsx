@@ -35,7 +35,7 @@ export default async function StaffPage({
 }) {
   const { token } = await requireStoreOwner("/seller/staff");
 
-  // Mağaza jetondan türetilir, adres çubuğundan değil: ?store=<baska-id>
+  // Mağaza jetondan türetilir, address çubuğundan değil: ?store=<baska-id>
   // yazarak başkasının personeline bakma denemesi burada kapanır.
   const stores = (await api<Store[]>("/api/stores/mine", token)) ?? [];
   const store = stores[0];

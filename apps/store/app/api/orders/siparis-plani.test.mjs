@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { kodTasiyanSatirlar, kuponTabanlari, siparisPlani } from "./siparis-plani.mjs";
 
-const adres = { fullName: "Ayse Yilmaz", phone: "+90 555 000 00 00", line1: "Test Sokak 1", city: "Istanbul" };
+const address = { fullName: "Ayse Yilmaz", phone: "+90 555 000 00 00", line1: "Test Sokak 1", city: "Istanbul" };
 
 /** @returns {import("./siparis-plani.mjs").Satir} */
 const satir = (productId, storeId, birimFiyat, adet = 1) => ({
@@ -12,7 +12,7 @@ const satir = (productId, storeId, birimFiyat, adet = 1) => ({
 
 test("kod magaza basina TEK satirda gider", () => {
   const satirlar = [satir("u1", "A", 100), satir("u2", "A", 50), satir("u3", "B", 70)];
-  const plan = siparisPlani({ satirlar, adres, couponCode: "YAZ25", giftCardCode: "HED1" });
+  const plan = siparisPlani({ satirlar, address, couponCode: "YAZ25", giftCardCode: "HED1" });
 
   const kuponlu = plan.filter((p) => p.couponCode !== null);
   const kartli = plan.filter((p) => p.giftCardCode !== null);
@@ -41,7 +41,7 @@ test("kupon tabani, kodu tasiyan satirin tutaridir", () => {
   assert.equal(tabanlar.get("A"), 200);
   assert.equal(tabanlar.get("B"), 70);
 
-  const plan = siparisPlani({ satirlar, adres, couponCode: "YAZ25" });
+  const plan = siparisPlani({ satirlar, address, couponCode: "YAZ25" });
   for (const [magaza, taban] of tabanlar) {
     const kuponlu = plan.find((p) => p.sellerStoreId === magaza && p.couponCode);
     assert.equal(kuponlu.amountTry, taban, `${magaza}: gonderilen tutar taban ile ayristi`);
@@ -51,8 +51,8 @@ test("kupon tabani, kodu tasiyan satirin tutaridir", () => {
 test("ayni sepet iki kez planlanirsa tekrar anahtari AYNI kalir", () => {
   const satirlar = [satir("u1", "A", 100), satir("u2", "B", 70)];
 
-  const birinci = siparisPlani({ satirlar, adres });
-  const ikinci = siparisPlani({ satirlar, adres });
+  const birinci = siparisPlani({ satirlar, address });
+  const ikinci = siparisPlani({ satirlar, address });
 
   assert.deepEqual(
     birinci.map((p) => p.storeTransactionId),
@@ -63,9 +63,9 @@ test("ayni sepet iki kez planlanirsa tekrar anahtari AYNI kalir", () => {
 
 test("gonderim kimligi verilirse anahtar ondan turer", () => {
   const satirlar = [satir("u1", "A", 100)];
-  const a = siparisPlani({ satirlar, adres, gonderimId: "gonderim-1" });
-  const b = siparisPlani({ satirlar, adres, gonderimId: "gonderim-1" });
-  const c = siparisPlani({ satirlar, adres, gonderimId: "gonderim-2" });
+  const a = siparisPlani({ satirlar, address, gonderimId: "gonderim-1" });
+  const b = siparisPlani({ satirlar, address, gonderimId: "gonderim-1" });
+  const c = siparisPlani({ satirlar, address, gonderimId: "gonderim-2" });
 
   assert.equal(a[0].storeTransactionId, b[0].storeTransactionId);
   assert.notEqual(a[0].storeTransactionId, c[0].storeTransactionId,
@@ -73,19 +73,19 @@ test("gonderim kimligi verilirse anahtar ondan turer", () => {
 });
 
 test("farkli sepet farkli anahtar uretir", () => {
-  const a = siparisPlani({ satirlar: [satir("u1", "A", 100)], adres });
-  const b = siparisPlani({ satirlar: [satir("u1", "A", 100, 2)], adres });
+  const a = siparisPlani({ satirlar: [satir("u1", "A", 100)], address });
+  const b = siparisPlani({ satirlar: [satir("u1", "A", 100, 2)], address });
   assert.notEqual(a[0].storeTransactionId, b[0].storeTransactionId,
     "Adet degistigi halde anahtar ayni - ikinci siparis engellenir");
 });
 
 test("magazasi bilinmeyen satir kod tasimaz", () => {
   const satirlar = [{ productId: "u1", storeId: null, sellerUserId: "s", birimFiyat: 100, adet: 1 }];
-  const plan = siparisPlani({ satirlar, adres, couponCode: "YAZ25" });
+  const plan = siparisPlani({ satirlar, address, couponCode: "YAZ25" });
   assert.equal(plan[0].couponCode, null, "Magazasiz satira kupon gonderildi");
 });
 
 test("satir tutari adetle carpilir", () => {
-  const plan = siparisPlani({ satirlar: [satir("u1", "A", 49.9, 3)], adres });
+  const plan = siparisPlani({ satirlar: [satir("u1", "A", 49.9, 3)], address });
   assert.equal(plan[0].amountTry, 149.7);
 });

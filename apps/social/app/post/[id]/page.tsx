@@ -5,7 +5,7 @@ import { Comments } from "./Comments";
 
 export const metadata = { title: "Gönderi — GlamGuide" };
 
-/** Gönderi detayı: içerik + iş parçacıklı yorumlar. */
+/** Gönderi detailı: içerik + iş parçacıklı yorumlar. */
 export default async function PostDetail({
   params,
   searchParams,

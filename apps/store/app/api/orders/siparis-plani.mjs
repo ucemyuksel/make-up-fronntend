@@ -90,13 +90,13 @@ export function kuponTabanlari(satirlar) {
  *
  * @param {Object} girdi
  * @param {Satir[]} girdi.satirlar
- * @param {Object} girdi.adres
+ * @param {Object} girdi.address
  * @param {string|null} [girdi.couponCode]
  * @param {string|null} [girdi.giftCardCode]
  * @param {string} [girdi.gonderimId] istemcinin ürettiği tekrar anahtarı
  * @returns {SiparisIstegi[]}
  */
-export function siparisPlani({ satirlar, adres, couponCode = null, giftCardCode = null, gonderimId }) {
+export function siparisPlani({ satirlar, address, couponCode = null, giftCardCode = null, gonderimId }) {
   const tasiyan = kodTasiyanSatirlar(satirlar);
   const anahtar = gonderimId && String(gonderimId).trim()
     ? String(gonderimId).trim()
@@ -108,7 +108,7 @@ export function siparisPlani({ satirlar, adres, couponCode = null, giftCardCode 
       productId: s.productId,
       sellerUserId: s.sellerUserId,
       sellerStoreId: s.storeId,
-      shippingAddress: adres,
+      shippingAddress: address,
       couponCode: kodBuSatirda ? couponCode : null,
       giftCardCode: kodBuSatirda ? giftCardCode : null,
       amountTry: satirTutari(s),

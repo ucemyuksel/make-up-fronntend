@@ -19,9 +19,9 @@ export async function requireSeller(callbackUrl: string) {
     redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
   const roles = session?.roles ?? [];
-  // Magaza isini sahip de personel de yapar - ikisi ayni panele girer.
+  // Magaza isini owner de personel de yapar - ikisi ayni panele girer.
   if (!roles.includes("STORE_OWNER") && !roles.includes("STORE_STAFF") && !roles.includes("ADMIN")) {
-    // Oturum var ama yetki yok: /login bu durumu ayrica anlatiyor.
+    // Oturum var ama auth yok: /login bu durumu ayrica anlatiyor.
     redirect("/login?yetkisiz=1");
   }
   return { token, roles };

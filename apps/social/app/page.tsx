@@ -2,7 +2,7 @@ import * as React from "react";
 import { SectionHeader, ReelCard, Badge } from "@makeup/ui";
 import { revalidatePath } from "next/cache";
 import { auth } from "../auth";
-import { api, timeAgo, authorName, yazarAdi, img, type Post, type Reel } from "./lib";
+import { api, timeAgo, fallbackAuthorName, authorName, img, type Post, type Reel } from "./lib";
 import { StoryBar, ShareButton, SaveButton, DislikeButton, type Story } from "./interactions";
 
 /** post-service /api/stories yanıtı. */
@@ -77,7 +77,7 @@ export default async function Feed() {
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 14 }}>
               <span style={{ width: 38, height: 38, borderRadius: "50%", background: p.authorAvatarColorHex ?? "var(--gg-primary-light)" }} />
               <div style={{ flex: 1 }}>
-                <strong>{yazarAdi(p, i)}</strong>
+                <strong>{authorName(p, i)}</strong>
                 <div style={{ fontSize: 12, color: "var(--gg-muted)" }}>{timeAgo(p.createdAt)}</div>
               </div>
               <span style={{ color: "var(--gg-muted)" }}>⋯</span>
@@ -93,7 +93,7 @@ export default async function Feed() {
                   </button>
                 </form>
                 <DislikeButton id={p.id} />
-                {/* Yorumlar detay sayfasında (iş parçacıklı cevaplarla). */}
+                {/* Yorumlar detail sayfasında (iş parçacıklı cevaplarla). */}
                 <a href={`/post/${p.id}`} style={{ color: "var(--gg-muted)", textDecoration: "none" }}>
                   💬 {p.commentCount}
                 </a>

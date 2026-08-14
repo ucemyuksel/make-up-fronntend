@@ -234,10 +234,10 @@ function StoryViewer({ stories, ads, startIndex, close }: { stories: Story[]; ad
 
   // Tıklanan hikayenin slayt indeksini bul.
   const startSlide = React.useMemo(() => {
-    let sayac = -1;
+    let counter = -1;
     for (let idx = 0; idx < slides.length; idx++) {
       const s = slides[idx];
-      if (s.tip === "story") { sayac++; if (sayac === startIndex) return idx; }
+      if (s.tip === "story") { counter++; if (counter === startIndex) return idx; }
     }
     return 0;
   }, [slides, startIndex]);

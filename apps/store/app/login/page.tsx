@@ -18,29 +18,29 @@ export const metadata = { title: "Giriş yap · Mağaza" };
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: { callbackUrl?: string; error?: string; ulke?: string };
+  searchParams: { callbackUrl?: string; error?: string; country?: string };
 }) {
   const session = await auth();
   if (session) redirect(searchParams.callbackUrl ?? "/");
 
-  const ulkeler = enabledCountries();
+  const countries = enabledCountries();
   const callbackUrl = searchParams.callbackUrl ?? "/";
 
   async function girisYap(formData: FormData) {
     "use server";
-    const ulke = String(formData.get("country") ?? "tr");
+    const country = String(formData.get("country") ?? "tr");
     try {
       await signIn("kendi-form", {
         email: String(formData.get("email") ?? "").trim(),
         password: String(formData.get("password") ?? ""),
-        country: ulke,
+        country: country,
         redirectTo: callbackUrl,
       });
     } catch (e) {
       // signIn basarida da yonlendirme icin hata firlatir; yutarsak giris
       // hic calismaz. Yalniz AuthError yakalanir.
       if (e instanceof AuthError) {
-        redirect(`/login?error=1&ulke=${ulke}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
+        redirect(`/login?error=1&ulke=${country}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
       }
       throw e;
     }
@@ -57,8 +57,8 @@ export default async function SignInPage({
 
           <LoginForm
             action={girisYap}
-            countries={ulkeler}
-            defaultCountry={searchParams.ulke}
+            countries={countries}
+            defaultCountry={searchParams.country}
             error={Boolean(searchParams.error)}
           />
 

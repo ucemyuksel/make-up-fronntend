@@ -20,7 +20,7 @@ const TABS = [
  * post-service yapiyor. Bu satir yalnizca "hangi profili isteyecegiz"
  * sorusunu cevapliyor.
  */
-function jetondanKullanici(token: string): string | null {
+function userFromToken(token: string): string | null {
   try {
     const govde = token.split(".")[1];
     if (!govde) return null;
@@ -41,14 +41,14 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
   const activeTab = searchParams.tab ?? "gonderiler";
 
   // Yazar kimligi jetondan cozulur; istemciden alinmiyor.
-  const yazarId = jetondanKullanici(token);
+  const authorId = userFromToken(token);
 
   const [ilkSayfa, reels] = await Promise.all([
     // Ilk sayfa SUNUCUDA getirilir: kullanici bos ekran gormez ve bu kisim
     // arama motoruna da acik. Devami istemcide, kaydirdikca gelir.
-    yazarId
+    authorId
       ? api<{ items: Post[]; nextCursor: string | null }>(
-          process.env.POST_API, `/api/posts/author/${yazarId}?limit=24`, token)
+          process.env.POST_API, `/api/posts/author/${authorId}?limit=24`, token)
       : Promise.resolve(null),
     activeTab === "reels" ? api<Reel[]>(process.env.REELS_API, "/api/reels", token) : Promise.resolve(null),
   ]);

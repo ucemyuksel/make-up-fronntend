@@ -136,7 +136,7 @@ export default async function AdCreate({ searchParams }: { searchParams: { error
             <input name="headline" required className="gg-search" placeholder="Yeni sezon %50 indirimle" />
           </label>
           <label style={lbl}>
-            Tıklayınca gidilecek adres
+            Tıklayınca gidilecek address
             <input name="ctaUrl" required className="gg-search" placeholder="https://store.com/campaigns" />
           </label>
         </div>

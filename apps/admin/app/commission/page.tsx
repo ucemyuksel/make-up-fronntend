@@ -156,7 +156,7 @@ export default async function Commission({
       <section className="gg-card">
         <h2 style={{ marginTop: 0, fontSize: 17 }}>➕ Yeni komisyon kuralı</h2>
         <p style={{ color: "var(--gg-muted)", fontSize: 13, marginTop: 0 }}>
-          Boş bırakılan kapsam alanı &quot;hepsi&quot; demektir. Hepsini boş bırakırsan global varsayılan olur.
+          Boş bırakılan scope alanı &quot;hepsi&quot; demektir. Hepsini boş bırakırsan global varsayılan olur.
         </p>
         <form action={createRule} style={{ display: "grid", gap: 12 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   // ikisi ayrisirsa sepette gosterilen ile odenen tutar tutmaz.
   //
   // YAN ETKISIZ: ikisi de yalniz HESAP ucu; kupon tuketilmez, bakiye dusmez.
-  const yetki = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  const authHeader = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
   let kalan = Number(govde.orderAmount);
   let couponDiscount = 0;
   let giftCardApplied = 0;
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
         `${process.env.PROMOTION_API}/api/stores/${govde.storeId}/coupons/preview`,
         {
           method: "POST",
-          headers: yetki,
+          headers: authHeader,
           body: JSON.stringify({
             code: govde.couponCode,
             orderAmount: kalan,
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
         `${process.env.WALLET_API}/api/stores/${govde.storeId}/gift-cards/balance`,
         {
           method: "POST",
-          headers: yetki,
+          headers: authHeader,
           body: JSON.stringify({ code: govde.giftCardCode }),
           cache: "no-store",
         });

@@ -34,19 +34,19 @@ export async function POST(request: Request) {
 
   const storeApi = process.env.STORE_API;
   const purchaseApi = process.env.PURCHASE_API;
-  const yetki = { Authorization: `Bearer ${token}` };
+  const authHeader = { Authorization: `Bearer ${token}` };
 
   // Mağaza sahiplerini tek seferde çöz (ürün başına tekrar tekrar çekmemek için).
-  const stores = (await fetch(`${storeApi}/api/stores`, { headers: yetki, cache: "no-store" })
+  const stores = (await fetch(`${storeApi}/api/stores`, { headers: authHeader, cache: "no-store" })
     .then((r) => (r.ok ? r.json() : []))
     .catch(() => [])) as Store[];
-  const sahip = new Map(stores.map((m) => [m.id, m.ownerUserId]));
+  const owner = new Map(stores.map((m) => [m.id, m.ownerUserId]));
 
   const olusan: string[] = [];
   const errors: string[] = [];
 
   for (const line of lines) {
-    const product = (await fetch(`${storeApi}/api/products/${line.productId}`, { headers: yetki, cache: "no-store" })
+    const product = (await fetch(`${storeApi}/api/products/${line.productId}`, { headers: authHeader, cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)) as Product | null;
 
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       errors.push(`Ürün bulunamadı: ${line.productId}`);
       continue;
     }
-    const sellerId = product.storeId ? sahip.get(product.storeId) : undefined;
+    const sellerId = product.storeId ? owner.get(product.storeId) : undefined;
     if (!sellerId) {
       errors.push(`${product.name}: satıcı çözülemedi`);
       continue;
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     // Her satır ayrı sipariş kaydı olur — kargolama ürün bazında yapılır.
     const res = await fetch(`${purchaseApi}/api/purchases/product`, {
       method: "POST",
-      headers: { ...yetki, "Content-Type": "application/json" },
+      headers: { ...authHeader, "Content-Type": "application/json" },
       body: JSON.stringify({
         productId: product.id,
         sellerUserId: sellerId,

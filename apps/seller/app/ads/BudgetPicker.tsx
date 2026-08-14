@@ -4,7 +4,7 @@ import * as React from "react";
 
 /**
  * Günlük bütçe + teklif seçimi. Hazır paketler tek tıkla doldurur, isteyen
- * kendi tutarını yazar. Tahmini erişim CPM tekliflerinden hesaplanır:
+ * kendi tutarını author. Tahmini erişim CPM tekliflerinden hesaplanır:
  * gösterim ≈ bütçe / CPM × 1000.
  */
 

@@ -168,7 +168,7 @@ export default async function StoreHome({ searchParams }: { searchParams: { q?: 
         ) : null}
       </section>
 
-      {/* KATEGORİLER (detay) — mağazaların ALTINDA. Mağaza seçiliyse yalnızca o mağazanın kategorileri. */}
+      {/* KATEGORİLER (detail) — mağazaların ALTINDA. Mağaza seçiliyse yalnızca o mağazanın kategorileri. */}
       <section>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h2 style={{ margin: 0, fontSize: 18 }}>{activeStore ? `${activeStore.ad} · Categories` : "Kategoriler"}</h2>

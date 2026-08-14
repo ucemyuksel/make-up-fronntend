@@ -117,7 +117,7 @@ export default function CartPage() {
           body: JSON.stringify({
             storeId: magaza,
             orderAmount: magazaTutari,
-            // Kupon urune bagliysa kapsam kontrolu KODU TASIYAN urunle
+            // Kupon urune bagliysa scope kontrolu KODU TASIYAN urunle
             // yapilmali; rastgele bir satir secilirse hesap, siparisin
             // gercekten gonderecegi urunle uyusmaz.
             productId: tasiyan.get(magaza),
@@ -191,7 +191,7 @@ export default function CartPage() {
     setSubmitting(true);
     setOrderError(null);
     try {
-      // Adres formdan okunur. Once gonderilmiyordu: siparis olusuyor ama
+      // Address formdan okunur. Once gonderilmiyordu: siparis olusuyor ama
       // satici kargoya veremiyordu - zincirin son halkasi kopuktu.
       const f = new FormData(e.target as HTMLFormElement);
       const metin = (k: string) => String(f.get(k) ?? "").trim();
@@ -412,7 +412,7 @@ export default function CartPage() {
                   <input name="postaKodu" className="gg-search" placeholder="34710" />
                 </label>
               </div>
-              <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Açık Adres
+              <label style={{ display: "grid", gap: 4, fontSize: 13 }}>Açık Address
                 <textarea name="adres" required className="gg-search" rows={2} placeholder="Mahalle, cadde, sokak, bina/daire no" style={{ resize: "vertical" }} />
               </label>
             </div>

@@ -26,38 +26,38 @@ export const metadata = { title: "Satıcı Girişi · GlamGuide" };
 export default async function SellerSignInPage({
   searchParams,
 }: {
-  searchParams: { callbackUrl?: string; error?: string; ulke?: string };
+  searchParams: { callbackUrl?: string; error?: string; country?: string };
 }) {
   const session = (await auth()) as { roles?: string[] } | null;
   const roller = session?.roles ?? [];
-  const saticiMi = roller.includes("STORE_OWNER") || roller.includes("STORE_STAFF")
+  const isSeller = roller.includes("STORE_OWNER") || roller.includes("STORE_STAFF")
     || roller.includes("ADMIN");
 
   // Oturum var ve satıcıysa panele. Oturum var ama rolü yoksa aşağıdaki
   // açıklama gösterilir — sessizce giriş ekranına geri atmak kullanıcıyı
   // "şifremi mi yanlış girdim" döngüsüne sokardı.
-  if (session && saticiMi) {
+  if (session && isSeller) {
     redirect(searchParams.callbackUrl ?? "/seller");
   }
 
-  const ulkeler = enabledCountries();
+  const countries = enabledCountries();
   const callbackUrl = searchParams.callbackUrl ?? "/seller";
 
   async function girisYap(formData: FormData) {
     "use server";
-    const ulke = String(formData.get("country") ?? "tr");
+    const country = String(formData.get("country") ?? "tr");
     try {
       await signIn("kendi-form", {
         email: String(formData.get("email") ?? "").trim(),
         password: String(formData.get("password") ?? ""),
-        country: ulke,
+        country: country,
         redirectTo: callbackUrl,
       });
     } catch (e) {
       // signIn başarılı olduğunda da yönlendirme için hata fırlatır; onu
       // yutmamak gerekir, yoksa giriş çalışmaz.
       if (e instanceof AuthError) {
-        redirect(`/login?error=1&ulke=${ulke}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
+        redirect(`/login?error=1&ulke=${country}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
       }
       throw e;
     }
@@ -74,7 +74,7 @@ export default async function SellerSignInPage({
           mağaza hesabınızla girin.
         </p>
 
-        {session && !saticiMi ? (
+        {session && !isSeller ? (
           <div role="alert" style={{ margin: "0 0 18px", padding: "12px 14px", borderRadius: 10,
                                      background: "#FBE6E6", color: "#B42318", fontSize: 14 }}>
             <strong>Bu hesabın mağaza yetkisi yok.</strong>
@@ -88,8 +88,8 @@ export default async function SellerSignInPage({
 
         <LoginForm
           action={girisYap}
-          countries={ulkeler}
-          defaultCountry={searchParams.ulke}
+          countries={countries}
+          defaultCountry={searchParams.country}
           error={Boolean(searchParams.error)}
           emailPlaceholder="magaza@ornek.com"
         />

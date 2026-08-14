@@ -15,10 +15,10 @@ export default async function CouponsPage({
 }) {
   const { token } = await requireSeller("/seller/coupons");
 
-  // Mağaza JETONDAN çözülür, adres çubuğundan değil: personelin ?store=
+  // Mağaza JETONDAN çözülür, address çubuğundan değil: personelin ?store=
   // parametresi yok ve elle yazılan bir kimlikle başka mağazaya bakma
   // denemesi de bu sayede kapanır. ?store= yalnızca birden fazla mağazası
-  // olan sahip için seçim aracı.
+  // olan owner için seçim aracı.
   const stores = (await api<Store[]>("/api/stores/mine", token)) ?? [];
   const store = stores.find((s) => s.id === searchParams.store)?.id ?? stores[0]?.id;
   if (!store) {
@@ -79,7 +79,7 @@ export default async function CouponsPage({
         <h1 style={{ margin: "8px 0 0" }}>Kupon Kodları</h1>
         <p style={{ color: "#666", margin: "6px 0 0", fontSize: 14 }}>
           Kupon bir <strong>indirim kuralıdır</strong>, bakiyesi yoktur. Müşteri
-          sepette kodu yazar, şartlar tutuyorsa indirim uygulanır.
+          sepette kodu author, şartlar tutuyorsa indirim uygulanır.
         </p>
       </div>
 
