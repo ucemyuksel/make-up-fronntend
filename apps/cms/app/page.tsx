@@ -1,4 +1,4 @@
-import { auth, signIn } from "../auth";
+import { auth } from "../auth";
 import { redirect } from "next/navigation";
 
 /**
@@ -15,10 +15,11 @@ export default async function CmsHome() {
     return (
       <main style={{ maxWidth: 480, margin: "12vh auto", padding: 24 }} className="gg-card">
         <h1>İçerik Yönetimi</h1>
-        <p>İçerik yöneticisi hesabınla giriş yap.</p>
-        <form action={async () => { "use server"; await signIn("keycloak", { redirectTo: "/" }); }}>
-          <button className="gg-btn gg-btn-primary">Giriş yap</button>
-        </form>
+        <p>İçerik yöneticisi hesabınızla giriş yapın.</p>
+        {/* Kendi giriş sayfamıza gönderilir. Eskiden burada signIn("keycloak")
+            çağıran bir form vardı; o sağlayıcı yalnızca KEYCLOAK_LEGACY_ISSUER
+            tanımlıysa var olduğu için buton hiç çalışmıyordu. */}
+        <a href="/login" className="gg-btn gg-btn-primary">Giriş yap</a>
       </main>
     );
   }

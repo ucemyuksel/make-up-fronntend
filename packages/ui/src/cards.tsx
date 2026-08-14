@@ -87,7 +87,7 @@ export function ReelCard({
   caption?: string;
   meta?: string;
   image?: string;
-  /** Verilirse kart tıklanabilir olur (ana sayfadaki kartlar ölü görünüyordu). */
+  /** When supplied the card becomes clickable (home page cards looked dead). */
   href?: string;
 }) {
   const Sarmal: React.ElementType = href ? "a" : "div";

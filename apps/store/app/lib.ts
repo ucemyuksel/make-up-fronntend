@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 
 export type Product = {
   id: string;
+  /** Kupon ve hediye karti MAGAZAYA ait; sepet hangi magazaya soracagini bilmeli. */
+  storeId: string;
   name: string;
   brand: string;
   priceAmount: number;
@@ -42,7 +44,7 @@ export async function api<T>(path: string, token: string): Promise<T | null> {
   // Oturum düştüyse girişe yolla ("servis çalışmıyor" demek yanıltıcı olurdu).
   // redirect() try/catch DIŞINDA çağrılmalı — aksi halde NEXT_REDIRECT yutulur.
   if (token && (res.status === 401 || res.status === 403)) {
-    redirect("/api/auth/signin");
+    redirect("/login");
   }
   return res.ok ? ((await res.json()) as T) : null;
 }

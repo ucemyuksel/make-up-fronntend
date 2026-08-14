@@ -1,10 +1,19 @@
-import { auth, signIn } from "../auth";
+import { auth } from "../auth";
 import { redirect } from "next/navigation";
 
 export default async function AdminHome() {
   const session = await auth() as { accessToken?: string; roles?: string[] } | null;
   if (!session?.accessToken) {
-    return <main style={{ maxWidth: 480, margin: "12vh auto", padding: 24 }} className="gg-card"><h1>Yönetim Merkezi</h1><p>Platform yöneticisi hesabınla giriş yap.</p><form action={async () => { "use server"; await signIn("keycloak", { redirectTo: "/" }); }}><button className="gg-btn gg-btn-primary">Yönetici girişi</button></form></main>;
+    // Kendi giriş sayfamıza gönderilir. Eskiden burada signIn("keycloak")
+    // çağıran bir form vardı; o sağlayıcı yalnızca KEYCLOAK_LEGACY_ISSUER
+    // tanımlıysa var olduğu için buton hiç çalışmıyordu.
+    return (
+      <main style={{ maxWidth: 480, margin: "12vh auto", padding: 24 }} className="gg-card">
+        <h1>Yönetim Merkezi</h1>
+        <p>Platform yöneticisi hesabınızla giriş yapın.</p>
+        <a href="/login" className="gg-btn gg-btn-primary">Yönetici girişi</a>
+      </main>
+    );
   }
   if (!session.roles?.includes("ADMIN")) redirect("/forbidden");
   // İçerik yönetimi ayrı bir mikro-frontend (cms). Burada yalnızca köprü

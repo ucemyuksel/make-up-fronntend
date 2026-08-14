@@ -82,7 +82,7 @@ export default async function Dashboard() {
               <a href={`${RECIPES}/`} className="gg-btn gg-btn-primary">✨ Hemen Başla</a>
               <a href="/analysis" className="gg-btn gg-btn-ghost">🎯 Yüz Analizi Yap</a>
               {!live && (
-                <a href="/api/auth/signin?callbackUrl=%2F" className="gg-btn gg-btn-ghost">🔑 Giriş yap (canlı veri)</a>
+                <a href="/login?callbackUrl=%2F" className="gg-btn gg-btn-ghost">🔑 Giriş yap (canlı veri)</a>
               )}
             </div>
           </div>

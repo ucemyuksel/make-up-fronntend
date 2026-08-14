@@ -1,7 +1,10 @@
 "use client";
 import * as React from "react";
 
-type CartItem = { id: string; name: string; brand: string; priceAmount: number; qty: number };
+// storeId ZORUNLU: kupon ve hediye karti MAGAZAYA ait; hangi magazaya
+// sorulacagi bilinmeden dogrulama yapilamaz.
+type CartItem = { id: string; name: string; brand: string; priceAmount: number;
+                  qty: number; storeId?: string };
 
 export function AddToCart({ product }: { product: Omit<CartItem, "qty"> }) {
   const [qty, setQty] = React.useState(1);

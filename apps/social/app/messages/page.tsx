@@ -32,7 +32,7 @@ export default async function Messages({ searchParams }: { searchParams: { c?: s
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   if (!token) {
-    redirect("/api/auth/signin?callbackUrl=%2Fmessages");
+    redirect("/login?callbackUrl=%2Fmessages");
   }
 
   const conversations = (await api<Conversation[]>(process.env.MESSAGING_API, "/api/conversations", token)) ?? [];

@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -13,8 +17,32 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [{ "name": "next" }]
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    // Workspace paketleri DOGRUDAN kaynagina eslenir (package.json main
+    // zaten ./src/index.ts). npm, yerel workspaceleri node_modules altina
+    // sembolik bag olarak koyuyor; Windowsta bunlar junction ve Linux CI
+    // konteynerinden cozulemiyor - tip denetimi orada @makeup/ui bulamiyordu.
+    "paths": {
+      "@makeup/ui": [
+        "../../packages/ui/src/index.ts"
+      ],
+      "@makeup/auth": [
+        "../../packages/auth/src/index.ts"
+      ]
+    }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

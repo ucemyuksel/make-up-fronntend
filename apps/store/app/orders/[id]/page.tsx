@@ -3,13 +3,20 @@ import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
 import { tl } from "../../lib";
 import { purchases, STATUS, VAT_RATE, shortId, dateTr, type Purchase } from "../lib";
+import { ReturnRequest } from "../ReturnRequest";
 
 const STEPS = ["Sipariş Alındı", "Doğrulandı", "Hazırlanıyor", "Tamamlandı"];
 
-export default async function OrderDetail({ params }: { params: { id: string } }) {
+export default async function OrderDetail({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { ierror?: string; iok?: string };
+}) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) redirect(`/api/auth/signin?callbackUrl=%2Forders%2F${params.id}`);
+  if (!token) redirect(`/login?callbackUrl=%2Forders%2F${params.id}`);
 
   const o = await purchases<Purchase>(`/api/purchases/${params.id}`, token);
   if (!o) return <p>Sipariş bulunamadı.</p>;
@@ -75,6 +82,13 @@ export default async function OrderDetail({ params }: { params: { id: string } }
           })()}
         </div>
       </div>
+
+      <ReturnRequest
+        purchaseId={o.id}
+        shipmentStatus={o.shipmentStatus ?? null}
+        returnPath={`/orders/${o.id}`}
+        error={searchParams.ierror}
+      />
     </div>
   );
 }

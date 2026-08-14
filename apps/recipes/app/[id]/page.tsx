@@ -40,7 +40,7 @@ export default async function GuidedPage({ params }: { params: { id: string } })
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
 
-  if (!token) redirect(`/api/auth/signin?callbackUrl=%2F${recipeId}`);
+  if (!token) redirect(`/login?callbackUrl=%2F${recipeId}`);
 
   // Önce mevcut oturumu al; yoksa (404) başlat. 403 → erişim yok (ücretli, satın alınmamış).
   let s = await call(`/api/recipes/${recipeId}/session`, "GET", token);

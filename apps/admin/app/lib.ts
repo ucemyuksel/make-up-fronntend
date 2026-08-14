@@ -10,7 +10,7 @@ export async function adminApi<T>(base: string, path: string, token: string): Pr
   // Oturum düştüyse boş liste göstermek yanıltıcı ("veri yok" sanılır) — girişe yolla.
   // redirect() try/catch DIŞINDA çağrılmalı, aksi halde NEXT_REDIRECT yutulur.
   if (response.status === 401 || response.status === 403) {
-    redirect("/api/auth/signin");
+    redirect("/login");
   }
   return response.ok ? await response.json() as T : null;
 }

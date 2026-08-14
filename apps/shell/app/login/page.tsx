@@ -1,74 +1,79 @@
 import * as React from "react";
 import { redirect } from "next/navigation";
-import { Card } from "@makeup/ui";
-import { enabledCountries, providerId } from "@makeup/auth";
+import { Card, LoginForm } from "@makeup/ui";
+import { AuthError } from "next-auth";
+import { enabledCountries } from "@makeup/auth";
 import { auth, signIn } from "../../auth";
 
 export const metadata = { title: "Giriş yap · GlamGuide" };
 
 /**
- * Ülke seçimli giriş. Her ülkenin hesapları ayrı Keycloak realm'inde durduğu
- * için hangi realm'e gidileceği kullanıcıdan öğrenilmeli — Auth.js sağlayıcı
- * issuer'ını çalışma anında değiştiremiyor, o yüzden ülke başına bir sağlayıcı
- * tanımlı ve seçim doğrudan sağlayıcı seçimine karşılık geliyor.
+ * Giriş — <b>kendi formumuz</b>.
+ *
+ * <p>Kimlik doğrulama Keycloak'ta; kullanıcı Keycloak'ın barındırdığı sayfaya
+ * <b>gitmiyor</b>. Form, marka ve hata metinleri bizde. Keycloak arkada
+ * kimlik sağlayıcı olarak kalıyor: kullanıcılar, roller, parola politikası ve
+ * kaba kuvvet koruması orada.
+ *
+ * <p>Ülke seçimi var çünkü her ülkenin hesapları ayrı realm'de tutuluyor;
+ * hangi realm'e sorulacağı kullanıcıdan öğrenilmeli.
+ *
+ * <p><b>Hata mesajı bilerek tek tip:</b> "kullanıcı yok" ile "parola yanlış"
+ * ayrımı, hangi e-postaların kayıtlı olduğunu sızdırırdı.
  */
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: { callbackUrl?: string; error?: string };
+  searchParams: { callbackUrl?: string; error?: string; ulke?: string };
 }) {
   const session = await auth();
   if (session) redirect(searchParams.callbackUrl ?? "/");
 
-  const countries = enabledCountries();
+  const ulkeler = enabledCountries();
   const callbackUrl = searchParams.callbackUrl ?? "/";
 
+  async function girisYap(formData: FormData) {
+    "use server";
+    const ulke = String(formData.get("country") ?? "tr");
+    try {
+      await signIn("kendi-form", {
+        email: String(formData.get("email") ?? "").trim(),
+        password: String(formData.get("password") ?? ""),
+        country: ulke,
+        redirectTo: callbackUrl,
+      });
+    } catch (e) {
+      // signIn başarıda da yönlendirme için hata fırlatır; onu yutarsak
+      // giriş hiç çalışmaz. Yalnız AuthError yakalanır.
+      if (e instanceof AuthError) {
+        redirect(`/login?error=1&ulke=${ulke}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
+      }
+      throw e;
+    }
+  }
+
   return (
-    <main style={{ maxWidth: 460, margin: "10vh auto", padding: "0 20px" }}>
+    <main style={{ maxWidth: 440, margin: "10vh auto", padding: "0 20px" }}>
       <Card>
         <div style={{ padding: 28 }}>
           <h1 style={{ margin: "0 0 6px", fontSize: 26 }}>Giriş yap</h1>
           <p style={{ margin: "0 0 22px", opacity: 0.7, fontSize: 14 }}>
-            Hesabının açıldığı ülkeyi seç.
+            Hesabınla devam et.
           </p>
 
-          {searchParams.error ? (
-            <p
-              role="alert"
-              style={{
-                margin: "0 0 16px", padding: "10px 12px", borderRadius: 8,
-                background: "rgba(200,40,40,.1)", color: "#b02", fontSize: 14,
-              }}
-            >
-              Giriş tamamlanamadı. Lütfen tekrar dene.
-            </p>
-          ) : null}
-
-          <div style={{ display: "grid", gap: 10 }}>
-            {countries.map((country) => (
-              <form
-                key={country.code}
-                action={async () => {
-                  "use server";
-                  await signIn(providerId(country.code), { redirectTo: callbackUrl });
-                }}
-              >
-                <button
-                  type="submit"
-                  className="gg-btn"
-                  style={{ width: "100%", justifyContent: "space-between", display: "flex" }}
-                >
-                  <span>{country.label}</span>
-                  <span aria-hidden style={{ opacity: 0.5, fontSize: 12 }}>
-                    {country.code.toUpperCase()}
-                  </span>
-                </button>
-              </form>
-            ))}
-          </div>
+          <LoginForm
+            action={girisYap}
+            countries={ulkeler}
+            defaultCountry={searchParams.ulke}
+            error={Boolean(searchParams.error)}
+          />
 
           <p style={{ margin: "22px 0 0", fontSize: 14, textAlign: "center" }}>
             Hesabın yok mu? <a href="/register">Üye ol</a>
+          </p>
+          <p style={{ margin: "10px 0 0", fontSize: 13, textAlign: "center", opacity: 0.7 }}>
+            Mağaza sahibi misin?{" "}
+            <a href={process.env.NEXT_PUBLIC_SELLER_URL ?? "http://localhost:3006"}>Satıcı girişi</a>
           </p>
         </div>
       </Card>

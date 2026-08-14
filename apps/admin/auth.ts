@@ -1,6 +1,13 @@
-// Ortak kurulum @makeup/auth'ta — çok kiracılı (ülke başına realm) Keycloak.
-// Daha önce her uygulama kendi kopyasını taşıyordu ve kopyalar ayrışmıştı:
-// admin'de jeton yenileme hiç yoktu, oturum 15 dakikada düşüyordu.
+// admin panelinin Auth.js kurulumu.
+//
+// Normal kullanici girisinden AYRI:
+//   1) Kendi Keycloak istemcisi (makeup-admin) — ayri sir, ayri yonlendirme
+//      adresleri; musteri uygulamasinin sirri sizarsa burasi etkilenmez.
+//   2) ROL KAPISI: ADMIN rolu olmayan burada oturum bile acamaz. Kontrolu
+//      sayfaya biraksaydik gecerli bir yonetim oturumu olusur ve tek bir
+//      sayfada kontrol unutuldugunda acik kapi kalirdi.
 import { createAuth } from "@makeup/auth";
 
-export const { handlers, auth, signIn, signOut } = createAuth();
+export const { handlers, auth, signIn, signOut } = createAuth({
+  requireRoles: ["ADMIN"],
+});

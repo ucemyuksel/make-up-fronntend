@@ -2,9 +2,10 @@
 import * as React from "react";
 
 /**
- * MinIO'ya doğrudan yükleme (presigned PUT). Başarıda hedef input'u ({@code targetId})
- * public URL ile doldurur → aynı alan hem elle URL hem yükleme kabul eder.
- * Backend byte taşımaz (ölçeklenir); prod'da public URL CDN kökünü kullanır.
+ * Direct upload to MinIO (presigned PUT). On success it fills the target input
+ * ({@code targetId}) with the public URL, so the same field accepts both a
+ * pasted URL and an upload. The backend never carries the bytes (it scales); in
+ * production the public URL uses the CDN root.
  */
 export function MediaUpload({ targetId, label = "Görsel yükle", accept = "image/*" }: {
   targetId: string; label?: string; accept?: string;

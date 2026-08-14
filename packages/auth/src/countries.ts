@@ -1,15 +1,15 @@
 /**
- * Desteklenen pazarlar ve Keycloak realm adlandırması.
+ * Supported markets and the Keycloak realm naming.
  *
- * Backend'deki `CountryRealm` ile aynı kural: `makeup-<ülke kodu>`. İki taraf
- * ayrı ayrı bu kuralı bildiği için burası değişirse orası da değişmeli —
- * gerçek kaynak `infra/keycloak-config/ulkeler.json`.
+ * Same rule as `CountryRealm` in the backend: `makeup-<country code>`. Both
+ * sides know this rule independently, so if it changes here it must change
+ * there too — the source of truth is `infra/keycloak-config/ulkeler.json`.
  */
 
 export type Country = {
-  /** ISO-3166 alfa-2, küçük harf */
+  /** ISO-3166 alpha-2, lowercase */
   code: string;
-  /** Giriş ekranında gösterilen ad (kendi dilinde) */
+  /** Name shown on the login screen (in its own language) */
   label: string;
 };
 
@@ -27,20 +27,20 @@ export function realmName(code: string): string {
   return `makeup-${code.trim().toLowerCase()}`;
 }
 
-/** Auth.js sağlayıcı kimliği — geri dönüş adresi buna göre oluşur. */
+/** Auth.js provider id — the callback URL is derived from it. */
 export function providerId(code: string): string {
   return `keycloak-${code.trim().toLowerCase()}`;
 }
 
-/** `.../realms/makeup-de` → `"de"`; çözülemezse undefined. */
+/** `.../realms/makeup-de` → `"de"`; undefined when it cannot be resolved. */
 export function countryFromIssuer(issuer?: string): string | undefined {
   const match = issuer?.match(/\/realms\/makeup-([a-z]{2})\b/i);
   return match?.[1]?.toLowerCase();
 }
 
 /**
- * Env ile daraltılabilir list. Ortam başına farklı pazar açmak için:
- * `AUTH_COUNTRIES=tr,de`
+ * List that can be narrowed by env, to enable different markets per
+ * environment: `AUTH_COUNTRIES=tr,de`
  */
 export function enabledCountries(): Country[] {
   const raw = process.env.AUTH_COUNTRIES;

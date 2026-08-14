@@ -32,7 +32,7 @@ export default async function ProfileEdit({
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   if (!token) {
-    redirect("/api/auth/signin?callbackUrl=%2Fprofile%2Fduzenle");
+    redirect("/login?callbackUrl=%2Fprofile%2Fduzenle");
   }
 
   const [profile, countries] = await Promise.all([

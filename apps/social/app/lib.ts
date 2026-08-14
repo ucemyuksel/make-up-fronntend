@@ -38,7 +38,7 @@ export async function api<T>(base: string | undefined, path: string, token: stri
   }
   // Oturum düştüyse girişe yolla (redirect try/catch DIŞINDA olmalı).
   if (token && (res.status === 401 || res.status === 403)) {
-    redirect("/api/auth/signin");
+    redirect("/login");
   }
   return res.ok ? ((await res.json()) as T) : null;
 }

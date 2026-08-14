@@ -1,4 +1,4 @@
-// GlamGuide marka token'ları (mockup'a göre canlı pembe/magenta).
+// GlamGuide brand tokens (vivid pink/magenta, per the mockup).
 export const theme = {
   color: {
     primary: "#EC2E7A", // canlı pembe (CTA, "Hemen Başla", "Reels Satın Al")

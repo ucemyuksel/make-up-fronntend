@@ -35,7 +35,7 @@ const STATUS_STYLE: Record<ShipmentStatus, { bg: string; fg: string; text: strin
 
 const TABS: { key: string; label: string }[] = [
   { key: "", label: "Tümü" },
-  { key: "HAZIRLANIYOR", label: "Kargo pending" },
+  { key: "HAZIRLANIYOR", label: "Kargo bekleyen" },
   { key: "KARGOLANDI", label: "Kargoda" },
   { key: "TESLIM_EDILDI", label: "Teslim edilen" },
 ];
@@ -143,7 +143,7 @@ export default async function SellerOrders({
         {[
           { l: "Toplam sipariş", v: String(summary?.orderCount ?? 0) },
           { l: "Toplam satış", v: tl(Number(summary?.totalRevenue ?? 0)) },
-          { l: "Kargo pending", v: String(summary?.awaitingShipment ?? 0) },
+          { l: "Kargo bekleyen", v: String(summary?.awaitingShipment ?? 0) },
         ].map((k) => (
           <div key={k.l} className="gg-card" style={{ display: "grid", gap: 4 }}>
             <span style={{ fontSize: 12, color: "var(--gg-muted)" }}>{k.l}</span>

@@ -17,7 +17,7 @@ export default async function Orders({ searchParams }: { searchParams: { t?: str
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   if (!token) {
-    redirect("/api/auth/signin?callbackUrl=%2Forders"); // oturum yoksa login sayfasına yönlendir
+    redirect("/login?callbackUrl=%2Forders"); // oturum yoksa login sayfasına yönlendir
   }
   const all = (await purchases<Purchase[]>("/api/purchases", token)) ?? [];
 

@@ -15,25 +15,25 @@ import { Circle as CircleStyle, Fill, Stroke, Style, Text } from "ol/style";
 import Overlay from "ol/Overlay";
 
 /**
- * Gerçek harita üzerinde reklam yoğunluğu (OpenLayers + OpenStreetMap).
+ * Ad density on a real map (OpenLayers + OpenStreetMap).
  *
- * <p>Elle çizilmiş kıta siluetleri yerine gerçek tile haritası kullanılır;
- * kabarcıklar şehir koordinatlarına oturur, yakınlaştırma/kaydırma çalışır.
- * Tile'lar OSM'den gelir — istemci tarafında yüklenir, sunucuya yük bindirmez.
+ * <p>A real tile map replaces hand-drawn continent outlines; bubbles sit on
+ * city coordinates and zoom/pan work. Tiles come from OSM and are loaded
+ * client-side, so they put no load on our server.
  */
 
 export type MapPoint = {
-  /** Benzersiz anahtar (ülke|şehir). */
+  /** Unique key (country|city). */
   anahtar: string;
   ad: string;
   countryCode: string;
   lat: number;
   lon: number;
-  /** Kabarcık boyutunu belirleyen ana ölçü. */
+  /** The primary measure that drives bubble size. */
   weight: number;
-  /** İkincil ölçü — doluysa iç nokta çizilir (ör. tık). */
+  /** Secondary measure - when present an inner dot is drawn (e.g. clicks). */
   ikincil?: number;
-  /** Fare üzerine gelince gösterilecek satırlar. */
+  /** Lines shown on hover. */
   detail?: string;
 };
 
@@ -49,7 +49,7 @@ export function GeoMap({
   /** [boylam, enlem] */
   center?: [number, number];
   zoom?: number;
-  /** Şehir/ülke arama kutusu gösterilsin mi? */
+  /** Whether to show the city/country search box. */
   showSearch?: boolean;
 }) {
   const boxRef = React.useRef<HTMLDivElement | null>(null);
@@ -58,7 +58,7 @@ export function GeoMap({
   const [hint, setHint] = React.useState<string | null>(null);
   const [search, setArama] = React.useState("");
 
-  /** Bir noktaya yumuşak geçişle yakınlaş (arama sonucu / kabarcık tıklaması). */
+  /** Smoothly zoom to a point (search result / bubble click). */
   const odaklan = React.useCallback((lat: number, lon: number, hedefZoom = 8) => {
     const g = haritaRef.current?.getView();
     if (!g) return;
@@ -69,7 +69,7 @@ export function GeoMap({
     if (!boxRef.current) return;
 
     const enBuyuk = Math.max(1, ...points.map((n) => n.weight));
-    // Yarıçap alanla orantılı (sqrt) — büyük değerler haritayı ezmesin.
+    // Radius scales with area (sqrt) so large values do not swamp the map.
     const yaricap = (a: number) => 6 + Math.sqrt(a / enBuyuk) * 22;
 
     const source = new VectorSource({
@@ -91,7 +91,7 @@ export function GeoMap({
             fill: new Fill({ color: "rgba(197, 106, 122, 0.38)" }),
             stroke: new Stroke({ color: "rgba(138, 63, 82, 0.9)", width: 1.4 }),
           }),
-          // Yeterince büyük kabarcıklarda şehir adı da yazılır.
+          // Big enough bubbles also carry the city name.
           text: r > 14
             ? new Text({
                 text: n.ad,
@@ -120,8 +120,8 @@ export function GeoMap({
     });
     haritaRef.current = harita;
 
-    // Süzgeç değişince (ör. "Yayında" kartına tıklanınca) harita kalan
-    // noktalara kendiliğinden odaklanır.
+    // When the filter changes (e.g. clicking the "Live" card) the map refocuses
+    // on the remaining points by itself.
     const kapsam = source.getExtent();
     if (points.length > 0 && kapsam && isFinite(kapsam[0])) {
       harita.getView().fit(kapsam, {
@@ -131,7 +131,7 @@ export function GeoMap({
       });
     }
 
-    // Kabarcığa tıklayınca o şehre yakınlaş.
+    // Clicking a bubble zooms to that city.
     harita.on("click", (evt) => {
       const f = harita.forEachFeatureAtPixel(evt.pixel, (x) => x);
       if (f) {
@@ -159,7 +159,7 @@ export function GeoMap({
     };
   }, [points, center, zoom]);
 
-  // Arama: şehir veya ülke kodu. Türkçe karakterler eşleşsin diye aksanlar sökülür.
+  // Search by city or country code. Accents are stripped so Turkish characters match.
   const normalize = (s: string) =>
     s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLocaleLowerCase("tr");
   const results = search.trim().length < 2

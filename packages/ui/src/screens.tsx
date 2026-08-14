@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 
-/** Yükleniyor ekranı (RSC loading.tsx için) — erişilebilir spinner. */
+/** Loading screen (for the RSC loading.tsx) - an accessible spinner. */
 export function LoadingScreen({ label = "Yükleniyor…" }: { label?: string }) {
   return (
     <div role="status" aria-live="polite" style={{ display: "grid", placeItems: "center", padding: "64px 16px", gap: 14 }}>
@@ -11,7 +11,7 @@ export function LoadingScreen({ label = "Yükleniyor…" }: { label?: string }) 
   );
 }
 
-/** 404 ekranı (not-found.tsx için). */
+/** 404 screen (for not-found.tsx). */
 export function NotFoundScreen({ homeHref = "/" }: { homeHref?: string }) {
   return (
     <div style={{ display: "grid", placeItems: "center", padding: "64px 16px", gap: 12, textAlign: "center" }}>
@@ -23,7 +23,7 @@ export function NotFoundScreen({ homeHref = "/" }: { homeHref?: string }) {
   );
 }
 
-/** Hata sınırı ekranı (error.tsx için) — reset ile tekrar dener. */
+/** Error boundary screen (for error.tsx) - retries via reset. */
 export function ErrorScreen({ reset, message = "Bir şeyler ters gitti." }: { reset?: () => void; message?: string }) {
   return (
     <div role="alert" style={{ display: "grid", placeItems: "center", padding: "64px 16px", gap: 12, textAlign: "center" }}>

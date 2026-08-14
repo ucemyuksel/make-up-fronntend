@@ -24,7 +24,7 @@ export default async function StoryComposer({
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   if (!token) {
-    redirect("/api/auth/signin?callbackUrl=%2Fhikaye");
+    redirect("/login?callbackUrl=%2Fhikaye");
   }
 
   let benimkiler: Story[] = [];

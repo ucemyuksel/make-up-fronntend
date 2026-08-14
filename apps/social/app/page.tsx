@@ -25,7 +25,7 @@ export default async function Feed() {
       <div style={{ maxWidth: 440, display: "grid", gap: 14 }}>
         <Badge>Sosyal · Keycloak OIDC</Badge>
         <h1 style={{ margin: 0 }}>Haber akışına giriş</h1>
-        <a href="/api/auth/signin?callbackUrl=%2F" className="gg-btn gg-btn-primary" style={{ justifySelf: "start" }}>
+        <a href="/login?callbackUrl=%2F" className="gg-btn gg-btn-primary" style={{ justifySelf: "start" }}>
           Keycloak ile giriş yap
         </a>
       </div>

@@ -1,17 +1,28 @@
 "use client";
 import * as React from "react";
 import { SectionHeader, Carousel } from "@makeup/ui";
+// Hesap tabani ile siparis rotasinin gonderdigi tutar TEK yerden gelmeli;
+// ayri hesaplandiklarinda gosterilen indirim gerceklesenden buyuk cikiyordu.
+import { kuponTabanlari, kodTasiyanSatirlar } from "../api/orders/siparis-plani.mjs";
 
-type CartItem = { id: string; name: string; brand: string; priceAmount: number; qty: number };
+type CartItem = { id: string; name: string; brand: string; priceAmount: number;
+                  qty: number; storeId?: string };
 const tl = (n: number) => "₺" + Number(n).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const VAT_RATE = 0.20; // Kozmetik KDV %20
 
-// Kupon kodları (demo — prod'da purchase/promotion-service'ten doğrulanır).
-const COUPONS: Record<string, { tip: "yuzde" | "tutar"; value: number; ad: string }> = {
-  GLAM10: { tip: "yuzde", value: 10, ad: "%10 indirim" },
-  GLAM20: { tip: "yuzde", value: 20, ad: "%20 indirim" },
-  HOSGELDIN50: { tip: "tutar", value: 50, ad: "₺50 indirim" },
+/**
+ * Sunucudan gelen tutar hesabi.
+ *
+ * Burada SABIT KODLANMIS bir kupon tablosu vardi ve gercek kuponlarla hic
+ * ilgisi yoktu: magazanin tanimladigi kupon calismiyor, tanimlamadigi kod
+ * calisiyordu. Artik hesabi store-service yapiyor.
+ */
+type Hesap = {
+  couponDiscount: number;
+  giftCardApplied: number;
+  payable: number;
+  warning: string | null;
 };
 
 const GLAMPOINT_BALANCE = 75; // Kullanıcı kredisi (demo).
@@ -30,8 +41,10 @@ export default function CartPage() {
 
   // Kupon + puan durumu
   const [couponInput, setCouponInput] = React.useState("");
-  const [coupon, setCoupon] = React.useState<string | null>(null);
+  const [giftCardInput, setGiftCardInput] = React.useState("");
+  const [hesap, setHesap] = React.useState<Hesap | null>(null);
   const [couponError, setCouponError] = React.useState("");
+  const [hesaplaniyor, setHesaplaniyor] = React.useState(false);
   const [usePoints, setUsePoints] = React.useState(false);
 
   // Kurumsal fatura
@@ -39,6 +52,15 @@ export default function CartPage() {
   const [orderPlaced, setOrderPlaced] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const [orderError, setOrderError] = React.useState<string | null>(null);
+
+  // TEKRAR anahtari. Bir kez uretilir ve basarili siparise kadar AYNI kalir:
+  // cift tiklama ya da ag hatasindan sonraki yeniden deneme sunucuda ayni
+  // siparise dener. useRef sart - useState yeniden render'da yeni deger
+  // uretmez ama her denemede yenisini uretmek de korumayi yok ederdi.
+  const gonderimId = React.useRef<string>("");
+  if (!gonderimId.current) {
+    gonderimId.current = globalThis.crypto?.randomUUID?.() ?? String(Date.now());
+  }
 
   React.useEffect(() => {
     setItems(JSON.parse(localStorage.getItem("gg_cart") || "[]"));
@@ -56,23 +78,98 @@ export default function CartPage() {
     save(existing ? items.map((i) => (i.id === p.id ? { ...i, qty: i.qty + 1 } : i)) : [...items, { ...p, qty: 1 }]);
   };
 
-  const applyCoupon = () => {
-    const code = couponInput.trim().toUpperCase();
-    if (!code) return;
-    if (COUPONS[code]) { setCoupon(code); setCouponError(""); }
-    else { setCoupon(null); setCouponError("Geçersiz kupon kodu."); }
+  /**
+   * Kodlari SUNUCUYA dogrulatir. Istemci hesaplasaydi odenecek tutari da
+   * istemci belirlerdi; kupon ve hediye karti paraya dokunuyor.
+   */
+  const kodlariUygula = async () => {
+    // Sepet BIRDEN FAZLA magazanin urununu tasiyabilir. Tek hesap yapip
+    // tum sepet tutarini gonderseydik A magazasinin kuponu B magazasinin
+    // urunlerini de indirirdi. Bu yuzden magaza basina ayri hesap yapilir;
+    // kod hangi magazaya aitse indirim orada olusur, digerleri uyari alir.
+    //
+    // TABAN, siparis rotasiyla AYNI fonksiyondan gelir. Burada magazanin tum
+    // alt toplami, sipariste ise yalniz tek satirin tutari kullaniliyordu:
+    // sepette gosterilen indirim gerceklesenden BUYUK cikiyor, musteri
+    // gosterilenden fazla oduyordu.
+    const satirlar = items.map((i) => ({
+      productId: i.id, storeId: i.storeId, sellerUserId: "",
+      birimFiyat: i.priceAmount, adet: i.qty,
+    }));
+    const magazalar = kuponTabanlari(satirlar);
+    const tasiyan = kodTasiyanSatirlar(satirlar);
+    if (magazalar.size === 0) {
+      setCouponError("Sepetteki ürünün mağazası bilinmiyor; ürünü yeniden ekleyin.");
+      return;
+    }
+
+    setHesaplaniyor(true);
+    setCouponError("");
+    try {
+      let kupon = 0;
+      let kart = 0;
+      const uyarilar: string[] = [];
+
+      for (const [magaza, magazaTutari] of magazalar) {
+        const res = await fetch("/api/checkout/quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storeId: magaza,
+            orderAmount: magazaTutari,
+            // Kupon urune bagliysa kapsam kontrolu KODU TASIYAN urunle
+            // yapilmali; rastgele bir satir secilirse hesap, siparisin
+            // gercekten gonderecegi urunle uyusmaz.
+            productId: tasiyan.get(magaza),
+            couponCode: couponInput.trim() || null,
+            giftCardCode: giftCardInput.trim() || null,
+          }),
+        });
+        const veri = await res.json();
+        if (!res.ok) {
+          setHesap(null);
+          setCouponError(veri.message ?? "Kod doğrulanamadı.");
+          return;
+        }
+        kupon += Number(veri.couponDiscount ?? 0);
+        kart += Number(veri.giftCardApplied ?? 0);
+        if (veri.warning) uyarilar.push(veri.warning);
+      }
+
+      const veri = {
+        couponDiscount: kupon,
+        giftCardApplied: kart,
+        payable: Math.max(0, subtotal - kupon - kart),
+        // Indirim olustuysa uyarilari gostermeyiz: kod bir magazada
+        // gecerli, digerlerinde degil - bu beklenen durum.
+        warning: kupon + kart > 0 ? null : uyarilar[0] ?? null,
+      };
+      setHesap(veri);
+      // Uyari kodun kabul edilmedigini soyler ama hesap yine doner:
+      // yanlis kod yuzunden tum odemeyi dusurmek musteriyi cikmaza sokardi.
+      if (veri.warning) setCouponError(veri.warning);
+    } catch {
+      setHesap(null);
+      setCouponError("Sunucuya ulaşılamadı.");
+    } finally {
+      setHesaplaniyor(false);
+    }
   };
 
   // --- Tutar hesabı ---
   const subtotal = items.reduce((s, i) => s + i.priceAmount * i.qty, 0);
-  const k = coupon ? COUPONS[coupon] : null;
-  const couponDiscount = !k ? 0 : k.tip === "yuzde" ? (subtotal * k.value) / 100 : Math.min(k.value, subtotal);
-  const pointsDiscount = usePoints ? Math.min(GLAMPOINT_BALANCE, Math.max(0, subtotal - couponDiscount)) : 0;
+  // Indirimler SUNUCU hesabindan gelir; istemci yalnizca gosterir.
+  const couponDiscount = hesap?.couponDiscount ?? 0;
+  const giftCardApplied = hesap?.giftCardApplied ?? 0;
+  const pointsDiscount = usePoints
+    ? Math.min(GLAMPOINT_BALANCE, Math.max(0, subtotal - couponDiscount - giftCardApplied))
+    : 0;
   const kargo = 0; // Ücretsiz
-  const grandTotal = Math.max(0, subtotal - couponDiscount - pointsDiscount + kargo);
+  const grandTotal = Math.max(0, subtotal - couponDiscount - giftCardApplied - pointsDiscount + kargo);
   const kdvHaric = grandTotal / (1 + VAT_RATE);
   const kdv = grandTotal - kdvHaric;
-  const discountRate = subtotal > 0 ? Math.round(((couponDiscount + pointsDiscount) / subtotal) * 100) : 0;
+  const discountRate = subtotal > 0
+    ? Math.round(((couponDiscount + giftCardApplied + pointsDiscount) / subtotal) * 100) : 0;
 
   const stepBox: React.CSSProperties = {
     width: 28, height: 28, borderRadius: 7, border: "1px solid var(--gg-border)",
@@ -94,16 +191,52 @@ export default function CartPage() {
     setSubmitting(true);
     setOrderError(null);
     try {
+      // Adres formdan okunur. Once gonderilmiyordu: siparis olusuyor ama
+      // satici kargoya veremiyordu - zincirin son halkasi kopuktu.
+      const f = new FormData(e.target as HTMLFormElement);
+      const metin = (k: string) => String(f.get(k) ?? "").trim();
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: items.map((i) => ({ productId: i.id, quantity: i.qty })) }),
+        body: JSON.stringify({
+          items: items.map((i) => ({ productId: i.id, quantity: i.qty })),
+          shippingAddress: {
+            fullName: metin("ad"),
+            phone: metin("tel"),
+            line1: metin("adres"),
+            line2: null,
+            district: metin("ilce") || null,
+            city: metin("il"),
+            postalCode: metin("postaKodu") || null,
+            countryCode: "TR",
+            note: null,
+          },
+          couponCode: couponInput.trim() || null,
+          giftCardCode: giftCardInput.trim() || null,
+          submissionId: gonderimId.current,
+        }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         setOrderError(j.error ?? "Sipariş oluşturulamadı");
         return;
       }
+      // Gosterilen hesap ile gerceklesen ayristi mi?
+      //
+      // Ayni hediye kartini arada baska bir siparis harcamis olabilir;
+      // o durumda indirim beklenenden az olur. Sessizce gecmek yerine
+      // musteriye soyluyoruz - parayla ilgili bir fark gizlenmemeli.
+      const sonuc = await res.json().catch(() => ({}));
+      const beklenen = (hesap?.couponDiscount ?? 0) + (hesap?.giftCardApplied ?? 0);
+      const gerceklesen = Number(sonuc.couponDiscount ?? 0) + Number(sonuc.giftCardApplied ?? 0);
+      if (hesap && Math.abs(beklenen - gerceklesen) > 0.009) {
+        setOrderError(
+          `Siparişiniz oluştu ancak indirim beklenenden farklı gerçekleşti: ` +
+          `${tl(beklenen)} yerine ${tl(gerceklesen)} uygulandı. ` +
+          `Kupon süresi dolmuş ya da hediye kartı bakiyesi bu arada kullanılmış olabilir.`);
+      }
+
       save([]); // sipariş oluştu → sepeti boşalt
       setOrderPlaced(true);
     } catch {
@@ -130,18 +263,36 @@ export default function CartPage() {
       {/* Kupon */}
       <div style={{ display: "grid", gap: 6 }}>
         <label style={{ fontSize: 12.5, color: "var(--gg-muted)" }}>İndirim kuponu</label>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="gg-search" style={{ flex: 1 }} placeholder="GLAM10, HOSGELDIN50..." />
-          <button className="gg-btn gg-btn-ghost" onClick={applyCoupon} type="button">Uygula</button>
-        </div>
-        {coupon ? (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--gg-primary-soft)", color: "var(--gg-primary-dark)", borderRadius: 8, padding: "6px 10px", fontSize: 12.5 }}>
-            <span>🎟️ {coupon} — {COUPONS[coupon].ad}</span>
-            <button type="button" onClick={() => { setCoupon(null); setCouponInput(""); }}
-                    aria-label="Kuponu kaldır"
+        <input value={couponInput} onChange={(e) => setCouponInput(e.target.value)}
+               className="gg-search" placeholder="Mağazanın verdiği kod" />
+
+        <label style={{ fontSize: 12.5, color: "var(--gg-muted)", marginTop: 4 }}>Hediye kartı</label>
+        <input value={giftCardInput} onChange={(e) => setGiftCardInput(e.target.value)}
+               className="gg-search" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" />
+
+        <button className="gg-btn gg-btn-ghost" onClick={kodlariUygula} type="button"
+                disabled={hesaplaniyor} style={{ justifySelf: "start", marginTop: 4 }}>
+          {hesaplaniyor ? "Hesaplanıyor…" : "Kodları uygula"}
+        </button>
+
+        {hesap && (hesap.couponDiscount > 0 || hesap.giftCardApplied > 0) ? (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
+                        background: "var(--gg-primary-soft)", color: "var(--gg-primary-dark)",
+                        borderRadius: 8, padding: "6px 10px", fontSize: 12.5 }}>
+            <span>
+              {hesap.couponDiscount > 0 ? `🎟️ Kupon −${tl(hesap.couponDiscount)}` : null}
+              {hesap.couponDiscount > 0 && hesap.giftCardApplied > 0 ? "  ·  " : null}
+              {hesap.giftCardApplied > 0 ? `🎁 Hediye kartı −${tl(hesap.giftCardApplied)}` : null}
+            </span>
+            <button type="button"
+                    onClick={() => { setHesap(null); setCouponInput(""); setGiftCardInput(""); setCouponError(""); }}
+                    aria-label="Kodları kaldır"
                     style={{ cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: 14 }}>✕</button>
           </div>
         ) : null}
+
+        {/* Uyari kodun kabul edilmedigini soyler ama hesap yine gecerlidir:
+            yanlis kod yuzunden tum odemeyi dusurmek musteriyi cikmaza sokardi. */}
         {couponError ? <div style={{ color: "#B42318", fontSize: 12.5 }}>{couponError}</div> : null}
       </div>
 
@@ -154,7 +305,12 @@ export default function CartPage() {
       {/* Tutar kırılımı */}
       <div style={{ display: "grid", gap: 6, borderTop: "1px solid var(--gg-border)", paddingTop: 10 }}>
         {line("Ara Toplam", tl(subtotal))}
-        {couponDiscount > 0 ? line(`Kupon (%${k?.tip === "yuzde" ? k.value : Math.round((couponDiscount / subtotal) * 100)})`, <span style={{ color: "var(--gg-primary)" }}>−{tl(couponDiscount)}</span>) : null}
+        {couponDiscount > 0
+          ? line("Kupon indirimi", <span style={{ color: "var(--gg-primary)" }}>−{tl(couponDiscount)}</span>)
+          : null}
+        {giftCardApplied > 0
+          ? line("Hediye kartı", <span style={{ color: "var(--gg-primary)" }}>−{tl(giftCardApplied)}</span>)
+          : null}
         {pointsDiscount > 0 ? line("GlamPuan", <span style={{ color: "var(--gg-primary)" }}>−{tl(pointsDiscount)}</span>) : null}
         {line("Kargo", <span style={{ color: "var(--gg-primary)" }}>Ücretsiz</span>)}
         {line(<span>KDV (%20 dahil)</span>, tl(kdv))}

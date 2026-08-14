@@ -8,6 +8,17 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present"
+    "build": "npm run build --workspaces --if-present",
+    "test": "node --test apps",
+    "typecheck": "node scripts/typecheck.mjs",
+    "kontrol": "npm run typecheck && npm run test",
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:shell": "npm run dev -w shell",
+    "dev:store": "npm run dev -w store",
+    "dev:seller": "npm run dev -w seller",
+    "dev:social": "npm run dev -w social",
+    "dev:admin": "npm run dev -w admin",
+    "dev:cms": "npm run dev -w cms",
+    "dev:recipes": "npm run dev -w recipes"
   }
 }

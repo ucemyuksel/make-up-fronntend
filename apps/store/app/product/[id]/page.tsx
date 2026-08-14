@@ -3,6 +3,7 @@ import { Badge } from "@makeup/ui";
 import { auth } from "../../../auth";
 import { api, reviewApi, tl, type Product, type ReviewSummary } from "../../lib";
 import { Ratings } from "../../components/Ratings";
+import { Questions } from "../../components/Questions";
 import { AddToCart } from "./AddToCart";
 
 const SWATCHES = ["#E7C4A0", "#D9A679", "#C98A5E", "#B06B45", "#8A4F33", "#5E3320"];
@@ -12,7 +13,7 @@ export default async function ProductDetail({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { cerror?: string };
+  searchParams: { cerror?: string; qerror?: string; qok?: string };
 }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
@@ -60,11 +61,14 @@ export default async function ProductDetail({
             </div>
           </div>
 
-          <AddToCart product={{ id: p.id, name: p.name, brand: p.brand, priceAmount: p.priceAmount }} />
+          <AddToCart product={{ id: p.id, name: p.name, brand: p.brand,
+                                priceAmount: p.priceAmount, storeId: p.storeId }} />
         </div>
       </div>
 
       <Ratings kind="PRODUCT" subjectId={p.id} returnPath={`/product/${p.id}`} error={searchParams.cerror} />
+
+      <Questions productId={p.id} returnPath={`/product/${p.id}`} error={searchParams.qerror} />
     </div>
   );
 }

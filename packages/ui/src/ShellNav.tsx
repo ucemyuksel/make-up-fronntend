@@ -7,16 +7,17 @@ export type NavItem = { key: string; label: string; icon: string; href: string; 
 const MOD_ANAHTARI = "gg_panel_modu";
 
 /**
- * Kabuk navigasyonu — aktif sekmeyi KONUMDAN otomatik çıkarır (origin + pathname
- * en-uzun-önek eşleşmesi). Böylece her micro-frontend'in her alt sayfası doğru
- * menü öğesini vurgular (ör. social /messages → "Mesajlar", /reels → "Reels").
- * SSR/ilk boyamada {@code fallbackActive} kullanılır (hydration uyumu).
+ * Shell navigation - derives the active tab FROM THE LOCATION (longest-prefix
+ * match on origin + pathname), so every sub-page of every app highlights the
+ * right menu item (e.g. social /messages then /reels). During SSR and the first
+ * paint it uses {@code fallbackActive}, to keep hydration consistent.
  *
- * <p>Mağaza sahibi hesaplar iki moda sahiptir: <b>Alışveriş</b> ve <b>Satıcı</b>.
- * Menüyü tümden satıcıya çevirmek, aynı hesabın tüketici tarafını (tarifler,
- * reels) erişilemez kılıyordu — mod anahtarı ikisini de açık tutar. Seçim
- * localStorage'da saklanır; SSR her zaman alışveriş modunu boyar, mod yalnızca
- * tarayıcıda uygulanır (hydration uyuşmazlığı olmasın).
+ * <p>Store-owner accounts have two modes: <b>Shopping</b> and <b>Seller</b>.
+ * Switching the menu wholesale to seller made the consumer side of the same
+ * account (recipes, reels) unreachable - the mode switch keeps both open. The
+ * choice
+ * is kept in localStorage; SSR always paints shopping mode and the mode is
+ * applied in the browser only, so hydration never mismatches.
  */
 export function ShellNav({
   nav,
@@ -24,7 +25,7 @@ export function ShellNav({
   fallbackActive,
 }: {
   nav: NavItem[];
-  /** Verilirse mod anahtarı gösterilir (yalnız STORE_OWNER hesaplar). */
+  /** When supplied, the mode switch is shown (STORE_OWNER accounts only). */
   sellerNav?: NavItem[];
   fallbackActive: string;
 }) {

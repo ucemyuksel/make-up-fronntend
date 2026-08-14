@@ -9,7 +9,7 @@ export const metadata = { title: "Kampanya Raporu — GlamGuide" };
 export default async function CampaignReport({ params }: { params: { id: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
-  if (!token) redirect("/api/auth/signin?callbackUrl=%2Freklam");
+  if (!token) redirect("/login?callbackUrl=%2Freklam");
 
   const c = await adApi<AdCampaign>(`/api/campaigns/${params.id}`, token);
   if (!c) return <p>Kampanya bulunamadı. <a href="/ads" className="gg-see-all">← Reklam Paneli</a></p>;

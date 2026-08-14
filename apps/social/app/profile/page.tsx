@@ -1,10 +1,10 @@
 import * as React from "react";
 import { Stat } from "@makeup/ui";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { api, img, type Post, type Reel } from "../lib";
-import { SavedList, DislikeButton, ShareButton } from "../interactions";
+import { SavedList } from "../interactions";
+import { MediaGrid } from "./MediaGrid";
 
 const HILITE = [["🎨", "Makyaj"], ["🧴", "Cilt Bakımı"], ["🤍", "Favoriler"], ["❓", "Q&A"], ["👤", "Ben"]];
 const TABS = [
@@ -13,33 +13,46 @@ const TABS = [
   { ad: "Kaydedilenler", anahtar: "kaydedilenler" },
 ];
 
+/**
+ * JWT'nin sub alanini okur — imza dogrulamadan.
+ *
+ * Dogrulama gerekmiyor: jeton bizim oturumumuzdan geliyor ve asil dogrulamayi
+ * post-service yapiyor. Bu satir yalnizca "hangi profili isteyecegiz"
+ * sorusunu cevapliyor.
+ */
+function jetondanKullanici(token: string): string | null {
+  try {
+    const govde = token.split(".")[1];
+    if (!govde) return null;
+    const json = Buffer.from(govde.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+    return (JSON.parse(json) as { sub?: string }).sub ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function Profile({ searchParams }: { searchParams: { tab?: string } }) {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   const email = session?.user?.email;
   if (!token) {
-    redirect("/api/auth/signin?callbackUrl=%2Fprofile");
+    redirect("/login?callbackUrl=%2Fprofile");
   }
   const activeTab = searchParams.tab ?? "gonderiler";
 
-  const [posts, reels] = await Promise.all([
-    api<Post[]>(process.env.POST_API, "/api/posts", token),
+  // Yazar kimligi jetondan cozulur; istemciden alinmiyor.
+  const yazarId = jetondanKullanici(token);
+
+  const [ilkSayfa, reels] = await Promise.all([
+    // Ilk sayfa SUNUCUDA getirilir: kullanici bos ekran gormez ve bu kisim
+    // arama motoruna da acik. Devami istemcide, kaydirdikca gelir.
+    yazarId
+      ? api<{ items: Post[]; nextCursor: string | null }>(
+          process.env.POST_API, `/api/posts/author/${yazarId}?limit=24`, token)
+      : Promise.resolve(null),
     activeTab === "reels" ? api<Reel[]>(process.env.REELS_API, "/api/reels", token) : Promise.resolve(null),
   ]);
 
-  async function likePost(id: string) {
-    "use server";
-    const s = await auth();
-    const t = (s as unknown as { accessToken?: string } | null)?.accessToken;
-    if (t) {
-      await fetch(`${process.env.POST_API}/api/posts/${id}/like`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${t}` },
-        cache: "no-store",
-      }).catch(() => null);
-      revalidatePath("/profile");
-    }
-  }
 
   return (
     <div style={{ maxWidth: 820, display: "grid", gap: 20 }}>
@@ -55,7 +68,7 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
           <div style={{ fontSize: 13, marginTop: 6 }}>Makyaj | Güzellik | Cilt Bakımı</div>
           <div style={{ fontSize: 13, color: "var(--gg-muted)" }}>{email}</div>
           <div style={{ display: "flex", gap: 28, marginTop: 12 }}>
-            <Stat value={String((posts ?? []).length)} label="Gönderi" />
+            <Stat value={String(ilkSayfa?.items?.length ?? 0) + ((ilkSayfa?.nextCursor) ? "+" : "")} label="Gönderi" />
             <Stat value="18.6K" label="Takipçi" />
             <Stat value="392" label="Takip" />
           </div>
@@ -89,25 +102,7 @@ export default async function Profile({ searchParams }: { searchParams: { tab?: 
 
       {/* Sekme içerikleri */}
       {activeTab === "gonderiler" && (
-        <div className="gg-grid cols-3">
-          {(posts ?? []).map((p) => (
-            <div key={p.id} className="gg-card" style={{ padding: 12, display: "grid", gap: 8 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img(p.id)} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", borderRadius: "var(--gg-r-sm)", display: "block" }} />
-              <p style={{ margin: 0, fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.text}</p>
-              <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13 }}>
-                <form action={likePost.bind(null, p.id)} style={{ display: "inline" }}>
-                  <button type="submit" title="Beğen" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--gg-muted)" }}>
-                    ❤️ {p.likeCount}
-                  </button>
-                </form>
-                <DislikeButton id={p.id} />
-                <span style={{ marginLeft: "auto" }}><ShareButton title={p.text.slice(0, 60)} /></span>
-              </div>
-            </div>
-          ))}
-          {(posts ?? []).length === 0 && <p style={{ color: "var(--gg-muted)" }}>Gönderi yok.</p>}
-        </div>
+        <MediaGrid ilkSayfa={{ items: (ilkSayfa?.items ?? []) as never[], nextCursor: ilkSayfa?.nextCursor ?? null }} />
       )}
 
       {activeTab === "reels" && (

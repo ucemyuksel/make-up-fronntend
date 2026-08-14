@@ -2,8 +2,9 @@
 import * as React from "react";
 
 /**
- * Yatay kaydırılabilir carousel — sağa/sola ok butonları + dokunmatik/trackpad kaydırma.
- * Kartlar doğrudan children olarak verilir; her kart `flex: 0 0 auto` ile yan yana dizilir.
+ * Horizontally scrollable carousel - left/right arrow buttons plus touch and
+ * trackpad scrolling. Cards are passed as children; each is laid out side by
+ * side with `flex: 0 0 auto`.
  */
 export function Carousel({ children, itemWidth = 210, gap = 14 }: { children: React.ReactNode; itemWidth?: number; gap?: number }) {
   const ref = React.useRef<HTMLDivElement>(null);

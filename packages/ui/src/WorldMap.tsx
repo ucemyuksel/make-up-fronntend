@@ -3,11 +3,12 @@ import { GeoMap, type MapPoint } from "./GeoMap";
 import { findCoordinates } from "./coordinates";
 
 /**
- * Reklam coğrafi panosu — gerçek harita (OpenLayers + OpenStreetMap) üzerinde
- * şehir kabarcıkları. Hem satıcı hem yönetim panelinde kullanılır.
+ * The ad geography board - city bubbles on a real map (OpenLayers +
+ * OpenStreetMap). Used by both the seller and the admin panel.
  *
- * <p>Veriyi harita noktalarına çevirir; çizimi istemci bileşeni {@link GeoMap}
- * yapar (tile'lar tarayıcıda yüklenir, sunucuya yük binmez).
+ * <p>Turns the data into map points; the drawing is done by the client
+ * component {@link GeoMap} (tiles load in the browser, so our server is not
+ * involved).
  */
 
 export type CountryRow = {

@@ -1,8 +1,9 @@
 /**
- * Şehir/ülke koordinatları — harita kabarcıklarını konumlandırmak için.
+ * City/country coordinates, used to place the map bubbles.
  *
- * Şehir bilinmiyorsa ülke merkezine düşülür; ülke de bilinmiyorsa nokta
- * haritada gösterilmez (uydurma konum çizmektense eksik göstermek yeğdir).
+ * An unknown city falls back to the country centre; when the country is
+ * unknown too the point is not drawn at all - showing less beats inventing a
+ * location.
  */
 
 export const CITY_COORDS: Record<string, [number, number]> = {
@@ -41,7 +42,7 @@ export const COUNTRY_COORDS: Record<string, [number, number]> = {
   TH: [15.9, 100.99], VN: [14.06, 108.28], MY: [4.2, 101.98], SG: [1.35, 103.82], PH: [12.88, 121.77],
 };
 
-/** Şehir → koordinat; yoksa ülke merkezi; o da yoksa null. */
+/** City to coordinate; otherwise the country centre; otherwise null. */
 export function findCoordinates(countryCode: string, city?: string | null): [number, number] | null {
   if (city) {
     const s = CITY_COORDS[`${countryCode}|${city}`];

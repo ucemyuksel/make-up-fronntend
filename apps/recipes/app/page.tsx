@@ -26,7 +26,7 @@ async function fetchRecipes(token: string): Promise<RecipeCard[]> {
   // Oturum düştüyse (token bayat / Keycloak yeniden başlamış) girişe yolla —
   // "servis çalışmıyor" demek yanıltıcı olurdu.
   if (res.status === 401 || res.status === 403) {
-    redirect("/api/auth/signin?callbackUrl=%2F");
+    redirect("/login?callbackUrl=%2F");
   }
   if (!res.ok) return [];
   return res.json();
@@ -44,7 +44,7 @@ export default async function RecipesHome() {
         <p style={{ margin: 0, color: theme.color.textMuted }}>
           Canlı tarifleri görmek için giriş yapın (Keycloak).
         </p>
-        <a href="/api/auth/signin?callbackUrl=%2F">
+        <a href="/login?callbackUrl=%2F">
           <Button>Keycloak ile giriş yap</Button>
         </a>
       </div>

@@ -10,7 +10,7 @@ export default async function ReelsPage() {
   const session = await auth();
   const token = (session as unknown as { accessToken?: string } | null)?.accessToken;
   if (!token) {
-    redirect("/api/auth/signin?callbackUrl=%2Freels");
+    redirect("/login?callbackUrl=%2Freels");
   }
   const reels = (await api<Reel[]>(process.env.REELS_API, "/api/reels", token)) ?? [];
 
