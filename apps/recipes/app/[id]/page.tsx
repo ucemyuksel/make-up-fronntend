@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { GuidedCamera } from "./GuidedCamera";
+import { StepProducts, type StepProductCard } from "./StepProducts";
 
 type StepOutline = { index: number; title: string; region: string; state: string };
 type CurrentStep = {
@@ -13,6 +14,7 @@ type CurrentStep = {
   productColorHex: string;
   locked: boolean;
   instruction: string | null;
+  recommendedProducts: StepProductCard[];
 };
 type Session = {
   id: string;
@@ -72,11 +74,21 @@ export default async function GuidedPage({ params }: { params: { id: string } })
   }
 
   // --- Server action'lar: adım ilerlet/geri/baştan (token sunucuda kalır) ---
-  async function advance() {
+  // fromStep: bu form hangi adimi bitiriyor. Ayni istek iki kez ulasirsa
+  // (aynaya dayali telefonda cift dokunma, kopmus baglanti sonrasi tekrar)
+  // sunucu ikincisini yok sayar; onsuz bir adim sessizce atlanirdi.
+  async function advance(formData: FormData) {
     "use server";
     const ses = await auth();
     const t = (ses as unknown as { accessToken?: string } | null)?.accessToken;
-    if (t) await call(`/api/recipes/${recipeId}/session/advance`, "POST", t);
+    const fromStep = formData.get("fromStep");
+    if (t) {
+      await call(
+        `/api/recipes/${recipeId}/session/advance?fromStep=${encodeURIComponent(String(fromStep ?? ""))}`,
+        "POST",
+        t,
+      );
+    }
     revalidatePath(`/${recipeId}`);
   }
   async function back() {
@@ -148,11 +160,13 @@ export default async function GuidedPage({ params }: { params: { id: string } })
               <p style={{ margin: 0, lineHeight: 1.6 }}>{cs.instruction ?? "Bu adımın içeriği kilitli."}</p>
             </div>
           </div>
+          <StepProducts products={cs.recommendedProducts} />
           <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
             <form action={back}>
               <button className="gg-btn gg-btn-ghost" type="submit" disabled={data.currentStepIndex === 0}>← Geri</button>
             </form>
             <form action={advance} style={{ marginLeft: "auto" }}>
+              <input type="hidden" name="fromStep" value={data.currentStepIndex} />
               <button className="gg-btn gg-btn-primary" type="submit">
                 {data.currentStepIndex + 1 >= data.totalSteps ? "Bitir ✓" : "İleri →"}
               </button>
