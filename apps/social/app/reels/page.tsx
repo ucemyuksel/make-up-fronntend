@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { api, type Reel } from "../lib";
 import { ShareButton, SaveButton } from "../interactions";
+import { ReelPlayer } from "./ReelPlayer";
 
 export default async function ReelsPage() {
   const session = await auth();
@@ -36,15 +37,10 @@ export default async function ReelsPage() {
           <article key={r.id} className="gg-card gg-reel-card">
             {r.videoUrl ? (
               /* poster: ilk karede siyah kutu yerine kapak görseli görünsün */
-              <video
-                src={r.videoUrl}
-                poster={r.thumbnailUrl ?? undefined}
-                controls
-                loop
-                muted
-                playsInline
-                preload="metadata"
-                className="gg-reel-video"
+              <ReelPlayer
+                reelId={r.id}
+                videoUrl={r.videoUrl}
+                posterUrl={r.thumbnailUrl}
               />
             ) : (
               <div className="gg-reel-video gg-reel-placeholder">🎬</div>
