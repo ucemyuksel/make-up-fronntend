@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { api, type Reel } from "../lib";
-import { ShareButton, SaveButton } from "../interactions";
+import { SaveButton } from "../interactions";
 import { ReelPlayer } from "./ReelPlayer";
+import { ReelFeedback, ReelShare } from "./ReelFeedback";
 
 export default async function ReelsPage() {
   const session = await auth();
@@ -61,8 +62,9 @@ export default async function ReelsPage() {
                   <span>{r.viewCount}</span>
                 </span>
                 <span className="gg-reel-actions-end">
-                  <ShareButton title={r.caption} />
+                  <ReelShare reelId={r.id} title={r.caption} />
                   <SaveButton id={r.id} tip="reel" title={r.caption} />
+                  <ReelFeedback reelId={r.id} />
                 </span>
               </div>
             </div>

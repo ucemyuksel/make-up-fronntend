@@ -13,7 +13,7 @@ import { auth } from "../../../auth";
  * error over a video the user is currently watching. The service counts each
  * signal once per viewer anyway, so a retry that never happens costs nothing.
  */
-const ALLOWED = new Set(["VIEWED", "COMPLETED", "SKIPPED", "REPORTED", "HIDDEN"]);
+const ALLOWED = new Set(["VIEWED", "COMPLETED", "SHARED", "SKIPPED", "REPORTED", "HIDDEN"]);
 
 export async function POST(req: NextRequest) {
   const session = await auth();

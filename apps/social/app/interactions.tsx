@@ -5,7 +5,26 @@ import * as React from "react";
 /** Sosyal etkileşim bileşenleri: paylaş, kaydet, beğenmeme, hikâye görüntüleyici.
  *  Paylaşım Web Share API ile (destek yoksa bağlantı kopyalanır + hızlı linkler). */
 
-export function ShareButton({ title, text, url }: { title: string; text?: string; url?: string }) {
+export function ShareButton({
+  title,
+  text,
+  url,
+  onShared,
+}: {
+  title: string;
+  text?: string;
+  url?: string;
+  /**
+   * Called when the user actually shares - native sheet completed, link
+   * copied, or a network link opened.
+   *
+   * <p>Optional so posts and reels can keep using the same button: only the
+   * reel feed needs the share reported, because sharing is a ranking signal
+   * there. Without it the backend share endpoint existed but nothing ever
+   * called it.
+   */
+  onShared?: () => void;
+}) {
   const [open, setOpen] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const link = url ?? (typeof window !== "undefined" ? window.location.href : "");
@@ -14,6 +33,7 @@ export function ShareButton({ title, text, url }: { title: string; text?: string
     if (navigator.share) {
       try {
         await navigator.share({ title: title, text: text ?? title, url: link });
+        onShared?.();
         return;
       } catch { /* kullanıcı iptal etti → menüye düş */ }
     }
@@ -22,6 +42,7 @@ export function ShareButton({ title, text, url }: { title: string; text?: string
 
   const kopyala = async () => {
     await navigator.clipboard.writeText(link).catch(() => null);
+    onShared?.();
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -35,9 +56,9 @@ export function ShareButton({ title, text, url }: { title: string; text?: string
       </button>
       {open && (
         <span style={{ position: "absolute", bottom: "120%", right: 0, background: "#fff", border: "1px solid var(--gg-border)", borderRadius: 10, boxShadow: "0 4px 14px rgba(0,0,0,.12)", padding: 8, display: "grid", gap: 4, zIndex: 20, minWidth: 170 }}>
-          <a href={`https://wa.me/?text=${enc(title + " " + link)}`} target="_blank" rel="noreferrer" style={{ fontSize: 13, padding: "6px 8px" }}>🟢 WhatsApp</a>
-          <a href={`https://x.com/intent/tweet?text=${enc(title)}&url=${enc(link)}`} target="_blank" rel="noreferrer" style={{ fontSize: 13, padding: "6px 8px" }}>𝕏 X (Twitter)</a>
-          <a href={`https://t.me/share/url?url=${enc(link)}&text=${enc(title)}`} target="_blank" rel="noreferrer" style={{ fontSize: 13, padding: "6px 8px" }}>✈️ Telegram</a>
+          <a href={`https://wa.me/?text=${enc(title + " " + link)}`} target="_blank" rel="noreferrer" onClick={() => onShared?.()} style={{ fontSize: 13, padding: "6px 8px" }}>🟢 WhatsApp</a>
+          <a href={`https://x.com/intent/tweet?text=${enc(title)}&url=${enc(link)}`} target="_blank" rel="noreferrer" onClick={() => onShared?.()} style={{ fontSize: 13, padding: "6px 8px" }}>𝕏 X (Twitter)</a>
+          <a href={`https://t.me/share/url?url=${enc(link)}&text=${enc(title)}`} target="_blank" rel="noreferrer" onClick={() => onShared?.()} style={{ fontSize: 13, padding: "6px 8px" }}>✈️ Telegram</a>
           <button onClick={kopyala} style={{ fontSize: 13, padding: "6px 8px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
             {copied ? "✓ Kopyalandı" : "🔗 Bağlantıyı kopyala"}
           </button>
