@@ -2,7 +2,8 @@ export default {
   transpilePackages: ["@makeup/ui", "@makeup/auth"],
   env: {
     STORE_API: process.env.STORE_API || "http://localhost:8084",
-    AD_API: process.env.AD_API || "http://localhost:8089"
+    AD_API: process.env.AD_API || "http://localhost:8089",
+    ACCOUNTING_API: process.env.ACCOUNTING_API || "http://localhost:8098"
   },
   // Eski Türkçe rota adları — yer imleri ve paylaşılmış bağlantılar
   // kırılmasın diye kalıcı yönlendirme (308). En az bir yayın döngüsü kalmalı.

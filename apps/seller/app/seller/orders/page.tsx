@@ -8,7 +8,7 @@ import { api, tl, type Product } from "../../lib";
 
 export const metadata = { title: "Siparişler & Kargo — GlamGuide" };
 
-type ShipmentStatus = "HAZIRLANIYOR" | "KARGOLANDI" | "TESLIM_EDILDI" | "IPTAL";
+type ShipmentStatus = "PREPARING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
 type SellerOrder = {
   id: string;
   buyerUserId: string;
@@ -27,17 +27,17 @@ type SellerOrder = {
 type SellerSummary = { orderCount: number; totalRevenue: number; awaitingShipment: number };
 
 const STATUS_STYLE: Record<ShipmentStatus, { bg: string; fg: string; text: string }> = {
-  HAZIRLANIYOR: { bg: "#FCF2DE", fg: "#C98A1E", text: "HAZIRLANIYOR" },
-  KARGOLANDI: { bg: "#E7EEFB", fg: "#2C5BB8", text: "KARGODA" },
-  TESLIM_EDILDI: { bg: "#E5F6EC", fg: "#1E9E5A", text: "TESLİM EDİLDİ" },
-  IPTAL: { bg: "#F1F1F3", fg: "#6B7280", text: "İPTAL" },
+  PREPARING: { bg: "#FCF2DE", fg: "#C98A1E", text: "HAZIRLANIYOR" },
+  SHIPPED: { bg: "#E7EEFB", fg: "#2C5BB8", text: "KARGODA" },
+  DELIVERED: { bg: "#E5F6EC", fg: "#1E9E5A", text: "TESLİM EDİLDİ" },
+  CANCELLED: { bg: "#F1F1F3", fg: "#6B7280", text: "İPTAL" },
 };
 
 const TABS: { key: string; label: string }[] = [
   { key: "", label: "Tümü" },
-  { key: "HAZIRLANIYOR", label: "Kargo bekleyen" },
-  { key: "KARGOLANDI", label: "Kargoda" },
-  { key: "TESLIM_EDILDI", label: "Teslim edilen" },
+  { key: "PREPARING", label: "Kargo bekleyen" },
+  { key: "SHIPPED", label: "Kargoda" },
+  { key: "DELIVERED", label: "Teslim edilen" },
 ];
 
 /** Yaygın kargo firmaları — serbest yazım yerine seçim, takip linki tutarlı olsun. */
@@ -203,7 +203,7 @@ export default async function SellerOrders({
                   ) : null}
 
                   {/* Eylemler duruma göre — geçersiz geçiş hiç gösterilmez. */}
-                  {o.shipmentStatus === "HAZIRLANIYOR" ? (
+                  {o.shipmentStatus === "PREPARING" ? (
                     <div style={{ display: "grid", gap: 8 }}>
                       <form action={shipmentAction} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         <input type="hidden" name="id" value={o.id} />
@@ -226,7 +226,7 @@ export default async function SellerOrders({
                         </button>
                       </form>
                     </div>
-                  ) : o.shipmentStatus === "KARGOLANDI" ? (
+                  ) : o.shipmentStatus === "SHIPPED" ? (
                     <form action={shipmentAction}>
                       <input type="hidden" name="id" value={o.id} />
                       <input type="hidden" name="action" value="deliver" />

@@ -7,7 +7,7 @@ export type Purchase = {
   failureReason?: string;
   /** Fiziksel urunde kargo durumu; tarif satislarinda null. Iade yalnizca
       kargolanmis/teslim edilmis siparislerde acilabilir. */
-  shipmentStatus?: "HAZIRLANIYOR" | "KARGOLANDI" | "TESLIM_EDILDI" | "IPTAL" | null;
+  shipmentStatus?: "PREPARING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | null;
   createdAt: string;
 };
 

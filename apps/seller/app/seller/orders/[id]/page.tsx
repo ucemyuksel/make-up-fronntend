@@ -12,10 +12,10 @@ export const dynamic = "force-dynamic";
 const CARRIERS = ["Yurtiçi Kargo", "Aras Kargo", "MNG Kargo", "PTT Kargo", "Sürat Kargo", "UPS", "DHL"];
 
 const DURUM: Record<string, string> = {
-  HAZIRLANIYOR: "Hazırlanıyor",
-  KARGOLANDI: "Kargoda",
-  TESLIM_EDILDI: "Teslim edildi",
-  IPTAL: "İptal",
+  PREPARING: "Hazırlanıyor",
+  SHIPPED: "Kargoda",
+  DELIVERED: "Teslim edildi",
+  CANCELLED: "İptal",
 };
 const IADE_DURUM: Record<string, string> = {
   REQUESTED: "Karar bekliyor",
@@ -72,8 +72,8 @@ export default async function OrderDetailPage({
       : `/seller/orders/${params.id}?error=${encodeURIComponent(r.error ?? "İşlem tamamlanamadı")}`);
   }
 
-  const kargolandi = order.shipmentStatus === "KARGOLANDI";
-  const hazirlaniyor = order.shipmentStatus === "HAZIRLANIYOR";
+  const kargolandi = order.shipmentStatus === "SHIPPED";
+  const hazirlaniyor = order.shipmentStatus === "PREPARING";
 
   return (
     <div style={{ maxWidth: 760, display: "grid", gap: 16 }}>

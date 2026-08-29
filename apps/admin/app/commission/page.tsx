@@ -36,7 +36,9 @@ export default async function Commission({
   if (!session?.accessToken) redirect("/");
   if (!session.roles?.includes("ADMIN")) redirect("/forbidden");
 
-  const api = process.env.PURCHASE_API!;
+  // Komisyon ve gelir defteri accounting-servicee taşındı (muhasebe ayrı bir
+  // bağlam: "ödeme geçti mi" ile "bu satış kime ne kazandırdı" farklı sorular).
+  const api = process.env.ACCOUNTING_API!;
   const rules = (await adminApi<CommissionRule[]>(api, "/api/commissions", session.accessToken)) ?? [];
 
   // Önizleme: "bu pazarda oran ne olur?" — kural yazmadan denenir.
@@ -62,7 +64,7 @@ export default async function Commission({
       redirect("/commission?error=" + encodeURIComponent("Komisyon oranı 0-100 arasında olmalı"));
     }
 
-    const result = await adminSend(process.env.PURCHASE_API!, "/api/commissions", s.accessToken, "POST", {
+    const result = await adminSend(process.env.ACCOUNTING_API!, "/api/commissions", s.accessToken, "POST", {
       countryCode: String(form.get("countryCode") ?? "").trim() || null,
       regionCode: String(form.get("regionCode") ?? "").trim() || null,
       categoryId: String(form.get("categoryId") ?? "").trim() || null,
@@ -80,7 +82,7 @@ export default async function Commission({
     "use server";
     const s = (await auth()) as { accessToken?: string } | null;
     if (!s?.accessToken) return;
-    await adminSend(process.env.PURCHASE_API!, `/api/commissions/${form.get("id")}`, s.accessToken, "DELETE");
+    await adminSend(process.env.ACCOUNTING_API!, `/api/commissions/${form.get("id")}`, s.accessToken, "DELETE");
     revalidatePath("/commission");
   }
 
@@ -147,7 +149,7 @@ export default async function Commission({
           </div>
         ) : previewCountry ? (
           <p style={{ color: "var(--gg-muted)", fontSize: 13 }}>
-            Önizleme alınamadı — purchase-service çalışıyor mu?
+            Önizleme alınamadı — accounting-service çalışıyor mu?
           </p>
         ) : null}
       </section>

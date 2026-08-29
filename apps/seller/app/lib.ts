@@ -78,7 +78,7 @@ export async function orderSend(
   return { ok: false, status: res.status, error };
 }
 
-export type ShipmentStatus = "HAZIRLANIYOR" | "KARGOLANDI" | "TESLIM_EDILDI" | "IPTAL";
+export type ShipmentStatus = "PREPARING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
 
 export type SellerOrder = {
   id: string;

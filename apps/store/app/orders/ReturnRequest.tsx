@@ -62,7 +62,7 @@ export async function ReturnRequest({
   }
 
   const acikTalep = talepler.find((t) => t.status === "REQUESTED");
-  const kargolandi = shipmentStatus === "KARGOLANDI" || shipmentStatus === "TESLIM_EDILDI";
+  const kargolandi = shipmentStatus === "SHIPPED" || shipmentStatus === "DELIVERED";
 
   async function talepAc(formData: FormData) {
     "use server";
